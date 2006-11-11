@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-_debug         = False
+_debug         = True
 
 _author     = 'Mathias Laurin <mathias_laurin@users.sourceforge.net>'
 _documenter = 'Christian Faulhammer <opfer@gentoo.org>'
