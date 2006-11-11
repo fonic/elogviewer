@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-_debug         = False
+_debug         = True
 
 __author__     = 'Mathias Laurin <mathias_laurin@users.sourceforge.net>'
 __documenter__ = 'Christian Faulhammer <opfer@gentoo.org>'
@@ -29,20 +29,23 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.'''
 
 
-__description__ = '''elogviewer lists all elogs created during emerges of
-packages from Portage, the package manager of Gentoo Linux.  So all
-warnings or informational messages generated during an update can be
-reviewed at one glance.
+__description__ = '''
+elogviewer lists all elogs created during emerges of packages from Portage, 
+the package manager of Gentoo Linux.  So all warnings or informational 
+messages generated during an update can be reviewed at one glance.
 
 man 1 elogviewer and man 1 /etc/make.conf for more informations.
 
 Timothy Kilbourn (nmbrthry) has written the first version of elogviewer.
-Christian Faulhammer (V-Li) has written the man page.'''
+Jeremy Wickersheimer adapted elogviewer to KDE, some features he added were
+back ported in elogviewer.
+Christian Faulhammer (V-Li) has written the man page.
+'''
 
 
 try:
 	import pygtk
-	pygtk.require ( '2.0' )
+	pygtk.require('2.0')
 except:
 	print "Please run: emerge --sync && emerge pygtk"
 
@@ -59,14 +62,14 @@ stdout = stderr
 
 if _debug:
 	print 'Running debug mode'
-	os.chdir( "elog" )
+	os.chdir("elog")
 else:
 	try:
-		os.chdir( portage.settings["PORT_LOGDIR"] )
+		os.chdir(portage.settings["PORT_LOGDIR"])
 	except:
-		os.chdir( "/var/log/portage" )
+		os.chdir("/var/log/portage")
 	try:
-		os.chdir( "./elog" )
+		os.chdir("./elog")
 	except:
 		print '''
 Please install the elog feature as explained in the ebuild and
@@ -78,10 +81,12 @@ and
 in your /etc/make.conf
 		'''
 
+
 class ScrolledWindow (gtk.ScrolledWindow):
+
 	def __init__ (self, child):
 		gtk.ScrolledWindow.__init__ (self)
-		self.set_policy( gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC )
+		self.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		self.add (child)
 
 (
@@ -91,44 +96,57 @@ class ScrolledWindow (gtk.ScrolledWindow):
 	FILENAME_COLUMN
 ) = range(4)
 
+
+class ListStore (gtk.ListStore):
+
+		### DEBUG ListStore, GenericTreeModel, ...
+		def __init__ (self):
+			self = gtk.ListStore.__init__ (self, TYPE_STRING, TYPE_STRING, TYPE_STRING,\
+							TYPE_PYOBJECT)
+			#gtk.ListStore.__init__ (self, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_PYOBJECT) 
+
+		def populate (self):
+			for filename in os.listdir(os.getcwd()):
+				log = self.__split_colon(filename)
+				self.append(log)
+
+		def __split_colon (self, filename):
+			intimeformat  = '%Y%m%d-%H%M%S.log'
+			outtimeformat = '%Y-%m-%d %H:%M:%S'
+
+			(c, p, t) = re.split(':', str(filename))
+			t = time.strptime (t, intimeformat)
+			t = time.strftime (outtimeformat, t)
+
+			return [c, p, t, filename]
+		
+
 class FileList (gtk.TreeView):
 
 		def __init__ (self, selection_handler):
 
-			col_headers = [ 'Category', 'Package', 'Timestamp' ]
-			model = gtk.ListStore(TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_PYOBJECT)
+			col_headers = ['Category', 'Package', 'Timestamp']
+			model       = ListStore()
 			gtk.TreeView.__init__ (self, model)
-
-			self.model = model
 			self.set_enable_search(True)
-			self.set_search_column(PACKAGE_COLUMN)
+			self.set_search_column(PACKAGE_COLUMN)	
 			#self.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
-			for c in range( len(col_headers) ):
+			for c in range(len(col_headers)):
 				cell = gtk.CellRendererText()
 				col  = gtk.TreeViewColumn(col_headers[c], cell, text=c)
-				col.set_sort_column_id( c )
+				col.set_sort_column_id(c)
 				self.append_column(col)
 
-			### Selection handler
+			# Selection handler
 			self.get_selection().connect_object('changed', selection_handler, None)
 
-		def populate (self):
-			for filename in os.listdir( os.getcwd() ):
-				log = self.split_colon(filename)
-				self.model.append( log )
+			# Export
+			self.populate = model.populate
 
-		def split_colon (self, filename):
-			intimeformat  = '%Y%m%d-%H%M%S.log'
-			outtimeformat = '%Y-%m-%d %H:%M:%S'
-
-			(c, p, t) = re.split( ':', str(filename) )
-			t = time.strptime( t, intimeformat  )
-			t = time.strftime( outtimeformat, t )
-
-			return [c, p, t, filename]
 
 class Buffer (gtk.TextBuffer):
+		
 		def __init__ (self):
 			gtk.TextBuffer.__init__ (self)
 			self.set_text('No selection')
@@ -139,6 +157,7 @@ class Buffer (gtk.TextBuffer):
 
 
 class LogView (gtk.TextView):
+
 		def __init__ (self):
 			gtk.TextView.__init__ (self)
 			self.set_editable (False)
@@ -148,9 +167,8 @@ class LogView (gtk.TextView):
 			self.buffer = Buffer()
 			self.set_buffer (self.buffer)
 
-		def strip_nl (self, line):
-			### Helper function - reg exp are unclear to me...
-			return re.match( r'^([^\\\n]*)', line ).group( 1 )
+		def __strip_nl (self, line):
+			return re.match(r'^([^\\\n]*)', line).group(1)
 
 		def set_text (self, filename):
 			### local header list
@@ -160,20 +178,20 @@ class LogView (gtk.TextView):
 					header_labels = h
 				else:
 					header_labels = header_labels + '|' + h
-			header_labels = re.compile( header_labels )
+			header_labels = re.compile(header_labels)
 
 			### Read the file
-			file      = open( filename, 'r' )
+			file      = open(filename, 'r')
 			readline  = ''
 			firstline = True
 			for readline in file:
-				readline = self.strip_nl (readline)
+				readline = self.__strip_nl(readline)
 
 				### is section?
-				if header_labels.match (readline):
-					line = readline.split( ': ' )
-					h    = line[0]
-					s    = line[1]
+				if header_labels.match(readline):
+					line = readline.split(': ')
+					h = line[0]
+					s = line[1]
 					if firstline:
 						self.buffer.set_text('')
 						firstline = False
@@ -191,14 +209,13 @@ class LogView (gtk.TextView):
 					self.buffer.insert_with_tags_by_name(iter, line, h)
 					#self.buffer.insert_at_cursor (line)
 
+
 class Filter(gtk.VBox):
 
-		header = { 'INFO': bool(), 'WARN': bool(), 'ERROR': bool(), 'LOG': bool() }
-		stage  = { 'preinst': bool(), 'postinst': bool(), \
-					'postrm': bool(), 'prerm': bool(), \
-					'unpack': bool(), \
-					'compile': bool(), 'setup': bool(), 'test': bool(), 'install': bool(), \
-					'other': bool()}
+		header = {'INFO': bool(), 'WARN': bool(), 'ERROR': bool(), 'LOG': bool()}
+		stage  = {'preinst': bool(), 'postinst': bool(), 'postrm': bool(), 'prerm': bool(), \
+					'unpack': bool(), 'compile': bool(), 'setup': bool(), 'test': bool(), \
+					'install': bool(), 'other': bool()}
 	
 		def __init__ (self, selection_changed):
 			gtk.VBox.__init__ (self)
@@ -224,7 +241,7 @@ class Filter(gtk.VBox):
 				btn[label]   = gtk.CheckButton( label, False )
 				btn[label].set_active(True)
 				dict[label]  = True
-				btn[label].connect( 'toggled', self.toggle, dict, label )
+				btn[label].connect('toggled', self.toggle, dict, label)
 				box.attach(btn[label], col, col+1, row, row+1)
 				col += 1
 				if col == 2:
@@ -236,9 +253,8 @@ class Filter(gtk.VBox):
 		def toggle(self, btn, dict, label):
 			dict[label] = not dict[label]
 			self.selection_changed()
-			### should also update the logview by the way...
-			### emit selection change signal?
-			
+
+
 class Actions(gtk.UIManager):
 
 		def __init__ (self, delete, clear, refresh, quit):
@@ -270,12 +286,13 @@ class Actions(gtk.UIManager):
 			action_group.add_actions([
 			('File',    None, '_File'),
 			('Help',    None, '_Help'),
-			('About',   None, '_About...',          None, None,          self.about_box     ),
-			('Info',    None, '_Info',              None, None,          self.info_box      ),
-			('Quit',    gtk.STOCK_QUIT,   '_Quit',   'q', 'Quit',        quit),
+			('About',   None, '_About...', None, None, self.about_box),
+			('Info',    None, '_Info',     None, None, self.info_box),
+			('Quit',    gtk.STOCK_QUIT,   '_Quit',   'q', 'Quit', quit),
 			('Delete',  gtk.STOCK_DELETE, '_Delete', 'd', 'Delete selected entry', delete),
-			('Clear',   gtk.STOCK_CLEAR,  '_Clear',  'c', 'Clear all',   clear),
-			('Refresh', gtk.STOCK_REFRESH,'_Refresh','r', 'Refresh',     refresh)])
+			('Clear',   gtk.STOCK_CLEAR,  '_Clear',  'c', 'Clear all', clear),
+			('Refresh', gtk.STOCK_REFRESH,'_Refresh','r', 'Refresh', refresh)
+			])
 			
 			self.insert_action_group(action_group, 0)
 			self.add_ui_from_string(ui)
@@ -303,17 +320,18 @@ class Actions(gtk.UIManager):
 			d.run()
 			d.destroy()
 
+
 class Statusbar (gtk.Statusbar):
+
 		def __init__ (self):
 			gtk.Statusbar.__init__(self)
-			hbox = gtk.HBox()
-			hbox.add (gtk.Button())
-			hbox.add (gtk.Button())
-			self.add(hbox)
-			hbox.show_all()
-			
+
+		def update(self, text):
+			self.push(0, text)
+
 
 class Elogviewer (gtk.Window):
+		
 		def destroy (self, *args):
 			gtk.main_quit()
 	
@@ -326,13 +344,12 @@ class Elogviewer (gtk.Window):
 			self.show()
 
 			### Initialize widgets
-			actions  = Actions   (self.delete, self.clear, self.refresh, self.destroy)
-			filter   = Filter    (self.selection_changed)
-			statusbar= Statusbar ()
+			actions  = Actions(self.delete, self.clear, self.refresh, self.destroy)
+			filter   = Filter(self.selection_changed)
 			pane     = gtk.VPaned()
-			filelist = FileList  (self.selection_changed)
-			logview  = LogView   ()
-
+			filelist = FileList(self.selection_changed)
+			logview  = LogView()
+			statusbar= Statusbar()
 
 			### Accelerators
 			self.add_accel_group(actions.accel_group)
@@ -361,13 +378,13 @@ class Elogviewer (gtk.Window):
 			pane.show_all()
 
 			### Show status bar
-			if _debug:
-				statusbar.show()
+			statusbar.show()
 
 			### Export
 			self.filelist  = filelist
 			self.selection = filelist.get_selection()
 			self.logview   = logview
+			self.statusbar = statusbar
 
 			### Populate!
 			filelist.populate()
@@ -381,9 +398,13 @@ class Elogviewer (gtk.Window):
 				# No selection
 				self.logview.buffer.set_text('No elogs left, thank you for using elogviewer.')
 			else:
-
 				filename = model.get_value(iter, FILENAME_COLUMN)
 				self.logview.set_text(filename)
+				# Collect other infos for the statusbar
+				tot_files = model.iter_n_children(None)
+				sel_file  = model.get_path(iter)[0] + 1
+				statusbartext = str(sel_file) + '/' + str(tot_files) + ' file: ' + filename
+				self.statusbar.update(statusbartext)
 
 		def delete (self, *args):
 			[model, iter]  = self.selection.get_selected()
@@ -391,8 +412,8 @@ class Elogviewer (gtk.Window):
 				# No selection
 				return 
 
-			filename       = model.get_value(iter, FILENAME_COLUMN)
-			path           = model.get_path(iter)
+			filename = model.get_value(iter, FILENAME_COLUMN)
+			path     = model.get_path(iter)
 
 			model.remove (iter)
 			if _debug:
@@ -425,9 +446,11 @@ class Elogviewer (gtk.Window):
 		def refresh(self, *args):
 			self.filelist.populate()
 
+
 def main():
 		gtk.main()
 		return 0
+
 
 if __name__ == "__main__":
 		Elogviewer()
