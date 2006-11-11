@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-_debug         = False
+_debug         = True
 
 __author__     = 'Mathias Laurin <mathias_laurin@users.sourceforge.net>'
 __documenter__ = 'Christian Faulhammer <opfer@gentoo.org>'
@@ -58,7 +58,7 @@ from sys     import stdout, stderr
 stdout = stderr
 
 if _debug:
-	print 'running debug mode'
+	print 'Running in debug mode'
 	os.chdir( "elog" )
 else:
 	try:
@@ -79,9 +79,10 @@ in your /etc/make.conf
 		'''
 
 class ScrolledWindow (gtk.ScrolledWindow):
-	def __init__ (self):
+	def __init__ (self, child):
 		gtk.ScrolledWindow.__init__ (self)
 		self.set_policy( gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC )
+		self.add (child)
 
 class FileList (gtk.TreeView):
 
@@ -118,25 +119,17 @@ class FileList (gtk.TreeView):
 
 			return [c, p, t, filename]
 
-class LogView (gtk.TextView):
-		def __init__ (self):
-			gtk.TextView.__init__ (self)
-			self.set_editable (False)
-			self.set_cursor_visible (False)
-			self.set_wrap_mode (gtk.WRAP_WORD)
 
-		### Probably better in its own class...
+class Buffer (gtk.TextBuffer):
 		def strip_nl (self, line):
+			### Helper function - reg exp are unclear to me
 			return re.match( r'^([^\\\n]*)', line ).group( 1 )
 
-		### Should not receive filename! that is bad object-oriented prog
-		def set_text (self, filename=None):
-			
-			### Init buffer
-			N_COLORS      = 16
-			buffer        = self.get_buffer()
-			buffer.set_text ('')
-			# text color from gtk.TexTag - gtk.TextTagTable
+		def __init__ (self, filename):
+			gtk.TextBuffer.__init__ (self)
+
+			#text color from gtk.TexTag - gtk.TextTagTable
+			#N_COLORS = 16
 
 			### local header list
 			header_labels = ''
@@ -162,13 +155,27 @@ class LogView (gtk.TextView):
 					if firstline:
 						firstline = False
 					else:
-						buffer.insert_at_cursor ('\n')
+						self.insert_at_cursor ('\n')
 
-					buffer.insert_at_cursor ('%s (%s)\n' % (h, s))
+					self.insert_at_cursor ('%s (%s)\n' % (h, s))
 
 				### filter section content?
 				elif Filter.header[h] and Filter.stage[s]:
-					buffer.insert_at_cursor ( '%s\n' % readline)
+					self.insert_at_cursor ( '%s\n' % readline)
+
+class LogView (gtk.TextView):
+		def __init__ (self):
+			gtk.TextView.__init__ (self)
+			self.set_editable (False)
+			self.set_cursor_visible (False)
+			self.set_wrap_mode (gtk.WRAP_WORD)
+
+		def set_text (self, selection):
+			[model,iter]   = selection.get_selected()
+			if iter is not None:
+				self.filename  = model.get_value(iter,3)
+			buffer = Buffer(self.filename)
+			self.set_buffer(buffer)
 
 class Filter(gtk.VBox):
 
@@ -201,17 +208,19 @@ class Filter(gtk.VBox):
 				btn[label]   = gtk.CheckButton( label, False )
 				btn[label].set_active(True)
 				dict[label]  = True
-				btn[label].connect( "toggled", self.toggle, dict, label )
+				btn[label].connect( 'toggled', self.toggle, dict, label )
 				box.attach(btn[label], col, col+1, row, row+1)
 				col += 1
 				if col == 2:
 					col  = 0
 					row += 1
+			#self.emit('changed')
 			return box
 
 		def toggle(self, btn, dict, label):
 			dict[label] = not dict[label]
-			#LogView.set_text()
+			### should also update the logview by the way...
+			### emit selection change signal?
 			
 class Actions(gtk.UIManager):
 
@@ -240,7 +249,6 @@ class Actions(gtk.UIManager):
 			</toolbar>
 			</ui>'''
 
-			### Actually build the UI
 			action_group = gtk.ActionGroup('Main')
 			action_group.add_actions([
 			('File',    None, '_File'),
@@ -255,7 +263,7 @@ class Actions(gtk.UIManager):
 			self.insert_action_group(action_group, 0)
 			self.add_ui_from_string(ui)
 
-			### extract widgets
+			### Extract widgets
 			self.menubar     = self.get_widget('/Menubar')
 			self.toolbar     = self.get_widget('/Toolbar')
 			self.accel_group = self.get_accel_group()
@@ -295,70 +303,60 @@ class Elogviewer (gtk.Window):
 			self.show()
 
 			### Initialize widgets
-			actions  = Actions  (self.delete, self.clear, self.refresh, self.destroy)
-			filelist = FileList (self.selection_change)
-			filter   = Filter()
-			logview  = LogView()
-			statusbar= Statusbar()
+			actions  = Actions   (self.delete, self.clear, self.refresh, self.destroy)
+			filter   = Filter    ()
+			statusbar= Statusbar ()
 			pane     = gtk.VPaned()
+			filelist = FileList  (self.update_logview)
+			logview  = LogView   ()
+
 
 			### Accelerators
 			self.add_accel_group(actions.accel_group)
 
 			### Box for packing widgets
-			rootbox      = gtk.VBox (False, 0)
+			rootbox  = gtk.VBox (False, 0)
 			self.add(rootbox)
 			self.rootbox = rootbox
 
 			rootbox.pack_start(actions.menubar, False)
 			rootbox.pack_start(actions.toolbar, False)
-			rootbox.pack_start(pane) 
+			rootbox.pack_start(pane)
 			rootbox.pack_start(statusbar, False)
 			rootbox.show()
 
-			### Main window/VPaned
-			scfilelist = ScrolledWindow()
-			scfilelist.add (filelist)
+			### Fill main window (double pane)
+			scfilelist = ScrolledWindow(filelist)
 			pane.pack1  (scfilelist, True)
-
+			###
 			_botbox    = gtk.HBox()
-			sclogview  = ScrolledWindow()
-			sclogview.add(logview)
+			sclogview  = ScrolledWindow(logview)
 			_botbox.pack_start(sclogview, True)
-			_botbox.pack_start(filter,   False)
+			_botbox.pack_start(filter, False)
 			pane.pack2  (_botbox, True)
-
+			###
 			pane.show_all()
-
-			### Export
-			self.filelist  = filelist
-			self.selection = filelist.get_selection().get_selected
-			self.logview   = logview
-
-			### Populate!
-			filelist.populate()
 
 			### Export
 			self.filelist  = filelist
 			self.selection = filelist.get_selection()
 			self.logview   = logview
 
+			### Populate!
+			filelist.populate()
+
 		### Actions
-		def selection_change (self, *args):
-			try:
-				[model,iter] = self.selection.get_selected()
-				filename = model.get_value(iter,3)
-				self.logview.set_text(filename)
-			except:
-				pass
+		def update_logview (self, *args):
+			self.logview.set_text(self.selection)
 
 		def delete (self, *args):
-			[model,iter]    = self.selection.get_selected()
+			[model, iter]  = self.selection.get_selected()
 			if iter is None:
 				# No selection
-				return False
-			path            = model.get_path(iter)
-			filename        = model.get_value(iter,3)
+				return
+
+			filename       = model.get_value(iter,3)
+			path           = model.get_path(iter)
 
 			model.remove (iter)
 			if _debug:
@@ -390,7 +388,6 @@ class Elogviewer (gtk.Window):
 
 		def refresh(self, *args):
 			self.filelist.populate()
-
 
 def main():
 		gtk.main()
