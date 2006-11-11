@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+_debug         = False
+
 __author__     = 'Mathias Laurin <mathias_laurin@users.sourceforge.net>'
-__documenter__ = 'Christian Faulhammer <gentoo@faulhammer.org>'
+__documenter__ = 'Christian Faulhammer <opfer@gentoo.org>'
 __artists__    = 'elogviewer needs a logo, \nartists are welcome to contribute, \nplease contact the author.\n' + __author__
 __appname__    = 'elogviewer'
-__version__    = '0.5.0'
+__version__    = '0.5.1'
 __website__    = 'http://sourceforge.net/projects/elogviewer'
 __copyright__  = 'Copyright (c) 2006 ' + __author__
 __license__    = 'GNU General Public License (GPL) version 2'
@@ -44,23 +46,29 @@ try:
 except:
 	print "Please run: emerge --sync && emerge pygtk"
 
-import gtk, gobject
-import sys, os, portage
-import time, re
+import gtk
+from   gobject  import TYPE_STRING, TYPE_PYOBJECT
+import portage
+import os
+import time
+import re
 
 ### Redirect any message from sdtout to stderr
-sys.stdout = sys.stderr
+from sys     import stdout, stderr
+stdout = stderr
 
-# DEBUG #
-#os.chdir( "elog" )
-try:
-	os.chdir( portage.settings["PORT_LOGDIR"] )
-except:
-	os.chdir( "/var/log/portage" )
-try:
-	os.chdir( "./elog" )
-except:
-	print '''
+if _debug:
+	print 'running debug mode'
+	os.chdir( "elog" )
+else:
+	try:
+		os.chdir( portage.settings["PORT_LOGDIR"] )
+	except:
+		os.chdir( "/var/log/portage" )
+	try:
+		os.chdir( "./elog" )
+	except:
+		print '''
 Please install the elog feature as explained in the ebuild and
 in /etc/make.conf.example
 you should have at least one of 
@@ -68,53 +76,21 @@ you should have at least one of
 and
 	PORTAGE_ELOG_SYSTEM="save"
 in your /etc/make.conf
-	'''
+		'''
 
-class ScrolledWindow(gtk.ScrolledWindow):
-	def __init__(self):
-		gtk.ScrolledWindow.__init__(self)
-		self.set_policy( gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC )
-
-class InitGUI (gtk.Window):
+class ScrolledWindow (gtk.ScrolledWindow):
 	def __init__ (self):
-		gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
-		self.set_title( __appname__ )
-		self.connect( "destroy", lambda w: gtk.main_quit() )
-		self.set_default_size( 800, 600 )
-
-		rootbox = gtk.VBox( False, 0 )
-		self.add(rootbox)
-
-		pane = gtk.VPaned()
-		rootbox.pack_end(pane)
-
-		_topbox = gtk.HBox()
-		_botbox = gtk.HBox()
-		pane.pack1(_topbox, True)
-		pane.pack2(_botbox)
-
-		topbox    = ScrolledWindow()
-		botbox    = ScrolledWindow()
-		filterbox = gtk.HBox()
-
-		_topbox.add(topbox)
-		_botbox.pack_start(botbox, True)
-		_botbox.pack_start(filterbox, False)
-
-		self.rootbox   = rootbox
-		self.topbox    = topbox
-		self.botbox    = botbox
-		self.filterbox = filterbox
+		gtk.ScrolledWindow.__init__ (self)
+		self.set_policy( gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC )
 
 class FileList (gtk.TreeView):
 
-		def __init__ (self, parent):
+		def __init__ (self, selection_handler):
 
 			col_headers = [ "Category", "Package", "Timestamp" ]
-			model = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_PYOBJECT)
+			model = gtk.ListStore(TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_PYOBJECT)
 			gtk.TreeView.__init__ (self, model)
 
-			parent.add (self)
 			self.model = model
 			#self.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
@@ -123,6 +99,9 @@ class FileList (gtk.TreeView):
 				col  = gtk.TreeViewColumn(col_headers[c], cell, text=c)
 				col.set_sort_column_id( c )
 				self.append_column(col)
+
+			### Selection handler
+			self.get_selection().connect_object('changed', selection_handler, None)
 
 		def populate (self):
 			for filename in os.listdir( os.getcwd() ):
@@ -140,20 +119,24 @@ class FileList (gtk.TreeView):
 			return [c, p, t, filename]
 
 class LogView (gtk.TextView):
-		def __init__ (self, parent):
+		def __init__ (self):
 			gtk.TextView.__init__ (self)
 			self.set_editable (False)
 			self.set_cursor_visible (False)
 			self.set_wrap_mode (gtk.WRAP_WORD)
-			parent.add (self)
 
-		def strip_nl(self, line):
+		### Probably better in its own class...
+		def strip_nl (self, line):
 			return re.match( r'^([^\\\n]*)', line ).group( 1 )
 
+		### Should not receive filename! that is bad object-oriented prog
 		def set_text (self, filename=None):
+			
 			### Init buffer
+			N_COLORS      = 16
 			buffer        = self.get_buffer()
 			buffer.set_text ('')
+			# text color from gtk.TexTag - gtk.TextTagTable
 
 			### local header list
 			header_labels = ''
@@ -196,7 +179,7 @@ class Filter(gtk.VBox):
 					"compile": bool(), "setup": bool(), "test": bool(), "install": bool(), \
 					"other": bool()}
 	
-		def __init__ (self, parent):
+		def __init__ (self):
 			gtk.VBox.__init__ (self)
 			separator = gtk.HSeparator()
 
@@ -206,10 +189,9 @@ class Filter(gtk.VBox):
 			stagebox  = self.get_box(self.stage)
 			self.pack_start (stagebox, False)
 
-			parent.add (self)
-
 		### NOTE: won't work on odd number of stage/header
-		### fix it if ever it happens someday...
+		### fix it if ever it happens someday:
+		### a dummy box that is not shown would do
 		def get_box(self, dict):
 			box = gtk.Table(len(dict)/2, 2, True)
 			btn = {}
@@ -229,10 +211,11 @@ class Filter(gtk.VBox):
 
 		def toggle(self, btn, dict, label):
 			dict[label] = not dict[label]
+			#LogView.set_text()
 			
 class Actions(gtk.UIManager):
 
-		def __init__ (self, parent, delete_action, clear_action, refresh_action):
+		def __init__ (self, delete, clear, refresh, quit):
 			gtk.UIManager.__init__ (self)
 
 			ui = '''<ui>
@@ -264,22 +247,18 @@ class Actions(gtk.UIManager):
 			('Help',    None, '_Help'),
 			('About',   None, '_About...',          None, None,          self.about_box     ),
 			('Info',    None, '_Info',              None, None,          self.info_box      ),
-			('Quit',    gtk.STOCK_QUIT,   '_Quit',   'q', 'Quit',        gtk.main_quit      ),
-			('Delete',  gtk.STOCK_DELETE, '_Delete', 'd', 'Delete selected entry', delete_action ),
-			('Clear',   gtk.STOCK_CLEAR,  '_Clear',  'c', 'Clear all',   clear_action ),
-			('Refresh', gtk.STOCK_REFRESH,'_Refresh','r', 'Refresh',     refresh_action  )])
+			('Quit',    gtk.STOCK_QUIT,   '_Quit',   'q', 'Quit',        quit),
+			('Delete',  gtk.STOCK_DELETE, '_Delete', 'd', 'Delete selected entry', delete),
+			('Clear',   gtk.STOCK_CLEAR,  '_Clear',  'c', 'Clear all',   clear),
+			('Refresh', gtk.STOCK_REFRESH,'_Refresh','r', 'Refresh',     refresh)])
 			
 			self.insert_action_group(action_group, 0)
 			self.add_ui_from_string(ui)
 
 			### extract widgets
-			menubar     = self.get_widget('/Menubar')
-			toolbar     = self.get_widget('/Toolbar')
-			accel_group = self.get_accel_group()
-
-			parent.rootbox.pack_start(menubar, False)
-			parent.rootbox.pack_start(toolbar, False)
-			parent.add_accel_group(accel_group)
+			self.menubar     = self.get_widget('/Menubar')
+			self.toolbar     = self.get_widget('/Toolbar')
+			self.accel_group = self.get_accel_group()
 
 		def about_box (self, *args):
 			d = gtk.AboutDialog()
@@ -299,65 +278,104 @@ class Actions(gtk.UIManager):
 			d.run()
 			d.destroy()
 
-class Elogviewer:
+class Statusbar (gtk.Statusbar):
+		def __init__ (self):
+			gtk.Statusbar.__init__(self)
+
+class Elogviewer (gtk.Window):
+		def destroy (self, *args):
+			gtk.main_quit()
 	
 		def __init__ (self):
+			### Initialize main window
+			gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
+			self.set_title( __appname__ )
+			self.connect( "destroy", lambda w: self.destroy() )
+			self.set_default_size( 800, 600 )
+			self.show()
 
 			### Initialize widgets
-			GUI      = InitGUI()
-			actions  = Actions(GUI, self.delete, self.clear, self.refresh)
-			filelist = FileList( GUI.topbox )
-			filter   = Filter  ( GUI.filterbox )
-			logview  = LogView ( GUI.botbox )
+			actions  = Actions  (self.delete, self.clear, self.refresh, self.destroy)
+			filelist = FileList (self.selection_change)
+			filter   = Filter()
+			logview  = LogView()
+			statusbar= Statusbar()
+			pane     = gtk.VPaned()
 
+			### Accelerators
+			self.add_accel_group(actions.accel_group)
+
+			### Box for packing widgets
+			rootbox      = gtk.VBox (False, 0)
+			self.add(rootbox)
+			self.rootbox = rootbox
+
+			rootbox.pack_start(actions.menubar, False)
+			rootbox.pack_start(actions.toolbar, False)
+			rootbox.pack_start(pane) 
+			rootbox.pack_start(statusbar, False)
+			rootbox.show()
+
+			### Main window/VPaned
+			scfilelist = ScrolledWindow()
+			scfilelist.add (filelist)
+			pane.pack1  (scfilelist, True)
+
+			_botbox    = gtk.HBox()
+			sclogview  = ScrolledWindow()
+			sclogview.add(logview)
+			_botbox.pack_start(sclogview, True)
+			_botbox.pack_start(filter,   False)
+			pane.pack2  (_botbox, True)
+
+			pane.show_all()
+
+			### Export
+			self.filelist  = filelist
+			self.selection = filelist.get_selection().get_selected
+			self.logview   = logview
+
+			### Populate!
 			filelist.populate()
 
-			### Handle selection
-			filelist.get_selection().connect_object('changed', self.selection_change, None)
-			
-			### Define self
+			### Export
 			self.filelist  = filelist
 			self.selection = filelist.get_selection()
 			self.logview   = logview
 
-			### WARNING: DO NOT REMOVE, YOU STUPID!
-			GUI.show_all()
-			### END OF WARNING
-
 		### Actions
-		def selection_change(self, *args):
+		def selection_change (self, *args):
 			try:
 				[model,iter] = self.selection.get_selected()
-				filename     = model.get_value(iter,3)
+				filename = model.get_value(iter,3)
 				self.logview.set_text(filename)
 			except:
 				pass
 
-		def delete(self, *args):
-			### That one is a bit ugly...
-			try:
-				[model,iter]    = self.selection.get_selected()
-				path            = model.get_path(iter)
-				filename        = model.get_value(iter,3)
-
-				model.remove (iter)
-				os.remove  (filename)
-				#print filename
-
-				if model.iter_is_valid(iter):
-					self.selection.select_iter(iter)
-				else:
-					# Last position in the list, 
-					# select last but one
-					newpath = (path[0]-1,)
-					# but not if list is empty
-					if newpath != (-1,): 
-						self.selection.select_path(newpath)
-			except:
+		def delete (self, *args):
+			[model,iter]    = self.selection.get_selected()
+			if iter is None:
 				# No selection
 				return False
+			path            = model.get_path(iter)
+			filename        = model.get_value(iter,3)
 
-		def clear(self, *args):
+			model.remove (iter)
+			if _debug:
+				print filename
+			else:
+				os.remove (filename)
+
+			if model.iter_is_valid(iter):
+				self.selection.select_iter(iter)
+			else:
+				# Last in the list?
+				# select last but one but not if list is empty
+				newpath = (path[0]-1,)
+				if newpath != (-1,):
+					self.selection.select_path(newpath)
+
+		def clear (self, *args):
 			button = gtk.BUTTONS_YES_NO
 			dialog = gtk.MessageDialog(None, 0, gtk.MESSAGE_WARNING, button, \
 				"The whole elog directory is going to be wiped out.\nAre you sure you want to proceed?")
