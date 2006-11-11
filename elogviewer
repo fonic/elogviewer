@@ -82,13 +82,6 @@ in your /etc/make.conf
 		'''
 
 
-class ScrolledWindow (gtk.ScrolledWindow):
-
-	def __init__ (self, child):
-		gtk.ScrolledWindow.__init__ (self)
-		self.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-		self.add (child)
-
 (
 	CATEGORY_COLUMN,
 	PACKAGE_COLUMN,
@@ -96,9 +89,63 @@ class ScrolledWindow (gtk.ScrolledWindow):
 	FILENAME_COLUMN
 ) = range(4)
 
-_treeview = True
+
+class Header:
+
+		def __init__(self, name, color='black', is_section=False, is_active=True):
+			self.name = name
+			self.color = color
+			self.is_section = is_section
+			self.is_active = is_active
+
+
+class HeaderList:
+		'''Initialize the values for the filter '''
+		def __init__(self):
+			self.INFO = Header('INFO', 'darkgreen', True)
+			self.WARN = Header('WARN', 'red', True)
+			self.ERROR= Header('ERROR', 'orange', True)
+			self.LOG  = Header('LOG', 'black', True)
+
+			self.preinst = Header('preinst')
+			self.postinst= Header('postinst')
+			self.postrm  = Header('postrm')
+			self.prerm   = Header('prerm')
+			self.unpack  = Header('unpack')
+			self.compile = Header('compile')
+			self.setup   = Header('setup')
+			self.test    = Header('test')
+			self.install = Header('install')
+			self.other   = Header('other')
+
+		# Call the dictionary dictionary
+		# I love python
+		def keys(self):
+			return self.__dict__.keys()
+
+		def values(self):
+			return self.__dict__.values()
+
+		def is_active(self, name):
+			return self.__dict__[name].is_active
+
+		def section(self):
+			list = []
+			for value in self.__dict__.values():
+				if value.is_section:
+					list.append(value)
+			return list
+
+		def stage(self):
+			list = []
+			for value in self.__dict__.values():
+				if not value.is_section:
+					list.append(value)
+			return list
+
 
 class LogEntry:
+
 		def __init__ (self, filename='c:p:t.log'):
 			intimeformat  = '%Y%m%d-%H%M%S.log'
 			outtimeformat = '%Y-%m-%d %H:%M:%S'
@@ -113,6 +160,17 @@ class LogEntry:
 			self.filename = filename
 
 
+class ScrolledWindow (gtk.ScrolledWindow):
+
+	def __init__ (self, child):
+		gtk.ScrolledWindow.__init__ (self)
+		self.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+		self.add (child)
+
+
+#
+#	File list
+#
 class Model:
 
 		def __init__ (self):
@@ -131,26 +189,37 @@ class Model:
 				### Liststore
 				self.liststore.append([log.category, log.package, 
 								log.timestamp, log.filename])
-				### Treestore, looks simple, 
-				### but a pain and a lot of thinking.
+				### Treestore looks simple now.
 				iter = self.treestore.get_iter_first()
 				_loop = True
 				while _loop:
-						if iter is None:
-							_newcategory = True
-							_loop = False
-						else:
-							category = self.treestore.get_value(iter, CATEGORY_COLUMN)
-							if category == log.category:
-								self.treestore.append(iter, ['', 
+					if iter is None:
+						_newcategory = True
+						_loop = False
+					else:
+						category = self.treestore.get_value(iter, CATEGORY_COLUMN)
+						if category == log.category:
+							self.treestore.append(iter, ['', 
 									log.package, log.timestamp, log.filename])
-								_newcategory = False
-								_loop = False
-							iter = self.treestore.iter_next(iter) 
+							_newcategory = False
+							_loop = False
+						iter = self.treestore.iter_next(iter) 
 				if _newcategory:
-						iter = self.treestore.append(None, [log.category, '', '', ''])
-						self.treestore.append(iter, ['', 
-								log.package, log.timestamp, log.filename])
+					iter = self.treestore.append(None, [log.category, '', '', ''])
+					self.treestore.append(iter, ['', 
+							log.package, log.timestamp, log.filename])
+
+
+class ModelSelector (gtk.HBox):
+
+		def __init__ (self, set_treeview):
+			gtk.HBox.__init__(self)
+			liststore = gtk.RadioButton(None, 'List')
+			treeview  = gtk.RadioButton(liststore, 'Tree view')
+			treeview.connect('toggled', set_treeview, True)
+			liststore.connect('toggled', set_treeview,  False)
+			self.add(liststore)
+			self.add(treeview)
 
 
 class FileList (gtk.TreeView):
@@ -173,135 +242,128 @@ class FileList (gtk.TreeView):
 			# Selection handler
 			self.get_selection().connect_object('changed', selection_handler, None)
 
+			# NOTE: very likely, populate() should be here!
 			# Export
 			self.populate = self.model.populate
 
-		def is_treeview(self, treeview):
+		def set_treeview(self, treeview):
 			if treeview:
 				model = self.model.treestore
 			else:
 				model = self.model.liststore
 			self.set_model(model)
 
-
-class ModelSelector (gtk.HBox):
-		def __init__ (self, is_treeview):
-			gtk.HBox.__init__(self)
-			liststore = gtk.RadioButton(None, 'List')
-			treeview  = gtk.RadioButton(liststore, 'Tree view')
-			treeview.connect('toggled', is_treeview, True)
-			liststore.connect('toggled', is_treeview,  False)
-			self.add(liststore)
-			self.add(treeview)
+		def get_nfiles(self):
+			return len(self.model.liststore)
 
 
+#
+#	TextView
+#
 class Buffer (gtk.TextBuffer):
 		
-		def __init__ (self):
+		def __init__ (self, headerlist):
 			gtk.TextBuffer.__init__ (self)
 			self.set_text('No selection')
-			tag = self.create_tag('INFO', foreground='darkgreen')
-			tag = self.create_tag('WARN', foreground='red')
-			tag = self.create_tag('LOG',  foreground='black')
-			tag = self.create_tag('ERROR',foreground='orange')
+			for n in headerlist.section():
+				tag = self.create_tag(n.name, foreground=n.color)
 
 
 class LogView (gtk.TextView):
 
-		def __init__ (self):
+		def __init__ (self, headerlist):
 			gtk.TextView.__init__ (self)
 			self.set_editable (False)
 			self.set_cursor_visible (False)
 			self.set_wrap_mode (gtk.WRAP_WORD)
 
-			self.buffer = Buffer()
+			self.buffer = Buffer(headerlist)
 			self.set_buffer (self.buffer)
+			
+			# WARNING: potentially dangerous to have the regexp matching over 
+			# stages
+			self.reheaderlist= self.__make_re_list(headerlist.keys())
+			self.headerlist  = headerlist
+
+		def __make_re_list (self, list):
+			relist = 'empty'
+			for n in list:
+				if relist == 'empty':
+					relist = n
+				else:
+						relist = relist + '|' + n
+				relist = relist + ': '
+			relist = re.compile(relist)
+			return relist
 
 		def __strip_nl (self, line):
 			return re.match(r'^([^\\\n]*)', line).group(1)
 
 		def set_text (self, filename):
-			### no file when category selected in the treeview
-			#if filename == '':
-			#	return
-			### local header list
-			header_labels = ''
-			for h in Filter.header.keys():
-				if header_labels == '':
-					header_labels = h
-				else:
-					header_labels = header_labels + '|' + h
-			header_labels = re.compile(header_labels)
-
 			### Read the file
 			file      = open(filename, 'r')
-			readline  = ''
 			firstline = True
 			for readline in file:
 				readline = self.__strip_nl(readline)
-
 				### is section?
-				if header_labels.match(readline):
-					line = readline.split(': ')
-					h = line[0]
-					s = line[1]
+				if self.reheaderlist.match(readline):
+					(section, stage) = readline.split(': ')
 					if firstline:
 						self.buffer.set_text('')
 						firstline = False
 					else:
 						self.buffer.insert_at_cursor ('\n')
 					
-					line = '%s (%s)\n' % (h, s)
+					line = '%s (%s)\n' % (section, stage)
 					iter = self.buffer.get_end_iter()
-					self.buffer.insert_with_tags_by_name(iter, line, h)
+					self.buffer.insert_with_tags_by_name(iter, line, section)
 
-				### content?
-				elif Filter.header[h] and Filter.stage[s]:
-					line = '%s\n' % readline
-					iter = self.buffer.get_end_iter()
-					self.buffer.insert_with_tags_by_name(iter, line, h)
-					#self.buffer.insert_at_cursor (line)
+				### filter content?
+				elif self.headerlist.is_active(section) and \
+							self.headerlist.is_active(stage):
+						line = '%s\n' % readline
+						iter = self.buffer.get_end_iter()
+						self.buffer.insert_with_tags_by_name(iter, line, section)
 
 
-class Filter:
+#
+#	Filter
+#
+class Filter(gtk.Table):
 
-		header = {'INFO': bool(), 'WARN': bool(), 'ERROR': bool(), 'LOG': bool()}
-		stage  = {'preinst': bool(), 'postinst': bool(), 'postrm': bool(), 
-						'prerm': bool(), 'unpack': bool(), 'compile': bool(), 
-						'setup': bool(), 'test': bool(), 'install': bool(), 'other': bool()}
-	
-		def __init__ (self, selection_changed):
-			self.headerbox = self.__make_box(self.header)
-			self.stagebox  = self.__make_box(self.stage)
-			
+		def __init__ (self, list, selection_changed):
+			### NOTE: won't work on odd number of stage/header
+			### fix it if ever it happens someday:
+			### a dummy box that is not shown would do
+			tx = len(list)/2
+			ty = 2
+			gtk.Table.__init__ (self, tx, ty, True)
+
 			self.selection_changed = selection_changed
 
-		### NOTE: won't work on odd number of stage/header
-		### fix it if ever it happens someday:
-		### a dummy box that is not shown would do
-		def __make_box(self, dict):
-			box = gtk.Table(len(dict)/2, 2, True)
 			btn = {}
 			row = 0
 			col = 0
-			for label in dict.keys():
-				btn[label]   = gtk.CheckButton( label, False )
-				btn[label].set_active(True)
-				dict[label]  = True
-				btn[label].connect('toggled', self.toggle, dict, label)
-				box.attach(btn[label], col, col+1, row, row+1)
+
+			for hlist in list:
+				btn[hlist.name] = gtk.CheckButton(hlist.name, False)
+				btn[hlist.name].set_active(hlist.is_active)
+				btn[hlist.name].connect('toggled', self.toggle, hlist)
+				self.attach(btn[hlist.name], col, col+1, row, row+1)
 				col += 1
-				if col == 2:
+				if col == ty:
 					col  = 0
 					row += 1
-			#self.emit('changed')
-			return box
 
-		def toggle(self, btn, dict, label):
-			dict[label] = not dict[label]
+		def toggle(self, btn, header):
+			header.is_active = not header.is_active
+			### DEBUG not so elegant
 			self.selection_changed()
 
 
+#
+#	User interface
+#
 class Actions(gtk.UIManager):
 
 		def __init__ (self, delete, clear, refresh, quit):
@@ -369,6 +431,9 @@ class Actions(gtk.UIManager):
 			d.destroy()
 
 
+#
+#	Statusbar
+#
 class Statusbar (gtk.Statusbar):
 
 		def __init__ (self):
@@ -378,34 +443,41 @@ class Statusbar (gtk.Statusbar):
 			self.push(0, text)
 
 
+#
+#	Main program
+#
 class Elogviewer (gtk.Window):
 		
 		def destroy (self, *args):
 			gtk.main_quit()
 	
 		def __init__ (self):
-			### Initialize main window
+			# Initialize main window
 			gtk.Window.__init__ (self, gtk.WINDOW_TOPLEVEL)
 			self.set_title( _appname_ )
 			self.connect( "destroy", lambda w: self.destroy() )
 			self.set_default_size( 800, 600 )
 			self.show()
 
-			### Initialize widgets
+			# Get list and properties of headers
+			headerlist = HeaderList()
+			section = headerlist.section()
+			stage   = headerlist.stage()
+
+			# Initialize widgets
 			actions  = Actions(self.delete, self.clear, self.refresh, self.destroy)
-			filter   = Filter(self.selection_changed)
+			f_sectionbox = Filter(section, self.selection_changed)
+			f_stagebox   = Filter(stage,   self.selection_changed)
 			pane     = gtk.VPaned()
 			filelist = FileList(self.selection_changed)
-			logview  = LogView()
+			logview  = LogView(headerlist)
 			statusbar= Statusbar()
-			modelselector = ModelSelector(self.is_treeview)
+			modelselector = ModelSelector(self.set_treeview)
 			
-			#filelist.is_treeview(True)
-
-			### Accelerators
+			# Accelerators
 			self.add_accel_group(actions.accel_group)
 
-			### Box for packing widgets
+			# Box for packing widgets
 			rootbox  = gtk.VBox (False, 0)
 			self.add(rootbox)
 			self.rootbox = rootbox
@@ -416,65 +488,86 @@ class Elogviewer (gtk.Window):
 			rootbox.pack_start(statusbar, False)
 			rootbox.show()
 
-			### Fill main window (double pane)
+			# Fill main window (double pane)
 			scfilelist = ScrolledWindow(filelist)
 			pane.pack1  (scfilelist, True)
-			###
+			#
 			_botbox    = gtk.HBox()
 			sclogview  = ScrolledWindow(logview)
 			_botbox.pack_start(sclogview, True)
-			_filterbox = gtk.VBox()
-			_filterbox.pack_start(filter.headerbox, False)
+			#
+			_filterbox = gtk.VBox(False)
+			_filterbox.pack_start(f_sectionbox, False)
 			_filterbox.pack_start(gtk.HSeparator(), False)
-			_filterbox.pack_start(filter.stagebox, False)
+			_filterbox.pack_start(f_stagebox, False)
 			_filterbox.pack_start(gtk.HSeparator(), False)
 			_filterbox.pack_start(modelselector, False)
+			#
 			_botbox.pack_start(_filterbox, False)
 			pane.pack2  (_botbox, True)
-			###
+			#
 			pane.show_all()
 
-			### Show status bar
+			# Show status bar
 			statusbar.show()
 
-			### Export
+			# Export
 			self.filelist  = filelist
 			self.selection = filelist.get_selection()
 			self.logview   = logview
 			self.statusbar = statusbar
 
-			### Populate!
+			# Populate!
 			filelist.populate()
 			if not _debug:
 				self.selection.select_path(0)
-			### Select a model
-			self.filelist.is_treeview(False)
+			# Select a model
+			filelist.set_treeview(False)
+			print filelist.get_nfiles()
 
 		### Actions
-		def is_treeview (self, widget, bool):
-			self.filelist.is_treeview(bool)
+		def set_treeview (self, widget, bool):
+			self.filelist.set_treeview(bool)
 
-		def selection_changed (self, *args):
+		def __get_filename (self, *args):
+			# return (filename, model, iter)
 			[model, iter] = self.selection.get_selected()
 			if iter is None:
-				# No selection
-				self.logview.buffer.set_text('No selection')
-			else:
-				filename = model.get_value(iter, FILENAME_COLUMN)
-				self.logview.set_text(filename)
-				# Collect other infos for the statusbar
-				tot_files = model.iter_n_children(None)
-				sel_file  = model.get_path(iter)[0] + 1
-				statusbartext = str(sel_file) + '/' + str(tot_files) + ' file: ' + filename
-				self.statusbar.update(statusbartext)
-
-		def delete (self, *args):
-			[model, iter]  = self.selection.get_selected()
-			if iter is None:
-				# No selection
-				return 
-
+				if _debug:
+					print 'No selection'
+				return False, False, False
 			filename = model.get_value(iter, FILENAME_COLUMN)
+			if filename is '':
+				if _debug:
+					print 'Root selected', model.get_path(iter)
+				return 'Root', model, iter
+			return filename, model, iter
+
+
+		def selection_changed (self, *args):
+			[filename, model, iter] = self.__get_filename()
+			if filename is False:
+				# no selection
+				return
+			if filename is 'Root':
+				# root selected, invalid filename
+				return
+
+			self.logview.set_text(filename)
+			# Collect other infos for the statusbar
+			tot_files = model.iter_n_children(None)
+			sel_file  = model.get_path(iter)[0] + 1
+			statusbartext = str(sel_file) + '/' + str(tot_files) + ' file: ' + filename
+			self.statusbar.update(statusbartext)
+
+		# NOTE: delete(self.selection) should be in filelist
+		'''delete(selection) [RETURN selection]'''
+		def delete (self, *args):
+			[filename, model, iter] = self.__get_filename()
+			if filename is False:
+				return
+
+			# Get path before removing file
 			path     = model.get_path(iter)
 
 			model.remove (iter)
@@ -483,14 +576,39 @@ class Elogviewer (gtk.Window):
 			else:
 				os.remove (filename)
 
+			# Select next entry
 			if model.iter_is_valid(iter):
 				self.selection.select_iter(iter)
 			else:
-				# Last in the list?
-				# select last but one but not if list is empty
-				newpath = (path[0]-1,)
-				if newpath != (-1,):
-					self.selection.select_path(newpath)
+				test = len(path)
+				if test == 1:
+					# ListStore: end of the list
+					# select last but one unless list empty
+					newpath = (path[0]-1,)
+					if newpath != (-1,):
+						self.selection.select_path(newpath)
+				else:
+					# Treeview: end of branch
+					if _debug:
+						print path
+					if path[1] != 0:
+						# Not the last element (last is not first)
+						# select previous one
+						newpath = (path[0],path[1]-1)
+						self.selection.select_path(newpath)
+					else:
+						# Last is first, remove tree and select prev one
+						iter    = model.get_iter(path[0],)
+						model.remove (iter)
+						newpath = (path[0]-1,)
+						if newpath == (-1,):
+							try:
+								self.selection.select_path(newpath)
+							except:
+								# Tree is empty
+								pass
+						else:
+							self.selection.select_path(newpath)
 
 		def clear (self, *args):
 			button = gtk.BUTTONS_YES_NO
@@ -522,3 +640,4 @@ if __name__ == "__main__":
 ### Refs
 # http://www.javaworld.com/jw-07-1999/jw-07-toolbox.html
 # http://www.pygtk.org/pygtk2reference/
+# http://docs.python.org/
