@@ -125,12 +125,23 @@ class Elog:
 		self.filename = filename
 
 
+class Model:
+
+	def __init__(self):
+		pass
+
+	def delete(self, selection):
+		print
+		print selection.get_selected()
+
+
 from glob import glob
 from gobject import TYPE_STRING
 ( CATEGORY, PACKAGE, TIMESTAMP, FILENAME ) = range(4)
-class ListStore(gtk.ListStore):
+class ListStore(Model, gtk.ListStore):
 
 	def __init__(self):
+		Model.__init__(self)
 		gtk.ListStore.__init__( self,
 				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 		self.set_sort_column_id(TIMESTAMP, gtk.SORT_DESCENDING)
@@ -143,9 +154,10 @@ class ListStore(gtk.ListStore):
 			self.append([e.category, e.package, e.timestamp, e.filename])
 
 
-class TreeStore(gtk.TreeStore):
+class TreeStore(Model, gtk.TreeStore):
 
 	def __init__(self):
+		Model.__init__(self)
 		gtk.TreeStore.__init__( self,
 				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 
@@ -173,7 +185,6 @@ class TreeStore(gtk.TreeStore):
 class TreeView(gtk.TreeView):
 	
 	def __init__(self):
-		# FIXME model is not defined here
 		gtk.TreeView.__init__(self)
 
 		self.append_column(gtk.TreeViewColumn(
@@ -191,6 +202,7 @@ class TreeView(gtk.TreeView):
 		self.set_enable_search(True)
 		self.set_search_column(PACKAGE)
 		#self.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+	
 
 
 class CheckButton(gtk.CheckButton):
@@ -200,10 +212,16 @@ class CheckButton(gtk.CheckButton):
 		self.set_active(True)
 
 
-class HeaderTable(gtk.Table):
+class Table(gtk.Table):
+
+	def __inti__(self, rows=2, columns=2, homogeneous=True):
+		gtk.Table.__init__(self, rows, columns, homogeneous)
+
+
+class HeaderTable(Table):
 
 	def __init__(self):
-		gtk.Table.__init__(self, 2, 2, True)
+		Table.__init__(self, 2, 2)
 
 		btn_info = CheckButton('INFO')
 		btn_warn = CheckButton('WARN')
@@ -222,10 +240,10 @@ class HeaderTable(gtk.Table):
 		self.btn_log = btn_log
 
 
-class StageTable(gtk.Table):
+class StageTable(Table):
 
 	def __init__(self):
-		gtk.Table.__init__(self, 2, 5, True)
+		Table.__init__(self, 2, 5)
 
 		btn_preinst = CheckButton('preinst')
 		btn_postinst = CheckButton('postinst')
@@ -272,7 +290,7 @@ class ModelSelector(gtk.HBox):
 		self.add(self.btn_treeview)
 
 
-class Buffer(gtk.TextBuffer):
+class TextBuffer(gtk.TextBuffer):
 
 	def __init__(self):
 		gtk.TextBuffer.__init__(self)
@@ -281,8 +299,15 @@ class Buffer(gtk.TextBuffer):
 		self.create_tag('LOG', foreground='black')
 		self.create_tag('ERROR', foreground='orange')
 
+
+class Buffer(TextBuffer):
+
+	def __init__(self):
+		TextBuffer.__init__(self)
+
 	def read(self, selection):
 		# FIXME could be improved
+		# could have a get_filename in the treeview
 		[model, iter] = selection.get_selected()
 		if iter is None:
 			# no selection
@@ -293,6 +318,7 @@ class Buffer(gtk.TextBuffer):
 			return
 		if _debug:
 			print filename
+
 		file_obj = open(filename, 'r')
 		try:
 			# Parse file
@@ -318,7 +344,6 @@ class Buffer(gtk.TextBuffer):
 								line + '\n', my_tag)
 		finally:
 			file_obj.close()
-
 
 
 class TextView(gtk.TextView):
@@ -355,16 +380,54 @@ class Info(gtk.MessageDialog):
 		self.destroy()
 
 
+class ActionGroup(gtk.ActionGroup):
+
+	def __init__(self, activate_action):
+		gtk.ActionGroup.__init__(self, 'Main')
+
+		entries = (
+				( 'File', None, '_File' ),       # name, stock_id, label
+				( 'Help', None, '_Help' ),
+				( 'About', None, '_About...',
+				),#	None, self.about()),
+				( 'Info', None, 'Info',
+				),#	None, self.info()),
+				( 'Quit', gtk.STOCK_QUIT,        # name, stock_id
+					'_Quit', '<control>Q',       # label, accelerator
+					'Quit Elogviewer',           # tooltip
+					activate_action ),
+				( 'Delete', gtk.STOCK_DELETE,
+					'_Delete', '<control>D',
+					'Delete selected file',
+					activate_action ),
+				( 'Clear', gtk.STOCK_CLEAR,
+					'_Clear', '<control>C',
+					'Delete all the files',
+					activate_action ),
+				( 'Refresh', gtk.STOCK_REFRESH,
+					'_Refresh', '<control>R',
+					'Refresh the list',
+					activate_action ),
+				)
+		self.add_actions(entries)
+
+	def about(self, *args):
+		AboutDialog()
+
+	def info(self, *args):
+		Info()
+
+
 class UIManager(gtk.UIManager):
 
 	def __init__ (self):
 
 		gtk.UIManager.__init__ (self)
-		self.add_ui_from_string( '''
+		self.add_ui_from_string('''
 		<ui>
 		<menubar name="Menubar">
 			<menu action="File">
-				<menuitem action="Delete"/>
+				<menuitem action="Delete" />
 				<menuitem action="Clear"/>
 				<menuitem action="Refresh"/>
 				<separator/>
@@ -376,60 +439,13 @@ class UIManager(gtk.UIManager):
 			</menu>
 		</menubar>
 		<toolbar name="Toolbar">
-			<toolitem action="Quit"/>
 			<toolitem action="Delete"/>
 			<toolitem action="Clear"/>
 			<toolitem action="Refresh"/>
+			<toolitem action="Quit"/>
 		</toolbar>
 		</ui>
 		''')
-		
-		# FIXME split
-		ag = gtk.ActionGroup('Main')
-
-		ag.add_actions([
-			('File', None, 'File'),
-			('Help', None, 'Help'),
-			('About', None, 'About...', None, None, self.about),
-			('Info', None, 'Info', None, None, self.info),
-			('Quit', gtk.STOCK_QUIT, 'Quit',   
-				'<Control>q', 'Quit <Ctrl+q>', self.quit),
-			('Delete', gtk.STOCK_DELETE, 'Delete', 
-				'<Control>d', 'Delete selected entry <Ctrl+d>', self.delete),
-			('Clear', gtk.STOCK_CLEAR, 'Clear',  
-				'<Control>c', 'Clear all <Ctrl+c>', self.clear),
-			('Refresh', gtk.STOCK_REFRESH, 'Refresh',
-				'<Control>r', 'Refresh <Ctrl+r>', self.refresh)
-		])
-
-		self.insert_action_group(ag, 0)
-
-		### Extract widgets
-		self.menubar     = self.get_widget('/Menubar')
-		self.toolbar     = self.get_widget('/Toolbar')
-		self.accel_group = self.get_accel_group()
-			
-	def about(self, *args):
-		AboutDialog()
-
-	def info(self, *args):
-		Info()
-
-	# FIXME
-	def quit(self, *args):
-		print 'quit'
-
-	# FIXME
-	def delete(self, *args):
-		print 'del'
-
-	# FIXME
-	def clear(self, *args):
-		print 'clear'
-
-	# FIXME
-	def refresh(self, *args):
-		print 'refresh'
 
 
 # FIXME empty statusbar
@@ -452,9 +468,16 @@ class Elogviewer(MainWindow):
 		self.add(rootbox)
 		
 		ui = UIManager()
-		self.add_accel_group(ui.accel_group)
-		rootbox.pack_start(ui.menubar, False)
-		rootbox.pack_start(ui.toolbar, False)
+		ag = ActionGroup(self.action)
+		ui.insert_action_group(ag, 0)
+
+		menubar = ui.get_widget('/Menubar')
+		toolbar = ui.get_widget('/Toolbar')
+		accel_group = ui.get_accel_group()
+
+		self.add_accel_group(accel_group)
+		rootbox.pack_start(menubar, False)
+		rootbox.pack_start(toolbar, False)
 
 		vpaned = gtk.VPaned()
 		rootbox.pack_start(vpaned)
@@ -523,15 +546,11 @@ class Elogviewer(MainWindow):
 		self.elogview = elogview
 
 		# default model flat or tree
-		eloglist.set_model(flat)
-
-
-		# populate
-		eloglist.get_model().populate()
+		self.set_model(modelselector.btn_treeview)
 
 	def destroy(self):
 		gtk.main_quit()
-	
+
 	def set_model(self, is_treeview):
 		if is_treeview.get_active():
 			self.eloglist.set_model(self.tree)
@@ -543,6 +562,22 @@ class Elogviewer(MainWindow):
 		filter[chk_btn.get_label()] = chk_btn.get_active()
 		# update
 		self.buffer.read(self.eloglist.get_selection())
+	
+	def action(self, action_obj):
+		action = action_obj.get_name()
+		print "action %s" % action
+		# NOTE not OOP...
+		if action == "Delete":
+			selection = self.eloglist.get_selection()
+			self.eloglist.get_model().delete(selection)
+		if action == "Clear":
+			#FIXME
+			pass
+			#self.clear()
+		if action == "Refresh":
+			self.eloglist.get_model().populate()
+		if action == "Quit":
+			self.destroy()
 
 
 def main():
