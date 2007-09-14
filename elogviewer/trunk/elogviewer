@@ -128,7 +128,8 @@ class Elog:
 class Model:
 
 	def __init__(self):
-		pass
+		# BUG #187595 (thank you Radice David)
+		self.elog = [Elog(filename) for filename in glob('*:*:*.log')]
 
 	def delete(self, selection):
 		print
@@ -148,10 +149,8 @@ class ListStore(Model, gtk.ListStore):
 
 	def populate(self):
 		self.clear()
-		# BUG #187595 (thank you Radice David)
-		self.elog = [Elog(filename) for filename in glob('*:*:*.log')]
 		for e in self.elog:
-			self.append([e.category, e.package, e.timestamp, e.filename])
+			self.append((e.category, e.package, e.timestamp, e.filename))
 
 
 class TreeStore(Model, gtk.TreeStore):
@@ -163,23 +162,21 @@ class TreeStore(Model, gtk.TreeStore):
 
 	def populate(self):
 		self.clear()
-		# FIXME (parrot! not here)
-		self.elog = [Elog(filename) for filename in glob('*:*:*.log')]
 		for e in self.elog:
-			# FIXME nothing like C++ algorithms in python?
-			# http://www.mono-project.com/GtkSharp_TreeView_Tutorial
-			it = self.get_iter_first()
-			while True:
-				if it is None:
-					it = self.append(it, [e.category, None, None, None])
-					self.append(it, [None, 
-						e.package, e.timestamp, e.filename])
+			iter = self.get_iter_first()
+			while iter:
+				# Search for category
+				if self.get_value(iter, CATEGORY) == e.category:
 					break
-				if self.get_value(it, CATEGORY) == e.category:
-					self.append(it, [None, 
-						e.package, e.timestamp, e.filename])
-					break
-				it = self.iter_next(it)
+				else:
+					iter = self.iter_next(iter)
+			if iter is None:
+				# New category
+				iter = self.insert_before(None, None)
+				self.set_value(iter, 0, e.category)
+			# And append the rest
+			self.append(iter, (None,
+						e.package, e.timestamp, e.filename))
 
 
 class TreeView(gtk.TreeView):
@@ -194,6 +191,7 @@ class TreeView(gtk.TreeView):
 		self.append_column(gtk.TreeViewColumn(
 			'Time', gtk.CellRendererText(), text=TIMESTAMP))
 		# FIXME next is + elegant but does not work
+		# maybe lambda...
 		#[ c.set_sort_order(gtk.SORT_DESCENCDING) 
 		#		for c in self.get_columns() ]
 		for c in range(len(self.get_columns())):
@@ -202,7 +200,6 @@ class TreeView(gtk.TreeView):
 		self.set_enable_search(True)
 		self.set_search_column(PACKAGE)
 		#self.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
-	
 
 
 class CheckButton(gtk.CheckButton):
@@ -595,5 +592,6 @@ if __name__ == "__main__":
 # http://docs.python.org/
 # Python Cookbook, 2nd ed., O'Reilly
 # http://www.mono-project.com/GtkSharp_TreeView_Tutorial
+# http://www.pygtk.org/pygtk2tutorial/sec-TreeModelInterface.html
 
 # EOF
