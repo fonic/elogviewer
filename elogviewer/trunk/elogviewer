@@ -8,7 +8,7 @@ _artists    = 'elogviewer needs a logo, \nartists are welcome to contribute, \np
 _appname_    = 'elogviewer'
 _version    = '0.5.2'
 _website    = 'http://sourceforge.net/projects/elogviewer'
-_copyright  = 'Copyright (c) 2006 Mathias Laurin'
+_copyright  = 'Copyright (c) 2007 Mathias Laurin'
 _license    = 'GNU General Public License (GPL) version 2'
 
 
@@ -112,8 +112,9 @@ class Elog:
 	def __init__(self, filename):
 
 		itime = '%Y%m%d-%H%M%S.log'
-		# DEBUG: otime should be according to gnome pref.
-		otime = '%Y-%m-%d %H:%M:%S'
+		#otime = '%Y-%m-%d %H:%M:%S'
+		# see modules time and locale
+		otime = '%x %X'
 
 		(c, p, t) = filename.split(':')
 		t = time.strptime(t, itime)
@@ -125,58 +126,134 @@ class Elog:
 		self.filename = filename
 
 
-class Model:
+from glob import glob
+class TreeModel:
 
 	def __init__(self):
+		#gtk.TreeModel.__init__(self)
+
 		# BUG #187595 (thank you Radice David)
 		self.elog = [Elog(filename) for filename in glob('*:*:*.log')]
 
-	def delete(self, selection):
-		print
-		print selection.get_selected()
+	def get_filename(self, model, iter):
+		if not iter:
+			return
+		filename = model.get_value(iter, FILENAME)
+		if not filename:
+			return
+		return filename
 
 
-from glob import glob
 from gobject import TYPE_STRING
 ( CATEGORY, PACKAGE, TIMESTAMP, FILENAME ) = range(4)
-class ListStore(Model, gtk.ListStore):
+class ListStore(TreeModel, gtk.ListStore):
 
 	def __init__(self):
-		Model.__init__(self)
+		TreeModel.__init__(self)
 		gtk.ListStore.__init__( self,
 				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 		self.set_sort_column_id(TIMESTAMP, gtk.SORT_DESCENDING)
+
+	def get_iter_last(self):
+		iter = self.get_iter_first()
+		if not iter:
+			return
+		iter_next = self.iter_next(iter)
+		while iter_next:
+			iter_next = self.iter_next(iter)
+			iter = iter_next
+		return iter
 
 	def populate(self):
 		self.clear()
 		for e in self.elog:
 			self.append((e.category, e.package, e.timestamp, e.filename))
 
+	def delete(self, selection):
+		[model, iter] = selection.get_selected()
+		filename = self.get_filename(model, iter)
+		if not filename:
+			return
+		try:
+			if _debug:
+				print filename
+			else:
+				os.remove(filename)
+		except:
+			print "failed to remove " + filename + " in " + self
+		self.remove(iter)
+		if self.iter_is_valid(iter):
+			# select same position
+			selection.select_iter(iter)
+		else:
+			# select last in the list
+			# unless list is empty
+			iter = self.get_iter_last()
+			if iter:
+				selection.select_iter(iter)
 
-class TreeStore(Model, gtk.TreeStore):
+
+class TreeStore(TreeModel, gtk.TreeStore):
 
 	def __init__(self):
-		Model.__init__(self)
+		TreeModel.__init__(self)
 		gtk.TreeStore.__init__( self,
 				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
+
+	def get_iter_for(self, category):
+		iter = self.get_iter_first()
+		# FIXME try the foreach thing in
+		# http://www.pygtk.org/pygtk2tutorial/sec-TreeModelInterface.html
+		while iter:
+			if self.get_value(iter, CATEGORY) == category:
+				break
+			else:
+				iter = self.iter_next(iter)
+		return iter
+
+	def get_iter_last(self):
+		iter = self.get_iter_first()
+		if not iter:
+			return
+		iter_next = self.iter_next(iter)
+		while iter_next:
+			iter_next = self.iter_next(iter)
+			iter = iter_next
+		return iter
 
 	def populate(self):
 		self.clear()
 		for e in self.elog:
-			iter = self.get_iter_first()
-			while iter:
-				# Search for category
-				if self.get_value(iter, CATEGORY) == e.category:
-					break
-				else:
-					iter = self.iter_next(iter)
-			if iter is None:
+			iter = self.get_iter_for(e.category)
+			if not iter:
 				# New category
 				iter = self.insert_before(None, None)
 				self.set_value(iter, 0, e.category)
-			# And append the rest
 			self.append(iter, (None,
 						e.package, e.timestamp, e.filename))
+
+	def delete(self, selection):
+		[model, iter] = selection.get_selected()
+		filename = self.get_filename(model, iter)
+		if not filename:
+			return
+		try:
+			if _debug:
+				print filename + " deleted"
+			else:
+				os.remove(filename)
+		except:
+			print "failed to remove " + filename + " in " + self
+		# FIXME
+		# memorizing the path and using refresh should be easier
+		self.remove(iter)
+		if self.iter_is_valid(iter):
+			selection.select_iter(iter)
+		else:
+			iter = self.get_iter_last()
+			if iter:
+				selection.select_iter(iter)
+		
 
 
 class TreeView(gtk.TreeView):
@@ -201,6 +278,18 @@ class TreeView(gtk.TreeView):
 		self.set_search_column(PACKAGE)
 		#self.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
+	def get_filename(self):
+		[model, iter] = self.get_selection().get_selected()
+		if not iter:
+			# no selection
+			return
+		filename = model.get_value(iter, FILENAME)
+		if not filename:
+			return
+		if _debug:
+			print filename + " selected"
+		return filename
+
 
 class CheckButton(gtk.CheckButton):
 
@@ -211,7 +300,7 @@ class CheckButton(gtk.CheckButton):
 
 class Table(gtk.Table):
 
-	def __inti__(self, rows=2, columns=2, homogeneous=True):
+	def __init__(self, rows=2, columns=2, homogeneous=False):
 		gtk.Table.__init__(self, rows, columns, homogeneous)
 
 
@@ -298,47 +387,64 @@ class TextBuffer(gtk.TextBuffer):
 
 
 class Buffer(TextBuffer):
+	header = None
+	section = None
+	line = None
 
 	def __init__(self):
 		TextBuffer.__init__(self)
 
-	def read(self, selection):
-		# FIXME could be improved
-		# could have a get_filename in the treeview
+	def get_filename(self, selection):
+		# FIXME: not the best place
 		[model, iter] = selection.get_selected()
-		if iter is None:
+		if not iter:
 			# no selection
-			return
+			return None
 		filename = model.get_value(iter, FILENAME)
-		if filename is None:
+		if not filename:
 			# selection of a tree branch
-			return
+			return None
 		if _debug:
 			print filename
+		return filename
+
+	def clear(self):
+		self.delete(
+				self.get_start_iter(),
+				self.get_end_iter())
+
+	def insert_section(self):
+		self.insert_with_tags(
+				self.get_end_iter(),
+				self.header + ' (' + self.section + ')\n\n',
+				self.get_tag_table().lookup(self.header))
+
+	def insert_body(self):
+		self.insert_with_tags(
+				self.get_end_iter(),
+				self.line + '\n',
+				self.get_tag_table().lookup(self.header))
+
+
+	def read(self, selection):
+		filename = self.get_filename(selection)
+		if not filename:
+			return
 
 		file_obj = open(filename, 'r')
+		self.clear()
+		tags = self.get_tag_table()
 		try:
 			# Parse file
-			self.delete(
-					self.get_start_iter(),
-					self.get_end_iter())
-			tags = self.get_tag_table()
-			for line in file_obj.read().splitlines():
-				it = self.get_end_iter()
-				# Read section
-				L = line.split(': ')
-				if len(L) is 2 and L[0] in filter.keys() and L[1] in filter.keys():
-					(h, s) = L
-					my_tag = tags.lookup(h)
-					self.insert_with_tags(
-							self.get_end_iter(),
-							h + ' (' + s + ')\n\n', my_tag)
+			for self.line in file_obj.read().splitlines():
+				# section
+				L = self.line.split(': ')
+				if len(L) is 2 and (L[0] and L[1]) in filter.keys():
+					(self.header, self.section) = L
+					self.insert_section()
 				else:
-					if filter[h] and filter[s]:
-						# Read body
-						self.insert_with_tags(
-								self.get_end_iter(),
-								line + '\n', my_tag)
+					if filter[self.header] and filter[self.section]:
+						self.insert_body()
 		finally:
 			file_obj.close()
 
@@ -359,9 +465,9 @@ class AboutDialog(gtk.AboutDialog):
 		self.set_version( _version )
 		self.set_website( _website )
 		self.set_authors( _author )
-		self.set_artists( [_artists] )
+		self.set_artists( _artists )
 		self.set_copyright( _copyright )
-		self.set_documenters( [_documenter, _author] )
+		self.set_documenters( _documenter )
 		self.set_license( _LICENSE )
 		self.run()
 		self.destroy()
@@ -371,7 +477,11 @@ class Info(gtk.MessageDialog):
 
 	def __init__(self):
 		gtk.MessageDialog.__init__(self, 
-				None, 0, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, None)
+				parent=None, 
+				flasgs=0, 
+				type=gtk.MESSAGE_INFO, 
+				buttons=gtk.BUTTONS_OK, 
+				message_format=None)
 		self.set_markup ( _description )
 		self.run()
 		self.destroy()
@@ -558,19 +668,26 @@ class Elogviewer(MainWindow):
 	def filter(self, chk_btn):
 		filter[chk_btn.get_label()] = chk_btn.get_active()
 		# update
-		self.buffer.read(self.eloglist.get_selection())
+		self.buffer.read(self.eloglist.get_filenam())
+
+	def delete(self):
+		selection = self.eloglist.get_selection()
+		self.eloglist.get_model().delete(selection)
+
+	def clear(self):
+		selection = self.eloglist.get_selection()
+		[model, iter] = selection.get_selected()
+		while iter:
+			self.delete()
+			[model, iter] = selection.get_selected()
 	
 	def action(self, action_obj):
 		action = action_obj.get_name()
 		print "action %s" % action
-		# NOTE not OOP...
 		if action == "Delete":
-			selection = self.eloglist.get_selection()
-			self.eloglist.get_model().delete(selection)
+			self.delete()
 		if action == "Clear":
-			#FIXME
-			pass
-			#self.clear()
+			self.clear()
 		if action == "Refresh":
 			self.eloglist.get_model().populate()
 		if action == "Quit":
