@@ -127,78 +127,22 @@ class Elog:
 
 
 from glob import glob
-class TreeModel:
+from gobject import TYPE_STRING
+( CATEGORY, PACKAGE, TIMESTAMP, FILENAME ) = range(4)
+class TreeStore(gtk.TreeStore):
 
 	def __init__(self):
-		#gtk.TreeModel.__init__(self)
-
 		# BUG #187595 (thank you Radice David)
 		self.elog = [Elog(filename) for filename in glob('*:*:*.log')]
+
+		gtk.TreeStore.__init__( self,
+				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 
 	def get_filename(self, model, iter):
 		if not iter:
 			return
 		filename = model.get_value(iter, FILENAME)
-		if not filename:
-			return
 		return filename
-
-
-from gobject import TYPE_STRING
-( CATEGORY, PACKAGE, TIMESTAMP, FILENAME ) = range(4)
-class ListStore(TreeModel, gtk.ListStore):
-
-	def __init__(self):
-		TreeModel.__init__(self)
-		gtk.ListStore.__init__( self,
-				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
-		self.set_sort_column_id(TIMESTAMP, gtk.SORT_DESCENDING)
-
-	def get_iter_last(self):
-		iter = self.get_iter_first()
-		if not iter:
-			return
-		iter_next = self.iter_next(iter)
-		while iter_next:
-			iter_next = self.iter_next(iter)
-			iter = iter_next
-		return iter
-
-	def populate(self):
-		self.clear()
-		for e in self.elog:
-			self.append((e.category, e.package, e.timestamp, e.filename))
-
-	def delete(self, selection):
-		[model, iter] = selection.get_selected()
-		filename = self.get_filename(model, iter)
-		if not filename:
-			return
-		try:
-			if _debug:
-				print filename
-			else:
-				os.remove(filename)
-		except:
-			print "failed to remove " + filename + " in " + self
-		self.remove(iter)
-		if self.iter_is_valid(iter):
-			# select same position
-			selection.select_iter(iter)
-		else:
-			# select last in the list
-			# unless list is empty
-			iter = self.get_iter_last()
-			if iter:
-				selection.select_iter(iter)
-
-
-class TreeStore(TreeModel, gtk.TreeStore):
-
-	def __init__(self):
-		TreeModel.__init__(self)
-		gtk.TreeStore.__init__( self,
-				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 
 	def get_iter_for(self, category):
 		iter = self.get_iter_first()
@@ -209,16 +153,6 @@ class TreeStore(TreeModel, gtk.TreeStore):
 				break
 			else:
 				iter = self.iter_next(iter)
-		return iter
-
-	def get_iter_last(self):
-		iter = self.get_iter_first()
-		if not iter:
-			return
-		iter_next = self.iter_next(iter)
-		while iter_next:
-			iter_next = self.iter_next(iter)
-			iter = iter_next
 		return iter
 
 	def populate(self):
@@ -232,6 +166,13 @@ class TreeStore(TreeModel, gtk.TreeStore):
 			self.append(iter, (None,
 						e.package, e.timestamp, e.filename))
 
+	def populate_flat(self):
+		self.clear()
+		iter = self.get_iter_first()
+		for e in self.elog:
+			self.append(iter,
+					(e.category, e.package, e.timestamp, e.filename))
+
 	def delete(self, selection):
 		[model, iter] = selection.get_selected()
 		filename = self.get_filename(model, iter)
@@ -244,16 +185,7 @@ class TreeStore(TreeModel, gtk.TreeStore):
 				os.remove(filename)
 		except:
 			print "failed to remove " + filename + " in " + self
-		# FIXME
-		# memorizing the path and using refresh should be easier
 		self.remove(iter)
-		if self.iter_is_valid(iter):
-			selection.select_iter(iter)
-		else:
-			iter = self.get_iter_last()
-			if iter:
-				selection.select_iter(iter)
-		
 
 
 class TreeView(gtk.TreeView):
@@ -289,6 +221,14 @@ class TreeView(gtk.TreeView):
 		if _debug:
 			print filename + " selected"
 		return filename
+
+	def select_path(self, path):
+		selection = self.get_selection()
+		try:
+			selection.select_path(path)
+		# FIXME
+		finally:
+			return False
 
 
 class CheckButton(gtk.CheckButton):
@@ -370,10 +310,10 @@ class ModelSelector(gtk.HBox):
 
 	def __init__(self):
 		gtk.HBox.__init__(self)
-		self.btn_liststore = gtk.RadioButton(None, 'List')
-		self.btn_treeview  = gtk.RadioButton(self.btn_liststore, 'Tree view')
-		self.add(self.btn_liststore)
-		self.add(self.btn_treeview)
+		self.btn_flat = gtk.RadioButton(None, 'List')
+		self.btn_tree  = gtk.RadioButton(self.btn_flat, 'Tree view')
+		self.add(self.btn_flat)
+		self.add(self.btn_tree)
 
 
 class TextBuffer(gtk.TextBuffer):
@@ -594,10 +534,10 @@ class Elogviewer(MainWindow):
 
 		eloglist_box = ScrolledWindow()
 		eloglist = TreeView()
-		flat = ListStore()
-		tree = TreeStore()
 		eloglist_box.add(eloglist)
 		vpaned.pack1(eloglist_box, True)
+		store = TreeStore()
+		eloglist.set_model(store)
 
 		elogview_box = ScrolledWindow()
 		elogview = TextView()
@@ -627,7 +567,7 @@ class Elogviewer(MainWindow):
 		eloglist.get_selection().connect_object(
 				'changed', elogview.get_buffer().read, \
 						eloglist.get_selection())
-		modelselector.btn_treeview.connect('toggled', self.set_model)
+		modelselector.btn_tree.connect('toggled', self.set_model)
 		# connect the filter
 		f_header.btn_info.connect('toggled', self.filter)
 		f_header.btn_warn.connect('toggled', self.filter)
@@ -647,36 +587,39 @@ class Elogviewer(MainWindow):
 
 		# public
 		self.eloglist = eloglist
-		self.tree = tree
-		self.flat = flat
 		self.buffer = buffer
 		self.elogview = elogview
 
 		# default model flat or tree
-		self.set_model(modelselector.btn_treeview)
+		self.set_model(modelselector.btn_tree)
 
 	def destroy(self):
 		gtk.main_quit()
 
-	def set_model(self, is_treeview):
-		if is_treeview.get_active():
-			self.eloglist.set_model(self.tree)
+	def set_model(self, is_tree):
+		if is_tree.get_active():
+			self.eloglist.get_model().populate()
 		else:
-			self.eloglist.set_model(self.flat)
-		self.eloglist.get_model().populate()
+			self.eloglist.get_model().populate_flat()
 	
 	def filter(self, chk_btn):
 		filter[chk_btn.get_label()] = chk_btn.get_active()
 		# update
 		self.buffer.read(self.eloglist.get_filenam())
+	
+	def refresh(self):
+		self.eloglist.get_model().populate()
 
 	def delete(self):
 		selection = self.eloglist.get_selection()
-		self.eloglist.get_model().delete(selection)
+		path = self.eloglist.get_model().delete(selection)
+		self.eloglist.select_path(path)
 
 	def clear(self):
 		selection = self.eloglist.get_selection()
 		[model, iter] = selection.get_selected()
+		# count children
+		#print model.iter_n_children(None)
 		while iter:
 			self.delete()
 			[model, iter] = selection.get_selected()
@@ -689,7 +632,7 @@ class Elogviewer(MainWindow):
 		if action == "Clear":
 			self.clear()
 		if action == "Refresh":
-			self.eloglist.get_model().populate()
+			self.refresh()
 		if action == "Quit":
 			self.destroy()
 
@@ -710,5 +653,6 @@ if __name__ == "__main__":
 # Python Cookbook, 2nd ed., O'Reilly
 # http://www.mono-project.com/GtkSharp_TreeView_Tutorial
 # http://www.pygtk.org/pygtk2tutorial/sec-TreeModelInterface.html
-
+# A more complete tut on treeviews:
+# http://scentric.net/tutorial/treeview-tutorial.html
 # EOF
