@@ -140,8 +140,6 @@ from gobject import TYPE_STRING
 class TreeStore(gtk.TreeStore):
 
 	def __init__(self):
-		# BUG #187595 (thank you Radice David)
-		self.elog = [Elog(filename) for filename in glob('*:*:*.log')]
 
 		gtk.TreeStore.__init__( self,
 				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
@@ -164,7 +162,7 @@ class TreeStore(gtk.TreeStore):
 
 	def populate(self):
 		self.clear()
-		for e in self.elog:
+		for e in [Elog(filename) for filename in glob('*:*:*.log')]:
 			iter = self.get_iter_for(e.category)
 			if not iter:
 				# New category
@@ -176,7 +174,7 @@ class TreeStore(gtk.TreeStore):
 	def populate_flat(self):
 		self.clear()
 		iter = self.get_iter_first()
-		for e in self.elog:
+		for e in [Elog(filename) for filename in glob('*:*:*.log')]:
 			self.append(iter,
 					(e.category, e.package, e.timestamp, e.filename))
 
