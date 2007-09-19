@@ -138,16 +138,15 @@ class TreeStore(gtk.TreeStore):
 		gtk.TreeStore.__init__( self,
 				TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 
-	def get_filename(self, model, iter):
+	def get_filename(self, iter):
 		if not iter:
+			# No selection
 			return
-		filename = model.get_value(iter, FILENAME)
-		return filename
+		return self.get_value(iter, FILENAME)
 
 	def get_iter_for(self, category):
 		iter = self.get_iter_first()
-		# FIXME try the foreach thing in
-		# http://www.pygtk.org/pygtk2tutorial/sec-TreeModelInterface.html
+		# could also try with foreach inst. of traversing
 		while iter:
 			if self.get_value(iter, CATEGORY) == category:
 				break
@@ -173,19 +172,13 @@ class TreeStore(gtk.TreeStore):
 			self.append(iter,
 					(e.category, e.package, e.timestamp, e.filename))
 
-	def delete(self, selection):
-		[model, iter] = selection.get_selected()
-		filename = self.get_filename(model, iter)
-		if not filename:
-			return
-		try:
-			if _debug:
-				print filename + " deleted"
-			else:
-				os.remove(filename)
-		except:
-			print "failed to remove " + filename + " in " + self
-		self.remove(iter)
+
+class TreeViewColumn(gtk.TreeViewColumn):
+
+	def __init__(self, title=None, *args, **kargs):
+		gtk.TreeViewColumn.__init__(self, title, *args, **kargs)
+
+		self.set_sort_column_id(TIMESTAMP)
 
 
 class TreeView(gtk.TreeView):
@@ -193,42 +186,61 @@ class TreeView(gtk.TreeView):
 	def __init__(self):
 		gtk.TreeView.__init__(self)
 
-		self.append_column(gtk.TreeViewColumn(
+		self.append_column(TreeViewColumn(
 			'Category', gtk.CellRendererText(), text=CATEGORY))
-		self.append_column(gtk.TreeViewColumn(
+		self.append_column(TreeViewColumn(
 			'Package', gtk.CellRendererText(), text=PACKAGE))
-		self.append_column(gtk.TreeViewColumn(
+		self.append_column(TreeViewColumn(
 			'Time', gtk.CellRendererText(), text=TIMESTAMP))
-		# FIXME next is + elegant but does not work
-		# maybe lambda...
-		#[ c.set_sort_order(gtk.SORT_DESCENCDING) 
-		#		for c in self.get_columns() ]
-		for c in range(len(self.get_columns())):
-			self.get_column(c).set_sort_column_id(c)
 		
 		self.set_enable_search(True)
 		self.set_search_column(PACKAGE)
 		#self.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 
-	def get_filename(self):
-		[model, iter] = self.get_selection().get_selected()
-		if not iter:
-			# no selection
-			return
-		filename = model.get_value(iter, FILENAME)
-		if not filename:
-			return
-		if _debug:
-			print filename + " selected"
-		return filename
-
-	def select_path(self, path):
+	def select(self, path=0, is_valid=True):
+		model = self.get_model()
+		if not is_valid:
+			# FIXME this is not good but I cannot find better
+			# problem probably from the way I create the model
+			if len(path) is 1:
+				# is flat
+				path = (path[0] - 1)
+			else:
+				# is 2 => tree
+				parent = path[0]
+				child = path[1] - 1
+				if child is -1:
+					# top level
+					iter_parent = model.get_iter(parent)
+					if not model.iter_has_child(iter_parent):
+						model.remove(iter_parent)
+						child = 0
+						self.select(
+								(parent, child))
+					else:
+						child = 0
+				path = (parent, child)
 		selection = self.get_selection()
-		try:
-			selection.select_path(path)
-		# FIXME
-		finally:
-			return False
+		selection.select_path(path)
+
+	def remove_selected(self):
+		(model, iter) = self.get_selection().get_selected()
+		filename = model.get_filename(iter)
+		if filename:
+			if not _debug:
+				os.remove(filename)
+			#else:
+			#	print filename + " deleted"
+		else:
+			return
+		# Kill warning by taking path here and deal with it later
+		path = model.get_path(iter)
+		is_valid = model.remove(iter)
+
+		if is_valid:
+			self.select(path)
+		else:
+			self.select(path, False)
 
 
 class CheckButton(gtk.CheckButton):
@@ -305,7 +317,7 @@ class StageTable(Table):
 		self.btn_install = btn_install
 		self.btn_other = btn_other
 
-class ModelSelector(gtk.HBox):
+class ViewSelector(gtk.HBox):
 	'''Two buttons for selecting the model'''
 
 	def __init__(self):
@@ -334,20 +346,6 @@ class Buffer(TextBuffer):
 	def __init__(self):
 		TextBuffer.__init__(self)
 
-	def get_filename(self, selection):
-		# FIXME: not the best place
-		[model, iter] = selection.get_selected()
-		if not iter:
-			# no selection
-			return None
-		filename = model.get_value(iter, FILENAME)
-		if not filename:
-			# selection of a tree branch
-			return None
-		if _debug:
-			print filename
-		return filename
-
 	def clear(self):
 		self.delete(
 				self.get_start_iter(),
@@ -366,13 +364,11 @@ class Buffer(TextBuffer):
 				self.get_tag_table().lookup(self.header))
 
 
-	def read(self, selection):
-		filename = self.get_filename(selection)
+	def read(self, filename):
+		self.clear()
 		if not filename:
 			return
-
 		file_obj = open(filename, 'r')
-		self.clear()
 		tags = self.get_tag_table()
 		try:
 			# Parse file
@@ -532,12 +528,12 @@ class Elogviewer(MainWindow):
 		statusbar = Statusbar()
 		rootbox.pack_start(statusbar, False)
 
-		eloglist_box = ScrolledWindow()
-		eloglist = TreeView()
-		eloglist_box.add(eloglist)
-		vpaned.pack1(eloglist_box, True)
-		store = TreeStore()
-		eloglist.set_model(store)
+		treeview_box = ScrolledWindow()
+		treeview = TreeView()
+		treeview_box.add(treeview)
+		vpaned.pack1(treeview_box, True)
+		treemodel = TreeStore()
+		treeview.set_model(treemodel)
 
 		elogview_box = ScrolledWindow()
 		elogview = TextView()
@@ -548,12 +544,12 @@ class Elogviewer(MainWindow):
 		botrightbox = gtk.VBox(False)
 		f_header = HeaderTable()
 		f_stage = StageTable()
-		modelselector = ModelSelector()
+		viewselector = ViewSelector()
 		botrightbox.pack_start(f_header, False)
 		botrightbox.pack_start(gtk.HSeparator(), False)
 		botrightbox.pack_start(f_stage, False)
 		botrightbox.pack_start(gtk.HSeparator(), False)
-		botrightbox.pack_start(modelselector, False)
+		botrightbox.pack_start(viewselector, False)
 
 		botbox = gtk.HBox()
 		botbox.pack_start(elogview_box)
@@ -564,10 +560,9 @@ class Elogviewer(MainWindow):
 		# END GUI
 
 		# connections
-		eloglist.get_selection().connect_object(
-				'changed', elogview.get_buffer().read, \
-						eloglist.get_selection())
-		modelselector.btn_tree.connect('toggled', self.set_model)
+		treeview.get_selection().connect_object(
+				'changed', self.read, None)
+		viewselector.btn_tree.connect('toggled', self.set_view)
 		# connect the filter
 		f_header.btn_info.connect('toggled', self.filter)
 		f_header.btn_warn.connect('toggled', self.filter)
@@ -586,43 +581,50 @@ class Elogviewer(MainWindow):
 		f_stage.btn_other.connect('toggled', self.filter)
 
 		# public
-		self.eloglist = eloglist
+		self.treeview = treeview
+		self.model = treemodel
 		self.buffer = buffer
 		self.elogview = elogview
+		self.btn_tree = viewselector.btn_tree
 
 		# default model flat or tree
-		self.set_model(modelselector.btn_tree)
+		self.set_view(viewselector.btn_tree)
+		# default selection
+		self.treeview.select()
 
 	def destroy(self):
 		gtk.main_quit()
 
-	def set_model(self, is_tree):
-		if is_tree.get_active():
-			self.eloglist.get_model().populate()
+	def set_view(self, btn_tree):
+		if btn_tree.get_active():
+			self.model.populate()
 		else:
-			self.eloglist.get_model().populate_flat()
+			self.model.populate_flat()
+
+	def read(self, *args):
+		( model, iter ) = self.treeview.get_selection().get_selected()
+		filename = model.get_filename(iter)
+		self.buffer.read(filename)
 	
 	def filter(self, chk_btn):
 		filter[chk_btn.get_label()] = chk_btn.get_active()
-		# update
-		self.buffer.read(self.eloglist.get_filenam())
+		self.read()
 	
 	def refresh(self):
-		self.eloglist.get_model().populate()
+		self.set_view(self.btn_tree)
 
 	def delete(self):
-		selection = self.eloglist.get_selection()
-		path = self.eloglist.get_model().delete(selection)
-		self.eloglist.select_path(path)
+		self.treeview.remove_selected()
 
 	def clear(self):
-		selection = self.eloglist.get_selection()
-		[model, iter] = selection.get_selected()
-		# count children
-		#print model.iter_n_children(None)
-		while iter:
+		# Switch to flat view
+		self.model.populate_flat()
+		selection = self.treeview.get_selection()
+		# Delete all
+		selection.select_path(0)
+		while selection.path_is_selected(0):
 			self.delete()
-			[model, iter] = selection.get_selected()
+			selection.select_path(0)
 	
 	def action(self, action_obj):
 		action = action_obj.get_name()
