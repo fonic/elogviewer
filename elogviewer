@@ -1,10 +1,14 @@
 #!/usr/bin/env python
-_debug = True
+_debug = False
 
 _author     = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
-		'Timothy Kilbourn']
-_documenter = 'Christian Faulhammer <opfer@gentoo.org>'
-_artists    = 'elogviewer needs a logo, \nartists are welcome to contribute, \nplease contact the author.\nMathias Laurin' 
+		'Timothy Kilbourn', 'Jeremy Wickersheimer',
+		'',
+		'contribution by',
+		'Radice David, gentoo bug #187595',
+		'Christian Faulhammer, gentoo bug #192701',]
+_documenter = ['Christian Faulhammer <opfer@gentoo.org>']
+_artists    = ['elogviewer needs a logo, artists are welcome to\ncontribute, please contact the author.']
 _appname_    = 'elogviewer'
 _version    = '0.5.2'
 _website    = 'http://sourceforge.net/projects/elogviewer'
@@ -30,9 +34,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.'
 
 
 _description = '''
-<b>elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of Gentoo Linux.  So all warnings or informational messages generated during an update can be reviewed at one glance.
+<b>Elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of the Gentoo linux distribution.  So all warnings or informational messages generated during an update can be reviewed at one glance.
 
-<tt>man 1 elogviewer</tt> and <tt>man 1 /etc/make.conf</tt> for more informations.
+Read
+<tt>man 1 elogviewer</tt>
+and
+<tt>man 1 /etc/make.conf</tt>
+for more information.
 
 Timothy Kilbourn (nmbrthry) has written the first version of elogviewer.
 Jeremy Wickersheimer adapted elogviewer to KDE, some features he added are now imported in elogviewer.
@@ -394,7 +402,7 @@ class TextView(gtk.TextView):
 		self.set_wrap_mode(gtk.WRAP_WORD)
 
 
-class AboutDialog(gtk.AboutDialog):
+class About(gtk.AboutDialog):
 
 	def __init__(self):
 		gtk.AboutDialog.__init__(self)
@@ -414,7 +422,7 @@ class Info(gtk.MessageDialog):
 	def __init__(self):
 		gtk.MessageDialog.__init__(self, 
 				parent=None, 
-				flasgs=0, 
+				#flasgs=0, 
 				type=gtk.MESSAGE_INFO, 
 				buttons=gtk.BUTTONS_OK, 
 				message_format=None)
@@ -431,10 +439,12 @@ class ActionGroup(gtk.ActionGroup):
 		entries = (
 				( 'File', None, '_File' ),       # name, stock_id, label
 				( 'Help', None, '_Help' ),
-				( 'About', None, '_About...',
-				),#	None, self.about()),
-				( 'Info', None, 'Info',
-				),#	None, self.info()),
+				( 'About', None, '_About...', 
+					None, None,                  # accelerator, tooltip
+					activate_action ),
+				( 'Info', None, 'Info', 
+					None, None, 
+					activate_action ),
 				( 'Quit', gtk.STOCK_QUIT,        # name, stock_id
 					'_Quit', '<control>Q',       # label, accelerator
 					'Quit Elogviewer',           # tooltip
@@ -453,12 +463,6 @@ class ActionGroup(gtk.ActionGroup):
 					activate_action ),
 				)
 		self.add_actions(entries)
-
-	def about(self, *args):
-		AboutDialog()
-
-	def info(self, *args):
-		Info()
 
 
 class UIManager(gtk.UIManager):
@@ -628,7 +632,8 @@ class Elogviewer(MainWindow):
 	
 	def action(self, action_obj):
 		action = action_obj.get_name()
-		print "action %s" % action
+		if _debug:
+			print "action %s" % action
 		if action == "Delete":
 			self.delete()
 		if action == "Clear":
@@ -637,6 +642,10 @@ class Elogviewer(MainWindow):
 			self.refresh()
 		if action == "Quit":
 			self.destroy()
+		if action == "Info":
+			Info()
+		if action == "About":
+			About()
 
 
 def main():
