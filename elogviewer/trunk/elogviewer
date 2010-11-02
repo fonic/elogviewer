@@ -10,7 +10,7 @@ _author     = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
 _documenter = ['Christian Faulhammer <opfer@gentoo.org>']
 _artists    = ['elogviewer needs a logo, artists are welcome to\ncontribute, please contact the author.']
 _appname_    = 'elogviewer'
-_version    = '0.5.2'
+_version    = '0.6'
 _website    = 'http://sourceforge.net/projects/elogviewer'
 _copyright  = 'Copyright (c) 2007 Mathias Laurin'
 _license    = 'GNU General Public License (GPL) version 2'
@@ -93,7 +93,7 @@ Read /etc/make.conf.example for more information
 
 
 
-filter = {'INFO': True, 'WARN': True, 'ERROR': True, 'LOG': True,
+filter = {'INFO': True, 'WARN': True, 'ERROR': True, 'LOG': True, 'QA': True,
 		'preinst': True, 'postinst': True, 'prerm': True, 'postrm': True,
 		'unpack': True, 'compile': True, 'setup': True, 'test': True,
 		'install': True, 'other': True}
@@ -344,6 +344,7 @@ class TextBuffer(gtk.TextBuffer):
 
 	def __init__(self):
 		gtk.TextBuffer.__init__(self)
+		self.create_tag('QA', foreground='black')
 		self.create_tag('INFO', foreground='darkgreen')
 		self.create_tag('WARN', foreground='red')
 		self.create_tag('LOG', foreground='black')
@@ -454,7 +455,7 @@ class ActionGroup(gtk.ActionGroup):
 					'Quit Elogviewer',           # tooltip
 					activate_action ),
 				( 'Delete', gtk.STOCK_DELETE,
-					'_Delete', '<control>D',
+					'_Delete', '<delete>',
 					'Delete selected file',
 					activate_action ),
 				( 'Clear', gtk.STOCK_CLEAR,
