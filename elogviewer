@@ -93,39 +93,6 @@ Read /etc/make.conf.example for more information
 '''
 		exit(1)
 
-
-( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
-class TreeView(gtk.TreeView):
-	def __init__(self):
-		gtk.TreeView.__init__(self)
-		
-		category_col = gtk.TreeViewColumn(
-			'Category', gtk.CellRendererText(), text=CATEGORY)
-		package_col = gtk.TreeViewColumn(
-			'Package', gtk.CellRendererText(), text=PACKAGE)
-		locale_time_col = gtk.TreeViewColumn(
-			'Time', gtk.CellRendererText(), text=TIMESTAMP)
-		sorted_time_col = gtk.TreeViewColumn(
-			'Sort time', gtk.CellRendererText(), text=TIMESORT)
-		filename_col = gtk.TreeViewColumn(
-			'Filename', gtk.CellRendererText(), text=FILENAME)
-
-		category_col.set_sort_column_id(CATEGORY)
-		package_col.set_sort_column_id(PACKAGE)
-		locale_time_col.set_sort_column_id(TIMESORT)
-
-		if not _debug:
-			sorted_time_col.set_visible(False)
-			filename_col.set_visible(False)
-
-		self.append_column(category_col)
-		self.append_column(package_col)
-		self.append_column(locale_time_col)
-		self.append_column(sorted_time_col)
-		self.append_column(filename_col)
-		
-		self.set_enable_search(False)
-		#self.set_search_column(FILENAME)
 		
 class ActionGroup(gtk.ActionGroup):
 	def __init__(self, activate_action=None):
@@ -183,7 +150,6 @@ class UIManager(gtk.UIManager):
 		</toolbar>
 		</ui>
 		''')
-
 
 class CheckButton(gtk.CheckButton):
 	def __init__(self, label, use_underline=False):
@@ -303,6 +269,7 @@ class Elog:
 		return self
 
 
+( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
 class ListStore(gtk.ListStore):
 	def __init__(self):
@@ -380,7 +347,33 @@ class Elogviewer:
 		self.window.set_title( _appname_ )
 		self.window.set_default_size( 800, 600 )
 
-		self.treeview = TreeView()
+		self.treeview = gtk.TreeView()
+		category_col = gtk.TreeViewColumn(
+			'Category', gtk.CellRendererText(), text=CATEGORY)
+		package_col = gtk.TreeViewColumn(
+			'Package', gtk.CellRendererText(), text=PACKAGE)
+		locale_time_col = gtk.TreeViewColumn(
+			'Time', gtk.CellRendererText(), text=TIMESTAMP)
+		sorted_time_col = gtk.TreeViewColumn(
+			'Sort time', gtk.CellRendererText(), text=TIMESORT)
+		filename_col = gtk.TreeViewColumn(
+			'Filename', gtk.CellRendererText(), text=FILENAME)
+
+		category_col.set_sort_column_id(CATEGORY)
+		package_col.set_sort_column_id(PACKAGE)
+		locale_time_col.set_sort_column_id(TIMESORT)
+		if not _debug:
+			sorted_time_col.set_visible(False)
+			filename_col.set_visible(False)
+
+		self.treeview.append_column(category_col)
+		self.treeview.append_column(package_col)
+		self.treeview.append_column(locale_time_col)
+		self.treeview.append_column(sorted_time_col)
+		self.treeview.append_column(filename_col)
+		self.treeview.set_enable_search(False)
+		#self.treeview.set_search_column(FILENAME)
+		
 		self.textview = gtk.TextView()
 		self.textview.set_editable(False)
 		self.textview.set_cursor_visible(False)
