@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-_debug = True
+_debug = False
 
 _author     = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
 		'Timothy Kilbourn', 'Jeremy Wickersheimer',
@@ -529,10 +529,7 @@ class Elogviewer:
 			filename)
 
 	def delete(self, model, path, iter):
-		if not _debug:
-			os.remove(model.get_value(iter).delete())
-		else:
-			print '   Remove ' + model.get_value(iter).filename()
+		model.get_value(iter).delete()
 		model.remove(iter)
 	
 	def clear(self):
