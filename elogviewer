@@ -86,6 +86,8 @@ and
 	PORTAGE_ELOG_SYSTEM="save"
 in /etc/make.conf
 
+You need to add yourself to the portage group to use 
+elogviewer without privileges.
 
 Read /etc/make.conf.example for more information
 '''
