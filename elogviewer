@@ -81,7 +81,7 @@ else:
 	except:
 		print '''
 You need to enable the elog feature by setting at least one of 
-	PORTAGE_ELOG_CLASSES="info warn error log"
+	PORTAGE_ELOG_CLASSES="info warn error log qa"
 and
 	PORTAGE_ELOG_SYSTEM="save"
 in /etc/make.conf
@@ -93,29 +93,38 @@ Read /etc/make.conf.example for more information
 
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
-class TreeViewColumn(gtk.TreeViewColumn):
-	def __init__(self, title, *args, **kargs):
-		gtk.TreeViewColumn.__init__(self, title, *args, **kargs)
-		self.set_sort_column_id(TIMESORT)
-
 class TreeView(gtk.TreeView):
 	def __init__(self):
 		gtk.TreeView.__init__(self)
 		
-		self.append_column(TreeViewColumn(
-			'Category', gtk.CellRendererText(), text=CATEGORY))
-		self.append_column(TreeViewColumn(
-			'Package', gtk.CellRendererText(), text=PACKAGE))
-		self.append_column(TreeViewColumn(
-			'Time', gtk.CellRendererText(), text=TIMESORT))
-		
-		self.set_enable_search(True)
-		self.set_search_column(PACKAGE)
-		
-		for c in range(len(self.get_columns())):
-			self.get_column(c).set_sort_column_id(c)
-	
+		category_col = gtk.TreeViewColumn(
+			'Category', gtk.CellRendererText(), text=CATEGORY)
+		package_col = gtk.TreeViewColumn(
+			'Package', gtk.CellRendererText(), text=PACKAGE)
+		locale_time_col = gtk.TreeViewColumn(
+			'Time', gtk.CellRendererText(), text=TIMESTAMP)
+		sorted_time_col = gtk.TreeViewColumn(
+			'Sort time', gtk.CellRendererText(), text=TIMESORT)
+		filename_col = gtk.TreeViewColumn(
+			'Filename', gtk.CellRendererText(), text=FILENAME)
 
+		category_col.set_sort_column_id(CATEGORY)
+		package_col.set_sort_column_id(PACKAGE)
+		locale_time_col.set_sort_column_id(TIMESORT)
+
+		if not _debug:
+			sorted_time_col.set_visible(False)
+			filename_col.set_visible(False)
+
+		self.append_column(category_col)
+		self.append_column(package_col)
+		self.append_column(locale_time_col)
+		self.append_column(sorted_time_col)
+		self.append_column(filename_col)
+		
+		self.set_enable_search(False)
+		#self.set_search_column(4)
+		
 class ActionGroup(gtk.ActionGroup):
 	def __init__(self, activate_action=None):
 		gtk.ActionGroup.__init__(self, 'Main')
@@ -129,8 +138,8 @@ class ActionGroup(gtk.ActionGroup):
 					None, None, 
 					activate_action ),
 				( 'Quit', gtk.STOCK_QUIT,        # name, stock_id
-					'_Quit', None,       # label, accelerator
-					'Quit Elogviewer',           # tooltip
+					None, None,      	 # label, accelerator
+					'Quit Elogviewer',       # tooltip
 					activate_action ),
 				( 'Delete', gtk.STOCK_DELETE,
 					'Delete', 'Delete',
@@ -180,14 +189,14 @@ class CheckButton(gtk.CheckButton):
 		self.set_active(True)
 
 class Filter:
-	def __init__(self, label, match="", is_header=False, color='black'):
+	def __init__(self, label, match="", is_class=False, color='black'):
 		self._button = gtk.CheckButton(label, False)
 		self._name = label
 		if match is "":
 			self._match = label
 		else:
 			self._match = match
-		self._is_header = is_header		# header OR section
+		self._is_class = is_class
 		self._color = color
 		self._button.set_active(True)
 	
@@ -203,8 +212,8 @@ class Filter:
 	def button(self):
 		return self._button
 		
-	def is_header(self):
-		return self._is_header
+	def is_class(self):
+		return self._is_class
 	
 	def color(self):
 		return self._color
@@ -218,7 +227,7 @@ class ElogTextBuffer(gtk.TextBuffer):
 		gtk.TextBuffer.__init__(self)
 	
 	def create_tag(self, filter):
-		if filter.is_header():
+		if filter.is_class():
 			gtk.TextBuffer.create_tag(self, 
 				filter.match(), foreground=filter.color())
 		self.filters[filter.match()] = filter
@@ -256,21 +265,17 @@ class ElogTextBuffer(gtk.TextBuffer):
 
 import time
 class Elog:
-
 	def __init__(self, filename):
-
 		itime = '%Y%m%d-%H%M%S.log'
 		# see modules time and locale
-		otime = '%x %X'
-		vtime = '%Y-%m-%d %H:%M:%S'
+		locale_time_fmt = '%x %X'
+		sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
 
-		(self._c, self._p, self._t) = filename.split(':')
-		self._t = time.strptime(self._t, itime)
-		self._st = time.strftime(vtime, self._t)
-		self._t = time.strftime(otime, self._t)
+		(self._c, self._p, t) = filename.split(':')
+		t = time.strptime(t, itime)
+		self._sorted_time = time.strftime(sorted_time_fmt, t)
+		self._locale_time = time.strftime(locale_time_fmt, t)
 		
-		#self._content = ElogContent()
-		self._content = None
 		self._filename = filename
 		
 	def category(self):
@@ -279,11 +284,11 @@ class Elog:
 	def package(self):
 		return self._p
 			
-	def timestamp(self):
-		return self._st
+	def locale_time(self):
+		return self._locale_time
 			
-	def timesort(self):
-		return self._t
+	def sorted_time(self):
+		return self._sorted_time
 		
 	def filename(self):
 		return self._filename
@@ -304,7 +309,7 @@ class ListStore(gtk.ListStore):
 	
 	def append(self, elog):
 		return gtk.ListStore.append(self, [elog, elog.category(), elog.package(),
-			elog.timestamp(), elog.timesort(), elog.filename()])
+			elog.locale_time(), elog.sorted_time(), elog.filename()])
 	
 	def get_value(self, iter):
 		return gtk.ListStore.get_value(self, iter, 0)
@@ -328,7 +333,7 @@ class TreeStore(gtk.TreeStore):
 			self.set_value(iter, 0, elog)
 			self.set_value(iter, 1, elog.category())
 		return gtk.TreeStore.append(self, iter, [elog, elog.category(), elog.package(),
-			elog.timestamp(), elog.timesort(), elog.filename()])
+			elog.locale_time(), elog.sorted_time(), elog.filename()])
 	
 	def get_value(self, iter):
 		return gtk.TreeStore.get_value(self, iter, 0)
@@ -388,11 +393,11 @@ class Elogviewer:
 		#textview_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 		textview_win.add(self.textview)
 
-		self.filter_header_table = gtk.Table()
+		self.filter_class_table = gtk.Table()
 		self.filter_stage_table = gtk.Table() 
 		self.model_selector_table = gtk.Table()
 		tables_container = gtk.VBox()
-		tables_container.pack_start(self.filter_header_table)
+		tables_container.pack_start(self.filter_class_table)
 		tables_container.pack_start(gtk.HSeparator(), False)
 		tables_container.pack_start(self.filter_stage_table)
 
@@ -422,7 +427,7 @@ class Elogviewer:
 		self.add_filter(Filter("warning", "WARN", True, 'red'),    1, 2, 0, 1)
 		self.add_filter(Filter("error", "ERROR", True, 'orange'),  0, 1, 1, 2)
 		self.add_filter(Filter("log", "LOG", True),                1, 2, 1, 2)
-		self.add_filter(Filter("QA", "QA Notice", True),           0, 1, 2, 3)
+		self.add_filter(Filter("QA", "QA", True),           0, 1, 2, 3)
 
 		self.add_filter(Filter("preinst"),  0, 1, 0, 1)
 		self.add_filter(Filter("postinst"), 1, 2, 0, 1)
@@ -447,14 +452,14 @@ class Elogviewer:
 
 		self.statusbar.push(0, "0 of 0")
 		self.statusbar.push(1, os.getcwd())
-		self.populate()
+		self.refresh()
 
 	def destroy(self):
 		gtk.main_quit()
 	
 	def add_filter(self, filter, l, r, t, b):
-		if filter.is_header():
-			self.filter_header_table.attach(filter.button(), l, r, t, b)
+		if filter.is_class():
+			self.filter_class_table.attach(filter.button(), l, r, t, b)
 		else:
 			self.filter_stage_table.attach(filter.button(), l, r, t, b)
 		self.textview.get_buffer().create_tag(filter)
@@ -464,7 +469,10 @@ class Elogviewer:
 	def UI_callback(self, action_obj):
 		action = action_obj.get_name()
 		if action == "Delete":
-			self.delete()
+			selection = self.treeview.get_selection()
+			if selection.count_selected_rows() is not 0:
+				(model, iter) = selection.get_selected()
+				self.delete(model, model.get_path(iter), iter)
 		elif action == "Clear":
 			self.clear()
 		elif action == "Refresh":
@@ -481,7 +489,10 @@ class Elogviewer:
 		self.read_elog(selection)
 	
 	def on_selection_changed(self, selection):
-		self.read_elog(selection)
+		if selection.count_selected_rows() is not 0:
+			(model, iter) = selection.get_selected()
+			if not model.iter_has_child(iter):
+				self.read_elog(selection)
 		self.update_statusbar(selection)
 	
 	def on_row_deleted(self, model, path):
@@ -494,49 +505,58 @@ class Elogviewer:
 				selection.select_path(path)
 	
 	def read_elog(self, selection):
-		(model, iter) = selection.get_selected()
-		if iter:
+		if selection.count_selected_rows() is not 0:
+			(model, iter) = selection.get_selected()
 			self.textview.get_buffer().read(model.get_value(iter))
-			self.statusbar.push(0, 
-				str(model.get_path(iter)[0] + 1) 
-				+ ' of ' +
-				str(len(model)))
-		
+		else:
+			self.textview.get_buffer().clear()
+		self.update_statusbar(selection)
+
 	def update_statusbar(self, selection):
+		selected_path = -1
+		model_size = 0
+		if selection.count_selected_rows() is not 0:
+			(model, iter) = selection.get_selected()
+			selected_path = model.get_path(iter)[0]
+			model_size = len(model)
+		self.statusbar.push(0, 
+			str(selected_path + 1)
+			+ ' of ' +
+			str(model_size))
+
+	def delete(self, model, path, iter):
+		if not _debug:
+			os.remove(model.get_value(iter).delete())
+		else:
+			print '   Remove ' + model.get_value(iter).filename()
+		model.remove(iter)
+	
+	def clear(self):
+		model = self.treeview.get_model()
+		iter = model.get_iter_first()
+		while iter:
+			next = model.iter_next(iter)
+			self.delete(model, model.get_path(iter), iter)
+			iter = next
+		self.textview.get_buffer().clear()
+	
+	def refresh(self):
+		selected_path = 0
+		selection = self.treeview.get_selection()
 		(model, iter) = selection.get_selected()
-		if iter:
-			self.statusbar.push(0, 
-				str(model.get_path(iter)[0] + 1) 
-				+ ' of ' +
-				str(len(model)))
+		if selection.count_selected_rows() is not 0:
+			selected_path = model.get_path(iter)[0]
+		model.clear()
+		self.populate()
+		if selected_path <= len(model):
+			selection.select_path(selected_path)
+		elif len(model) is not 0:
+			selection.select_path(0)
 
 	def populate(self):
 		model = self.treeview.get_model()
-		for e in [Elog(filename) for filename in glob('*:*:*.log')]:
-			model.append(e)
-		if len(model) is not 0:
-			selection = self.treeview.get_selection()
-			selection.select_path(0)
-
-	def delete(self, delete_file=True):
-		selection = self.treeview.get_selection()
-		(model, iter) = selection.get_selected()
-		if len(model) is not 0:
-			if delete_file and not _debug:
-				os.remove(model.get_value(iter).delete())
-				pass
-			model.remove(iter)
-	
-	def clear(self, delete_files=True):
-		selection = self.treeview.get_selection()
-		(model, iter) = selection.get_selected()
-		while len(model) is not 0:
-			selection.select_path(0)
-			self.delete(delete_files)
-	
-	def refresh(self):
-		self.clear(False)
-		self.populate()
+		[ model.append(e) for e in [Elog(filename) 
+			for filename in glob('*:*:*.log')]]
 
 	def main(self):
 		gtk.main()
