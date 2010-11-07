@@ -123,7 +123,7 @@ class TreeView(gtk.TreeView):
 		self.append_column(filename_col)
 		
 		self.set_enable_search(False)
-		#self.set_search_column(4)
+		#self.set_search_column(FILENAME)
 		
 class ActionGroup(gtk.ActionGroup):
 	def __init__(self, activate_action=None):
@@ -286,7 +286,7 @@ class Elog:
 			
 	def locale_time(self):
 		return self._locale_time
-			
+		
 	def sorted_time(self):
 		return self._sorted_time
 		
@@ -515,14 +515,18 @@ class Elogviewer:
 	def update_statusbar(self, selection):
 		selected_path = -1
 		model_size = 0
+		filename = ""
 		if selection.count_selected_rows() is not 0:
 			(model, iter) = selection.get_selected()
 			selected_path = model.get_path(iter)[0]
 			model_size = len(model)
+			filename = model.get_value(iter).filename()
 		self.statusbar.push(0, 
 			str(selected_path + 1)
 			+ ' of ' +
-			str(model_size))
+			str(model_size)
+			+ '\t' +
+			filename)
 
 	def delete(self, model, path, iter):
 		if not _debug:
