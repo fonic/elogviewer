@@ -566,6 +566,7 @@ def main(argv):
 			_debug = True
 			print "debug mode is set"
 		elif opt in ("-h", "--help"):
+			help()
 			usage()
 			exit (0)
 	
