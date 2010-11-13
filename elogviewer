@@ -420,6 +420,9 @@ class ElogviewerGUI:
         gtk.main_quit()
     
 class Elogviewer(ElogviewerGUI):
+	
+	def __init__(self):
+		ElogviewerGUI.__init__(self)
 
     def add_filter(self, filter, l, r, t, b):
         if filter.is_class():
