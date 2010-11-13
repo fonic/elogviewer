@@ -586,6 +586,7 @@ def main(argv):
 		if "split-elog" in portage.settings["FEATURES"]:
 			global _split_elog
 			_split_elog = True
+			print "FEATURE=split-elog is not supported"
 
     gui = Elogviewer()
     gui.main()
