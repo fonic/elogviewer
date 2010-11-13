@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-_debug = False
+#
+# vim: set ts=4 st=4 sw=4 expandtab:
+
+_debug = True
 
 _author     = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
 		'Timothy Kilbourn', 'Jeremy Wickersheimer',
