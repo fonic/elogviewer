@@ -302,7 +302,6 @@ class Info(gtk.MessageDialog):
         self.destroy()
 
 
-from glob import glob
 class ElogviewerGUI:
 
     def __init__(self):
@@ -419,6 +418,7 @@ class ElogviewerGUI:
     def destroy(self):
         gtk.main_quit()
     
+from glob import glob
 class Elogviewer(ElogviewerGUI):
 	
 	def __init__(self):
