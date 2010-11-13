@@ -303,7 +303,7 @@ class Info(gtk.MessageDialog):
 
 
 from glob import glob
-class Elogviewer:
+class ElogviewerGUI:
 
     def __init__(self):
 
@@ -419,6 +419,8 @@ class Elogviewer:
     def destroy(self):
         gtk.main_quit()
     
+class Elogviewer(ElogviewerGUI):
+
     def add_filter(self, filter, l, r, t, b):
         if filter.is_class():
             self.filter_class_table.attach(filter.button(), l, r, t, b)
