@@ -2,7 +2,7 @@
 
 # vi:ts=4 st=4 sw=4 et
 
-_debug = True
+_debug = False
 
 _author     = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
         'Timothy Kilbourn', 'Jeremy Wickersheimer',
@@ -50,53 +50,15 @@ Jeremy Wickersheimer adapted elogviewer to KDE, some features he added are now i
 Christian Faulhammer (V-Li) has written the man page.
 '''
 
-
 # Redirect messages to stderr
 import sys
 sys.stdout = sys.stderr
 
 try:
-    import gtk
+	import gtk
 except:
-    print '''
-Elogviewer should help you not to miss important information like: 
-
-If you have just upgraded from an older version of python you
-will need to run:
-    /usr/sbin/python-updater
-
-please do run it and restart elogviewer.
-'''
-    exit(1)
-
-import os
-import portage
-if _debug:
-    print "Debug mode\n"
-    os.chdir("elog/elog")
-else:
-    try:
-        os.chdir(portage.settings["PORT_LOGDIR"])
-    except:
-        os.chdir("/var/log/portage")
-    try:
-        os.chdir("./elog")
-    except:
-        print '''
-You need to enable the elog feature by setting at least one of 
-    PORTAGE_ELOG_CLASSES="info warn error log qa"
-and
-    PORTAGE_ELOG_SYSTEM="save"
-in /etc/make.conf
-
-You need to add yourself to the portage group to use 
-elogviewer without privileges.
-
-Read /etc/make.conf.example for more information
-'''
-        exit(1)
-
-        
+	print "a recent version of pygtk is required"
+ 
 class ActionGroup(gtk.ActionGroup):
     def __init__(self, activate_action=None):
         gtk.ActionGroup.__init__(self, 'Main')
@@ -562,7 +524,72 @@ class Elogviewer:
     def main(self):
         gtk.main()
 
-if __name__ == "__main__":
+def help():
+	print '''
+Elogviewer should help you not to miss important information like: 
+
+If you have just upgraded from an older version of python you
+will need to run:
+    /usr/sbin/python-updater
+
+please do run it and restart elogviewer.
+'''
+
+def usage():
+	print '''
+You need to enable the elog feature by setting at least one of 
+    PORTAGE_ELOG_CLASSES="info warn error log qa"
+and
+    PORTAGE_ELOG_SYSTEM="save"
+in /etc/make.conf
+
+You need to add yourself to the portage group to use 
+elogviewer without privileges.
+
+Read /etc/make.conf.example for more information
+'''
+	
+
+import getopt
+import os
+import portage
+def main(argv):
+	try:
+		opts, args = getopt.getopt(argv, "dh", ["debug", "help"])
+	except getopt.GetoptError:
+		help()
+		usage()
+		exit(1)
+	for opt, arg in opts:
+		if opt in ("-d", "--debug"):
+			global _debug
+			_debug = True
+			print "debug mode is set"
+		elif opt in ("-h", "--help"):
+			usage()
+			exit (0)
+	
+	if _debug:
+		os.chdir("elog/elog")
+	else:
+		logdir = portage.settings["PORT_LOGDIR"]
+		if logdir is not "":
+			os.chdir(logdir)
+		else:
+			os.chdir("/var/log/portage")
+		try:
+			os.chdir("./elog")
+		except:
+			usage()
+			exit(2)
+		if "split-elog" in portage.settings["FEATURES"]:
+			global _split_elog
+			_split_elog = True
+
     gui = Elogviewer()
     gui.main()
+
+
+if __name__ == "__main__":
+	main(sys.argv[1:])
 
