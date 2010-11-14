@@ -121,36 +121,6 @@ class CheckButton(gtk.CheckButton):
         gtk.CheckButton.__init__(self, label, use_underline)
         self.set_active(True)
 
-class Filter:
-    def __init__(self, label, match="", is_class=False, color='black'):
-        self._button = gtk.CheckButton(label, False)
-        self._name = label
-        if match is "":
-            self._match = label
-        else:
-            self._match = match
-        self._is_class = is_class
-        self._color = color
-        self._button.set_active(True)
-    
-    def __eq__(self, other):
-        return self.button().get_active()
-    
-    def name(self):
-        return self._name
-    
-    def match(self):
-        return self._match
-
-    def button(self):
-        return self._button
-        
-    def is_class(self):
-        return self._is_class
-    
-    def color(self):
-        return self._color
-
 
 class ElogTextBuffer(gtk.TextBuffer):
 
@@ -194,44 +164,6 @@ class ElogTextBuffer(gtk.TextBuffer):
                         self.get_tag_table().lookup(header))
         finally:
             file_obj.close()
-
-
-import time
-class Elog:
-    def __init__(self, filename):
-        itime = '%Y%m%d-%H%M%S.log'
-        # see modules time and locale
-        locale_time_fmt = '%x %X'
-        sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
-
-        (self._c, self._p, t) = filename.split(':')
-        t = time.strptime(t, itime)
-        self._sorted_time = time.strftime(sorted_time_fmt, t)
-        self._locale_time = time.strftime(locale_time_fmt, t)
-        
-        self._filename = filename
-        
-    def category(self):
-        return self._c
-        
-    def package(self):
-        return self._p
-            
-    def locale_time(self):
-        return self._locale_time
-        
-    def sorted_time(self):
-        return self._sorted_time
-        
-    def filename(self):
-        return self._filename
-        
-    def delete(self):
-        if not _debug:
-            os.remove(self._filename)
-        else:
-            print self._filename
-        return self
 
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
@@ -393,6 +325,76 @@ class ElogviewerGUI:
     def destroy(self):
         gtk.main_quit()
     
+
+class Filter:
+    def __init__(self, label, match="", is_class=False, color='black'):
+        self._button = CheckButton(label, False)
+        self._name = label
+        if match is "":
+            self._match = label
+        else:
+            self._match = match
+        self._is_class = is_class
+        self._color = color
+        self._button.set_active(True)
+    
+    def __eq__(self, other):
+        return self.button().get_active()
+    
+    def name(self):
+        return self._name
+    
+    def match(self):
+        return self._match
+
+    def button(self):
+        return self._button
+        
+    def is_class(self):
+        return self._is_class
+    
+    def color(self):
+        return self._color
+
+
+import time
+class Elog:
+    def __init__(self, filename):
+        itime = '%Y%m%d-%H%M%S.log'
+        # see modules time and locale
+        locale_time_fmt = '%x %X'
+        sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
+
+        (self._c, self._p, t) = filename.split(':')
+        t = time.strptime(t, itime)
+        self._sorted_time = time.strftime(sorted_time_fmt, t)
+        self._locale_time = time.strftime(locale_time_fmt, t)
+        
+        self._filename = filename
+        
+    def category(self):
+        return self._c
+        
+    def package(self):
+        return self._p
+            
+    def locale_time(self):
+        return self._locale_time
+        
+    def sorted_time(self):
+        return self._sorted_time
+        
+    def filename(self):
+        return self._filename
+        
+    def delete(self):
+        if not _debug:
+            os.remove(self._filename)
+        else:
+            print self._filename
+        return self
+
+
 from glob import glob
 class Elogviewer(ElogviewerGUI):
 	
