@@ -1,5 +1,7 @@
 CHANGELOG
 
+0.6.1	correct bugs #253552 and #240275
+0.6.0	rewrite with better OO and most bugs corrected
 0.5.1	colors for INFO, LOG, ERROR and WARN
 		status bar
 		search: just type a few letters in the file list
