@@ -395,7 +395,7 @@ class Elog:
         return self
 
 
-from glob import glob
+import fnmatch
 class Elogviewer(ElogviewerGUI):
 	
 	def __init__(self):
@@ -501,7 +501,7 @@ class Elogviewer(ElogviewerGUI):
     def populate(self):
         model = self.treeview.get_model()
         [ model.append(e) for e in [Elog(filename) 
-            for filename in glob('*:*:*.log')]]
+            for filename in fnmatch.fnmatch('*:*:*.log')]]
 
     def main(self):
         gtk.main()
