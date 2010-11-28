@@ -79,10 +79,6 @@ class ActionGroup(gtk.ActionGroup):
                     'Delete', 'Delete',
                     'Delete selected file',
                     activate_action ),
-                ( 'Clear', gtk.STOCK_CLEAR,
-                    '_Clear', '<control>C',
-                    'Delete all the files',
-                    activate_action ),
                 ( 'Refresh', gtk.STOCK_REFRESH,
                     '_Refresh', '<control>R',
                     'Refresh the list',
@@ -97,7 +93,6 @@ class UIManager(gtk.UIManager):
         <menubar name="Menubar">
             <menu action="File">
                 <menuitem action="Delete" />
-                <menuitem action="Clear"/>
                 <menuitem action="Refresh"/>
                 <separator/>
                 <menuitem action="Quit"/>
@@ -109,7 +104,6 @@ class UIManager(gtk.UIManager):
         </menubar>
         <toolbar name="Toolbar">
             <toolitem action="Delete"/>
-            <toolitem action="Clear"/>
             <toolitem action="Refresh"/>
             <toolitem action="Quit"/>
         </toolbar>
@@ -447,8 +441,6 @@ class Elogviewer(ElogviewerGUI):
             if selection.count_selected_rows() is not 0:
                 (model, iter) = selection.get_selected()
                 self.delete(model, model.get_path(iter), iter)
-        elif action == "Clear":
-            self.clear()
         elif action == "Refresh":
             self.refresh()
         elif action == "Quit":
@@ -505,15 +497,6 @@ class Elogviewer(ElogviewerGUI):
     def delete(self, model, path, iter):
         model.get_value(iter).delete()
         model.remove(iter)
-    
-    def clear(self):
-        model = self.treeview.get_model()
-        iter = model.get_iter_first()
-        while iter:
-            next = model.iter_next(iter)
-            self.delete(model, model.get_path(iter), iter)
-            iter = next
-        self.textview.get_buffer().clear()
     
     def refresh(self):
         selected_path = 0
