@@ -424,13 +424,13 @@ class Elogviewer(ElogviewerGUI):
 
     def add_filter(self, filter):
         if filter.is_class():
-			(l, t) = divmod(self.filter_counter_class, self.filter_columns_class)
+			(t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
 			r = l + 1
 			b = t + 1
             self.filter_class_table.attach(filter.button(), l, r, t, b)
 			self.filter_counter_class += 1
         else:
-			(l, t) = divmod(self.filter_counter_stage, self.filter_columns_stage)
+			(t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
 			r = l + 1
 			b = t + 1
             self.filter_stage_table.attach(filter.button(), l, r, t, b)
