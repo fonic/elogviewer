@@ -148,7 +148,7 @@ class ElogTextBuffer(gtk.TextBuffer):
             # Parse file
             header = None
             section = None
-			for line in file_obj:
+			for line in file_obj.read().splitlines():
                 L = line.split(': ')
                 if len(L) is 2 and (L[0] and L[1]) in self.filters.keys():
                     (header, section) = L
