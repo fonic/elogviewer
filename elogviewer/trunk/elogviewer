@@ -55,9 +55,9 @@ import sys
 sys.stdout = sys.stderr
 
 try:
-	import gtk
+    import gtk
 except:
-	print "a recent version of pygtk is required"
+    print "a recent version of pygtk is required"
  
 class ActionGroup(gtk.ActionGroup):
     def __init__(self, activate_action=None):
@@ -142,7 +142,7 @@ class ElogTextBuffer(gtk.TextBuffer):
             # Parse file
             header = None
             section = None
-			for line in file_obj.read().splitlines():
+            for line in file_obj.read().splitlines():
                 L = line.split(': ')
                 if len(L) is 2 and (L[0] and L[1]) in self.filters.keys():
                     (header, section) = L
@@ -174,9 +174,9 @@ class ListStore(gtk.ListStore):
     def get_value(self, iter):
         return gtk.ListStore.get_value(self, iter, 0)
 
-	def populate(self):
-		for file in all_files('.', '*:*:*.log', False, True):
-			self.append(Elog(file))
+    def populate(self):
+        for file in all_files('.', '*:*.log', False, True):
+            self.append(Elog(file))
 
 class About(gtk.AboutDialog):
 
@@ -356,19 +356,19 @@ class Filter:
 
 import os, fnmatch
 def all_files(root, patterns='*', single_level=False, yield_folders=False):
-	''' Expand patterns for semicolon-separated strin of list '''
-	patterns = patterns.split(';')
-	for path, subdirs, files in os.walk(root):
-		if yield_folders:
-			files.extend(subdirs)
-		files.sort()
-		for name in files:
-			for pattern in patterns:
-				if fnmatch.fnmatch(name, pattern):
-					yield os.path.join(path, name)
-					break
-		if single_level:
-			break
+    ''' Expand patterns for semicolon-separated strin of list '''
+    patterns = patterns.split(';')
+    for path, subdirs, files in os.walk(root):
+        if yield_folders:
+            files.extend(subdirs)
+        files.sort()
+        for name in files:
+            for pattern in patterns:
+                if fnmatch.fnmatch(name, pattern):
+                    yield os.path.join(path, name)
+                    break
+        if single_level:
+            break
 
 
 import time
@@ -379,8 +379,15 @@ class Elog:
         locale_time_fmt = '%x %X'
         sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
 
-        (self._category, self._package, t) = filename.split(':')
-		self._category = self._category.split('./')[1]
+        split_filename = filename[2:]
+        split_filename = split_filename.split(':')
+        t = self._category = self._package = ""
+        if len(split_filename) is 3:
+            (self._category, self._package, t) = split_filename
+        elif len(split_filename) is 2:
+            print split_filename
+            (self._category, self._package) = split_filename[0].split('/')
+            t = split_filename[1]
         t = time.strptime(t, itime)
         self._sorted_time = time.strftime(sorted_time_fmt, t)
         self._locale_time = time.strftime(locale_time_fmt, t)
@@ -412,27 +419,27 @@ class Elog:
 
 class Elogviewer(ElogviewerGUI):
 
-	filter_counter_class = 0
-	filter_counter_stage = 0
-	filter_columns_class = 2
-	filter_columns_stage = filter_columns_class 
-	
-	def __init__(self):
-		ElogviewerGUI.__init__(self)
+    filter_counter_class = 0
+    filter_counter_stage = 0
+    filter_columns_class = 2
+    filter_columns_stage = filter_columns_class 
+    
+    def __init__(self):
+        ElogviewerGUI.__init__(self)
 
     def add_filter(self, filter):
         if filter.is_class():
-			(t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
-			r = l + 1
-			b = t + 1
+            (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
+            r = l + 1
+            b = t + 1
             self.filter_class_table.attach(filter.button(), l, r, t, b)
-			self.filter_counter_class += 1
+            self.filter_counter_class += 1
         else:
-			(t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
-			r = l + 1
-			b = t + 1
+            (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
+            r = l + 1
+            b = t + 1
             self.filter_stage_table.attach(filter.button(), l, r, t, b)
-			self.filter_counter_stage += 1
+            self.filter_counter_stage += 1
         self.textview.get_buffer().create_tag(filter)
         filter.button().connect('toggled', self.on_filter_btn)
         filter.button().show()
@@ -516,14 +523,14 @@ class Elogviewer(ElogviewerGUI):
 
     def populate(self):
         model = self.treeview.get_model()
-		model.populate()
+        model.populate()
 
     def main(self):
         gtk.main()
 
 
 def help():
-	print '''
+    print '''
 Elogviewer should help you not to miss important information like: 
 
 If you have just upgraded from an older version of python you
@@ -534,7 +541,7 @@ please do run it and restart elogviewer.
 '''
 
 def usage():
-	print '''
+    print '''
 You need to enable the elog feature by setting at least one of 
     PORTAGE_ELOG_CLASSES="info warn error log qa"
 and
@@ -546,50 +553,46 @@ elogviewer without privileges.
 
 Read /etc/make.conf.example for more information
 '''
-	
+    
 
 import getopt
 import os
 import portage
 def main(argv):
-	try:
-		opts, args = getopt.getopt(argv, "dh", ["debug", "help"])
-	except getopt.GetoptError:
-		help()
-		usage()
-		exit(1)
-	for opt, arg in opts:
-		if opt in ("-d", "--debug"):
-			global _debug
-			_debug = True
-			print "debug mode is set"
-		elif opt in ("-h", "--help"):
-			help()
-			usage()
-			exit (0)
-	
-	if _debug:
-		os.chdir("elog/elog")
-	else:
-		logdir = portage.settings["PORT_LOGDIR"]
-		if logdir is not "":
-			os.chdir(logdir)
-		else:
-			os.chdir("/var/log/portage")
-		try:
-			os.chdir("./elog")
-		except:
-			usage()
-			exit(2)
-		if "split-elog" in portage.settings["FEATURES"]:
-			global _split_elog
-			_split_elog = True
-			print "FEATURE=split-elog is not supported"
+    try:
+        opts, args = getopt.getopt(argv, "dh", ["debug", "help"])
+    except getopt.GetoptError:
+        help()
+        usage()
+        exit(1)
+    for opt, arg in opts:
+        if opt in ("-d", "--debug"):
+            global _debug
+            _debug = True
+            print "debug mode is set"
+        elif opt in ("-h", "--help"):
+            help()
+            usage()
+            exit (0)
+    
+    if _debug:
+        os.chdir("elog/elog")
+    else:
+        logdir = portage.settings["PORT_LOGDIR"]
+        if logdir is not "":
+            os.chdir(logdir)
+        else:
+            os.chdir("/var/log/portage")
+        try:
+            os.chdir("./elog")
+        except:
+            usage()
+            exit(2)
 
     gui = Elogviewer()
     gui.main()
 
 
 if __name__ == "__main__":
-	main(sys.argv[1:])
+    main(sys.argv[1:])
 
