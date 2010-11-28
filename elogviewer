@@ -382,7 +382,8 @@ class Elog:
         locale_time_fmt = '%x %X'
         sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
 
-        (self._c, self._p, t) = filename.split(':')
+        (self._category, self._package, t) = filename.split(':')
+		self._category = self._category.split('./')[1]
         t = time.strptime(t, itime)
         self._sorted_time = time.strftime(sorted_time_fmt, t)
         self._locale_time = time.strftime(locale_time_fmt, t)
@@ -390,10 +391,10 @@ class Elog:
         self._filename = filename
         
     def category(self):
-        return self._c
+        return self._category
         
     def package(self):
-        return self._p
+        return self._package
             
     def locale_time(self):
         return self._locale_time
