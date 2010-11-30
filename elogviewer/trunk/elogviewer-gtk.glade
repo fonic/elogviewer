@@ -2,7 +2,37 @@
 <interface>
   <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy project-wide -->
-  <object class="GtkWindow" id="window1">
+  <object class="GtkListStore" id="liststore">
+    <columns>
+      <!-- column-name Elog -->
+      <column type="GObject"/>
+      <!-- column-name Category -->
+      <column type="gchar"/>
+      <!-- column-name Package -->
+      <column type="gchar"/>
+      <!-- column-name Time -->
+      <column type="gchar"/>
+      <!-- column-name Sort -->
+      <column type="gchar"/>
+      <!-- column-name Filename -->
+      <column type="gchar"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0"/>
+        <col id="1"></col>
+        <col id="2"></col>
+        <col id="3"></col>
+        <col id="4"></col>
+        <col id="5"></col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkWindow" id="window">
+    <property name="title">elogviewer</property>
+    <property name="default_width">800</property>
+    <property name="default_height">600</property>
+    <signal name="destroy" handler="gtk_main_quit"/>
     <child>
       <object class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -16,13 +46,23 @@
                 <property name="label" translatable="yes">_File</property>
                 <property name="use_underline">True</property>
                 <child type="submenu">
-                  <object class="GtkMenu" id="menu1">
+                  <object class="GtkMenu" id="submenuFile">
                     <property name="visible">True</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem4">
-                        <property name="label">gtk-save-as</property>
+                      <object class="GtkImageMenuItem" id="menuDelete">
                         <property name="visible">True</property>
-                        <property name="use_underline">True</property>
+                        <property name="tooltip_text" translatable="yes">Delete selected file</property>
+                        <property name="use_action_appearance">True</property>
+                        <property name="related_action">actionDelete</property>
+                        <property name="use_stock">True</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImageMenuItem" id="menuRefresh">
+                        <property name="visible">True</property>
+                        <property name="tooltip_text" translatable="yes">Refresh the list</property>
+                        <property name="use_action_appearance">True</property>
+                        <property name="related_action">actionRefresh</property>
                         <property name="use_stock">True</property>
                       </object>
                     </child>
@@ -32,66 +72,15 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem5">
-                        <property name="label">gtk-quit</property>
+                      <object class="GtkImageMenuItem" id="menuQuit">
                         <property name="visible">True</property>
-                        <property name="use_underline">True</property>
+                        <property name="use_action_appearance">True</property>
+                        <property name="related_action">actionQuit</property>
                         <property name="use_stock">True</property>
                       </object>
                     </child>
                   </object>
                 </child>
-              </object>
-            </child>
-            <child>
-              <object class="GtkMenuItem" id="menuEdit">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">_Edit</property>
-                <property name="use_underline">True</property>
-                <child type="submenu">
-                  <object class="GtkMenu" id="menu2">
-                    <property name="visible">True</property>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem6">
-                        <property name="label">gtk-cut</property>
-                        <property name="visible">True</property>
-                        <property name="use_underline">True</property>
-                        <property name="use_stock">True</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem7">
-                        <property name="label">gtk-copy</property>
-                        <property name="visible">True</property>
-                        <property name="use_underline">True</property>
-                        <property name="use_stock">True</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem8">
-                        <property name="label">gtk-paste</property>
-                        <property name="visible">True</property>
-                        <property name="use_underline">True</property>
-                        <property name="use_stock">True</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem9">
-                        <property name="label">gtk-delete</property>
-                        <property name="visible">True</property>
-                        <property name="use_underline">True</property>
-                        <property name="use_stock">True</property>
-                      </object>
-                    </child>
-                  </object>
-                </child>
-              </object>
-            </child>
-            <child>
-              <object class="GtkMenuItem" id="menuView">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">_View</property>
-                <property name="use_underline">True</property>
               </object>
             </child>
             <child>
@@ -100,13 +89,13 @@
                 <property name="label" translatable="yes">_Help</property>
                 <property name="use_underline">True</property>
                 <child type="submenu">
-                  <object class="GtkMenu" id="menu3">
+                  <object class="GtkMenu" id="submenuHelp">
                     <property name="visible">True</property>
                     <child>
-                      <object class="GtkImageMenuItem" id="imagemenuitem10">
-                        <property name="label">gtk-about</property>
+                      <object class="GtkImageMenuItem" id="menuAbout">
                         <property name="visible">True</property>
-                        <property name="use_underline">True</property>
+                        <property name="use_action_appearance">True</property>
+                        <property name="related_action">actionAbout</property>
                         <property name="use_stock">True</property>
                       </object>
                     </child>
@@ -123,6 +112,45 @@
         <child>
           <object class="GtkToolbar" id="toolbar">
             <property name="visible">True</property>
+            <child>
+              <object class="GtkToolButton" id="toolbuttonDelete">
+                <property name="visible">True</property>
+                <property name="use_action_appearance">True</property>
+                <property name="related_action">actionDelete</property>
+                <property name="label" translatable="yes">Delete</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolButton" id="toolbuttonRefresh">
+                <property name="visible">True</property>
+                <property name="use_action_appearance">True</property>
+                <property name="related_action">actionRefresh</property>
+                <property name="label" translatable="yes">Refresh</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToolButton" id="toolbuttonQuit">
+                <property name="visible">True</property>
+                <property name="use_action_appearance">True</property>
+                <property name="related_action">actionQuit</property>
+                <property name="label" translatable="yes">Quit</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -165,26 +193,13 @@
               </packing>
             </child>
             <child>
-              <object class="GtkVBox" id="vbox2">
+              <object class="GtkVBox" id="tables_container">
                 <property name="visible">True</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkTable" id="table1">
+                  <object class="GtkTable" id="filter_class_table">
                     <property name="visible">True</property>
-                    <property name="n_rows">3</property>
                     <property name="n_columns">2</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
                     <child>
                       <placeholder/>
                     </child>
@@ -197,22 +212,9 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkTable" id="table2">
+                  <object class="GtkTable" id="filter_stage_table">
                     <property name="visible">True</property>
-                    <property name="n_rows">3</property>
                     <property name="n_columns">2</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
                     <child>
                       <placeholder/>
                     </child>
@@ -237,7 +239,6 @@
         <child>
           <object class="GtkStatusbar" id="statusbar">
             <property name="visible">True</property>
-            <property name="spacing">2</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -248,31 +249,17 @@
     </child>
   </object>
   <object class="GtkTextBuffer" id="textbuffer"/>
-  <object class="GtkListStore" id="liststore">
-    <columns>
-      <!-- column-name Elog -->
-      <column type="GObject"/>
-      <!-- column-name Category -->
-      <column type="gchar"/>
-      <!-- column-name Package -->
-      <column type="gchar"/>
-      <!-- column-name Time -->
-      <column type="gchar"/>
-      <!-- column-name Sort time -->
-      <column type="gchar"/>
-      <!-- column-name Filename -->
-      <column type="gchar"/>
-    </columns>
-    <data>
-      <row>
-        <col id="0"/>
-        <col id="1"></col>
-        <col id="2"></col>
-        <col id="3"></col>
-        <col id="4"></col>
-        <col id="5"></col>
-      </row>
-    </data>
+  <object class="GtkAction" id="actionQuit">
+    <property name="stock_id">gtk-quit</property>
   </object>
-  <object class="GtkActionGroup" id="actiongroup"/>
+  <object class="GtkAction" id="actionDelete">
+    <property name="stock_id">gtk-delete</property>
+  </object>
+  <object class="GtkAction" id="actionRefresh">
+    <property name="stock_id">gtk-refresh</property>
+    <signal name="activate" handler="on_actionRefresh_activate"/>
+  </object>
+  <object class="GtkAction" id="actionAbout">
+    <property name="stock_id">gtk-about</property>
+  </object>
 </interface>
