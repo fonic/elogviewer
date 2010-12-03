@@ -34,7 +34,7 @@ class ElogviewerIdentity:
 		'GNU General Public License (GPL) version 2'
 
 	def LICENSE(self):
-		return copyright + '''
+		return str(copyright) + '''
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
