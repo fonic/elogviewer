@@ -33,7 +33,7 @@
     <property name="title">elogviewer</property>
     <property name="default_width">800</property>
     <property name="default_height">600</property>
-    <signal name="destroy" handler="gtk_main_quit"/>
+    <signal name="destroy" handler="on_actionQuit_activate"/>
     <child>
       <object class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -170,6 +170,7 @@
               <object class="GtkTreeView" id="treeview">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="model">liststore</property>
                 <property name="reorderable">True</property>
                 <property name="search_column">5</property>
               </object>

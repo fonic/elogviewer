@@ -1,54 +1,10 @@
 #!/usr/bin/env python
 
 # vi:ts=4 st=4 sw=4 et
+# (c) 2010 Mathias Laurin, GPL2
+# see elogviewerCommon.py for details
 
 _debug = False
-
-_author     = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
-        'Timothy Kilbourn', 'Jeremy Wickersheimer',
-        '',
-        'contribution by',
-        'Radice David, gentoo bug #187595',
-        'Christian Faulhammer, gentoo bug #192701',]
-_documenter = ['Christian Faulhammer <opfer@gentoo.org>']
-_artists    = ['elogviewer needs a logo, artists are welcome to\ncontribute, please contact the author.']
-_appname_    = 'elogviewer'
-_version    = '0.6.2'
-_website    = 'http://sourceforge.net/projects/elogviewer'
-_copyright  = 'Copyright (c) 2007, 2010 Mathias Laurin'
-_license    = 'GNU General Public License (GPL) version 2'
-
-
-_LICENSE    = _copyright + '''
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.'''
-
-
-_description = '''
-<b>Elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of the Gentoo linux distribution.  So all warnings or informational messages generated during an update can be reviewed at one glance.
-
-Read
-<tt>man 1 elogviewer</tt>
-and
-<tt>man 1 /etc/make.conf</tt>
-for more information.
-
-Timothy Kilbourn (nmbrthry) has written the first version of elogviewer.
-Jeremy Wickersheimer adapted elogviewer to KDE, some features he added are now imported in elogviewer.
-Christian Faulhammer (V-Li) has written the man page.
-'''
 
 # Redirect messages to stderr
 import sys
@@ -64,7 +20,6 @@ class CheckButton(gtk.CheckButton):
     def __init__(self, label, use_underline=False):
         gtk.CheckButton.__init__(self, label, use_underline)
         self.set_active(True)
-
 
 class ElogTextBuffer(gtk.TextBuffer):
 
@@ -130,71 +85,21 @@ class ListStore(gtk.ListStore):
             self.append(Elog(file))
 
 class About(gtk.AboutDialog):
-
-    def __init__(self):
+    def __init__(self, identity):
         gtk.AboutDialog.__init__(self)
-        self.set_version( _version )
-        self.set_website( _website )
-        self.set_authors( _author )
-        self.set_artists( _artists )
-        self.set_copyright( _copyright )
-        self.set_documenters( _documenter )
-        self.set_license( _LICENSE )
+        self.set_version( identity.version() )
+        self.set_website( identity.website() )
+        self.set_authors( identity.author() )
+        self.set_artists( identity.artists() )
+        self.set_copyright( identity.copyright() )
+        self.set_documenters( identity.documenter() )
+        self.set_license( identity.LICENSE() )
         self.run()
         self.destroy()
-
-
-class Info(gtk.MessageDialog):
-
-    def __init__(self):
-        gtk.MessageDialog.__init__(self, 
-                parent=None, 
-                #flasgs=0, 
-                type=gtk.MESSAGE_INFO, 
-                buttons=gtk.BUTTONS_OK, 
-                message_format=None)
-        self.set_markup ( _description )
-        self.run()
-        self.destroy()
-
 
 import os
 class ElogviewerGUI:
-
     def __init__(self):
-
-        self.treeview = gtk.TreeView()
-        category_col = gtk.TreeViewColumn(
-            'Category', gtk.CellRendererText(), text=CATEGORY)
-        package_col = gtk.TreeViewColumn(
-            'Package', gtk.CellRendererText(), text=PACKAGE)
-        locale_time_col = gtk.TreeViewColumn(
-            'Time', gtk.CellRendererText(), text=TIMESTAMP)
-        sorted_time_col = gtk.TreeViewColumn(
-            'Sort time', gtk.CellRendererText(), text=TIMESORT)
-        filename_col = gtk.TreeViewColumn(
-            'Filename', gtk.CellRendererText(), text=FILENAME)
-
-        category_col.set_sort_column_id(CATEGORY)
-        package_col.set_sort_column_id(PACKAGE)
-        locale_time_col.set_sort_column_id(TIMESORT)
-        if not _debug:
-            sorted_time_col.set_visible(False)
-            filename_col.set_visible(False)
-
-        self.treeview.append_column(category_col)
-        self.treeview.append_column(package_col)
-        self.treeview.append_column(locale_time_col)
-        self.treeview.append_column(sorted_time_col)
-        self.treeview.append_column(filename_col)
-        self.treeview.set_enable_search(False)
-        #self.treeview.set_search_column(FILENAME)
-        
-        self.window.show_all()
-
-        # connect
-        model.connect('row_deleted', self.on_row_deleted)
-        self.treeview.get_selection().connect('changed', self.on_selection_changed)
 
         self.statusbar.push(0, "0 of 0")
         self.statusbar.push(1, os.getcwd())
@@ -229,15 +134,44 @@ class Elogviewer:
     def create_gui(self):
 		self.gui = gtk.Builder()
 		self.gui.add_from_file("elogviewer.glade")
-	
+
+		self.treeview = self.gui.get_object("treeview")
+        category_col = gtk.TreeViewColumn(
+            'Category', gtk.CellRendererText(), text=CATEGORY)
+        package_col = gtk.TreeViewColumn(
+            'Package', gtk.CellRendererText(), text=PACKAGE)
+        locale_time_col = gtk.TreeViewColumn(
+            'Time', gtk.CellRendererText(), text=TIMESTAMP)
+        sorted_time_col = gtk.TreeViewColumn(
+            'Sort time', gtk.CellRendererText(), text=TIMESORT)
+        filename_col = gtk.TreeViewColumn(
+            'Filename', gtk.CellRendererText(), text=FILENAME)
+
+        category_col.set_sort_column_id(CATEGORY)
+        package_col.set_sort_column_id(PACKAGE)
+        locale_time_col.set_sort_column_id(TIMESORT)
+        if not _debug:
+            sorted_time_col.set_visible(False)
+            filename_col.set_visible(False)
+
+        self.treeview.append_column(category_col)
+        self.treeview.append_column(package_col)
+        self.treeview.append_column(locale_time_col)
+        self.treeview.append_column(sorted_time_col)
+        self.treeview.append_column(filename_col)
+        self.treeview.set_enable_search(False)
+        #self.treeview.set_search_column(FILENAME)
+ 
 	def connect(self):
 		self.gui.connect_signals({
 			"on_window_destroy" : gtk.main_quit,
 			"on_actionQuit_activate" : self.on_actionQuit,
 			"on_actionDelete_activate" : self.on_actionDelete,
 			"on_actionRefresh_activate" : self.on_actionRefresh,
-			"on_actionAbout_activate" : self.on_actionAbout
+			"on_actionAbout_activate" : self.on_actionAbout,
+			"on_liststore_row_deleted": self.on_row_deleted
 					})
+        self.treeview.get_selection().connect('changed', self.on_selection_changed)
 
 	def show(self):
 		main_window = self.gui.get_object("window")
@@ -285,9 +219,6 @@ class Elogviewer:
         elif len(model) is not 0:
             selection.select_path(0)
 
-	def on_liststore_row_deleted(self, sth):
-		print sth
-	
     def on_filter_btn(self, widget):
         selection = self.treeview.get_selection()
         self.read_elog(selection)
