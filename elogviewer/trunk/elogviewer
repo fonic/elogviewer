@@ -150,8 +150,8 @@ class ElogTextBuffer(gtk.TextBuffer):
                         self.get_end_iter(),
                         header + ' (' + section + ')\n\n',
                         self.get_tag_table().lookup(header))
-                elif self.filters[header] == True \
-                    and self.filters[section] == True:
+                elif self.filters[header].is_active() \
+                    and self.filters[section].is_active():
                     self.insert_with_tags(
                         self.get_end_iter(),
                         line,
