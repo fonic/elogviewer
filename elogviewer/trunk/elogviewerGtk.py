@@ -19,7 +19,7 @@ class CheckButton(gtk.CheckButton):
         gtk.CheckButton.__init__(self, label, use_underline)
         self.set_active(True)
 
-class ElogTextBuffer(gtk.TextBuffer):
+class TextBuffer(gtk.TextBuffer):
 
     filters = {}
 
@@ -155,6 +155,9 @@ class Elogviewer:
         #self.treeview.set_search_column(FILENAME)
 
 		self.treeview.set_model(ListStore())
+
+		self.textview = self.gui.get_object("textview")
+		self.textview.set_buffer(TextBuffer())
  
 	def connect(self):
 		self.gui.connect_signals({
@@ -189,7 +192,7 @@ class Elogviewer:
             b = t + 1
             filter_stage_table.attach(filter.button(), l, r, t, b)
             self.filter_counter_stage += 1
-        #self.textview.get_buffer().create_tag(filter)
+        self.textview.get_buffer().create_tag(filter)
         filter.button().connect('toggled', self.on_filter_btn)
         filter.button().show()
 
