@@ -331,28 +331,28 @@ class Elogviewer:
         filter.button().connect('toggled', self.on_filter_btn)
         filter.button().show()
 
-    def UI_callback(self, action_obj):
-        action = action_obj.get_name()
-        if action == "Delete":
-            selection = self.treeview.get_selection()
-            if selection.count_selected_rows() is not 0:
-                (model, iter) = selection.get_selected()
-                self.delete(model, model.get_path(iter), iter)
-        elif action == "Refresh":
-            self.refresh()
-        elif action == "Quit":
-            self.destroy()
-        elif action == "Info":
-            Info()
-        elif action == "About":
-            About()
-	
 	def on_actionQuit(self, action):
-		self.quit
+		self.quit()
 	
 	def on_actionAbout(self, action):
 		pass
 	
+    def on_actionDelete(self, model, path, iter):
+        model.get_value(iter).delete()
+        model.remove(iter)
+    
+    def on_actionRefresh(self, action):
+        selected_path = 0
+        selection = self.treeview.get_selection()
+        (model, iter) = selection.get_selected()
+        if selection.count_selected_rows() is not 0:
+            selected_path = model.get_path(iter)[0]
+        model.clear()
+        self.populate()
+        if selected_path <= len(model):
+            selection.select_path(selected_path)
+        elif len(model) is not 0:
+            selection.select_path(0)
     def on_filter_btn(self, widget):
         selection = self.treeview.get_selection()
         self.read_elog(selection)
@@ -396,24 +396,6 @@ class Elogviewer:
             str(model_size)
             + '\t' +
             filename)
-
-    def on_actionDelete(self, model, path, iter):
-        model.get_value(iter).delete()
-        model.remove(iter)
-    
-    def on_actionRefresh(self, action):
-		print "Refresh"
-        selected_path = 0
-        selection = self.treeview.get_selection()
-        (model, iter) = selection.get_selected()
-        if selection.count_selected_rows() is not 0:
-            selected_path = model.get_path(iter)[0]
-        model.clear()
-        self.populate()
-        if selected_path <= len(model):
-            selection.select_path(selected_path)
-        elif len(model) is not 0:
-            selection.select_path(0)
 
     def populate(self):
         model = self.treeview.get_model()
