@@ -1,6 +1,68 @@
 #!/usr/bin/env python
 
 # vi:ts=4 st=4 sw=4 et
+# (c) 2010 Mathias Laurin, GPL2
+
+class ElogviewerIdentity:
+	def author(self):
+		return ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
+        'Timothy Kilbourn', 'Jeremy Wickersheimer',
+        '',
+        'contribution by',
+        'Radice David, gentoo bug #187595',
+        'Christian Faulhammer, gentoo bug #192701',]
+	
+	def documenter(self):
+		return ['Christian Faulhammer <opfer@gentoo.org>']
+
+	def artists(self):
+		return ['elogviewer needs a logo, artists are welcome to\ncontribute, please contact the author.']
+
+	def appname(self):
+		return 'elogviewer'
+
+	def version(self):
+		return '0.6.2'
+
+	def website(self):
+		return 'http://sourceforge.net/projects/elogviewer'
+
+	def copyright(self):
+		'Copyright (c) 2007, 2010 Mathias Laurin'
+
+	def license(self):
+		'GNU General Public License (GPL) version 2'
+
+	def LICENSE(self):
+		return copyright + '''
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.'''
+
+	def description(self):
+		return '''
+<b>Elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of the Gentoo linux distribution.  So all warnings or informational messages generated during an update can be reviewed at one glance.
+
+Read
+<tt>man 1 elogviewer</tt>
+and
+<tt>man 1 /etc/make.conf</tt>
+for more information.
+
+Timothy Kilbourn (nmbrthry) has written the first version of elogviewer.
+Jeremy Wickersheimer adapted elogviewer to KDE, some features he added are now imported in elogviewer.
+Christian Faulhammer (V-Li) has written the man page.
+'''
 
 class FilterCommon:
     def __init__(self, label, match="", is_class=False, color='black'):
