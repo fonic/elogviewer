@@ -204,13 +204,13 @@ class ElogviewerGUI:
         #textview_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         textview_win.add(self.textview)
 
-        self.filter_class_table = gtk.Table()
-        self.filter_stage_table = gtk.Table() 
-        self.model_selector_table = gtk.Table()
-        tables_container = gtk.VBox(False)
-        tables_container.pack_start(self.filter_class_table)
-        tables_container.pack_start(gtk.HSeparator(), False)
-        tables_container.pack_start(self.filter_stage_table)
+        #self.filter_class_table = gtk.Table()
+        #self.filter_stage_table = gtk.Table() 
+        #self.model_selector_table = gtk.Table()
+        #tables_container = gtk.VBox(False)
+        #tables_container.pack_start(self.filter_class_table)
+        #tables_container.pack_start(gtk.HSeparator(), False)
+        #tables_container.pack_start(self.filter_stage_table)
 
         ui = UIManager()
         ui.insert_action_group(ActionGroup(self.UI_callback), 0)
@@ -234,24 +234,24 @@ class ElogviewerGUI:
 
         self.window.add(rootbox)
 
-        self.add_filter(Filter("info", "INFO", True, 'darkgreen'))
-        self.add_filter(Filter("warning", "WARN", True, 'red'))
-        self.add_filter(Filter("error", "ERROR", True, 'orange'))
-        self.add_filter(Filter("log", "LOG", True))
-        self.add_filter(Filter("QA", "QA", True))
+        #self.add_filter(Filter("info", "INFO", True, 'darkgreen'))
+        #self.add_filter(Filter("warning", "WARN", True, 'red'))
+        #self.add_filter(Filter("error", "ERROR", True, 'orange'))
+        #self.add_filter(Filter("log", "LOG", True))
+        #self.add_filter(Filter("QA", "QA", True))
 
-        self.add_filter(Filter("preinst"))
-        self.add_filter(Filter("postinst"))
-        self.add_filter(Filter("prerm"))
-        self.add_filter(Filter("postrm"))
-        self.add_filter(Filter("unpack"))
-        self.add_filter(Filter("compile"))
-        self.add_filter(Filter("setup"))
-        self.add_filter(Filter("test"))
-        self.add_filter(Filter("install"))
-        self.add_filter(Filter("prepare"))
-        self.add_filter(Filter("configure"))
-        self.add_filter(Filter("other"))
+        #self.add_filter(Filter("preinst"))
+        #self.add_filter(Filter("postinst"))
+        #self.add_filter(Filter("prerm"))
+        #self.add_filter(Filter("postrm"))
+        #self.add_filter(Filter("unpack"))
+        #self.add_filter(Filter("compile"))
+        #self.add_filter(Filter("setup"))
+        #self.add_filter(Filter("test"))
+        #self.add_filter(Filter("install"))
+        #self.add_filter(Filter("prepare"))
+        #self.add_filter(Filter("configure"))
+        #self.add_filter(Filter("other"))
 
         model = ListStore()
         self.treeview.set_model(model)
@@ -286,36 +286,51 @@ class Filter(FilterCommon):
 
 class Elogviewer:
 
-    filter_counter_class = 0
-    filter_counter_stage = 0
-    filter_columns_class = 2
-    filter_columns_stage = filter_columns_class 
+	def __init__(self):
+		self.filter_counter_class = 0
+		self.filter_counter_stage = 0
+		self.filter_columns_class = 2
+		self.filter_columns_stage = self.filter_columns_class 
     
+	def quit(self):
+		gtk.main_quit()
+
     def create_gui(self):
 		self.gui = gtk.Builder()
 		self.gui.add_from_file("elogviewer.glade")
 	
+	def connect(self):
+		self.gui.connect_signals({
+			"on_window_destroy" : gtk.main_quit,
+			"on_actionQuit_activate" : self.on_actionQuit,
+			"on_actionDelete_activate" : self.on_actionDelete,
+			"on_actionRefresh_activate" : self.on_actionRefresh,
+			"on_actionAbout_activate" : self.on_actionAbout
+					})
+
 	def show(self):
 		main_window = self.gui.get_object("window")
 		main_window.show()
 
     def add_filter(self, filter):
+		filter_class_table = self.gui.get_object("filter_class_table")
+		filter_stage_table = self.gui.get_object("filter_stage_table")
         if filter.is_class():
             (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
             r = l + 1
             b = t + 1
-            self.filter_class_table.attach(filter.button(), l, r, t, b)
+            filter_class_table.attach(filter.button(), l, r, t, b)
             self.filter_counter_class += 1
         else:
             (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
             r = l + 1
             b = t + 1
-            self.filter_stage_table.attach(filter.button(), l, r, t, b)
+            filter_stage_table.attach(filter.button(), l, r, t, b)
             self.filter_counter_stage += 1
-        self.textview.get_buffer().create_tag(filter)
+        #self.textview.get_buffer().create_tag(filter)
         filter.button().connect('toggled', self.on_filter_btn)
         filter.button().show()
-    
+
     def UI_callback(self, action_obj):
         action = action_obj.get_name()
         if action == "Delete":
@@ -331,7 +346,13 @@ class Elogviewer:
             Info()
         elif action == "About":
             About()
-    
+	
+	def on_actionQuit(self, action):
+		self.quit
+	
+	def on_actionAbout(self, action):
+		pass
+	
     def on_filter_btn(self, widget):
         selection = self.treeview.get_selection()
         self.read_elog(selection)
@@ -376,11 +397,12 @@ class Elogviewer:
             + '\t' +
             filename)
 
-    def delete(self, model, path, iter):
+    def on_actionDelete(self, model, path, iter):
         model.get_value(iter).delete()
         model.remove(iter)
     
-    def refresh(self):
+    def on_actionRefresh(self, action):
+		print "Refresh"
         selected_path = 0
         selection = self.treeview.get_selection()
         (model, iter) = selection.get_selected()
@@ -399,7 +421,7 @@ class Elogviewer:
 
     def main(self):
         gtk.main()
-
+	
 
 def help():
     print '''
@@ -463,6 +485,27 @@ def main(argv):
 
 	elogviewer = Elogviewer()
 	elogviewer.create_gui()
+
+	elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
+	elogviewer.add_filter(Filter("warning", "WARN", True, 'red'))
+	elogviewer.add_filter(Filter("error", "ERROR", True, 'orange'))
+	elogviewer.add_filter(Filter("log", "LOG", True))
+	elogviewer.add_filter(Filter("QA", "QA", True))
+
+	elogviewer.add_filter(Filter("preinst"))
+	elogviewer.add_filter(Filter("postinst"))
+	elogviewer.add_filter(Filter("prerm"))
+	elogviewer.add_filter(Filter("postrm"))
+	elogviewer.add_filter(Filter("unpack"))
+	elogviewer.add_filter(Filter("compile"))
+	elogviewer.add_filter(Filter("setup"))
+	elogviewer.add_filter(Filter("test"))
+	elogviewer.add_filter(Filter("install"))
+	elogviewer.add_filter(Filter("prepare"))
+	elogviewer.add_filter(Filter("configure"))
+	elogviewer.add_filter(Filter("other"))
+
+	elogviewer.connect()
 	elogviewer.show()
     elogviewer.main()
 
