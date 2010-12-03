@@ -14,9 +14,6 @@ class FilterCommon:
         self._color = color
         self._button.set_active(True)
     
-    def __eq__(self, other):
-        return self.is_active
-		
 	def is_active(self):
 		pass
     
