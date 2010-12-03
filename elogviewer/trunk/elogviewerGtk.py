@@ -60,57 +60,6 @@ try:
 except:
     print "a recent version of pygtk is required"
  
-class ActionGroup(gtk.ActionGroup):
-    def __init__(self, activate_action=None):
-        gtk.ActionGroup.__init__(self, 'Main')
-        self.add_actions( (
-                ( 'File', None, '_File' ),       # name, stock_id, label
-                ( 'Help', None, '_Help' ),
-                ( 'About', None, '_About...', 
-                    None, None,                  # accelerator, tooltip
-                    activate_action ),
-                ( 'Info', None, '_Info', 
-                    None, None, 
-                    activate_action ),
-                ( 'Quit', gtk.STOCK_QUIT,        # name, stock_id
-                    None, None,          # label, accelerator
-                    'Quit Elogviewer',       # tooltip
-                    activate_action ),
-                ( 'Delete', gtk.STOCK_DELETE,
-                    'Delete', 'Delete',
-                    'Delete selected file',
-                    activate_action ),
-                ( 'Refresh', gtk.STOCK_REFRESH,
-                    '_Refresh', '<control>R',
-                    'Refresh the list',
-                    activate_action ),
-                ) )
-
-class UIManager(gtk.UIManager):
-    def __init__ (self):
-        gtk.UIManager.__init__ (self)
-        self.add_ui_from_string('''
-        <ui>
-        <menubar name="Menubar">
-            <menu action="File">
-                <menuitem action="Delete" />
-                <menuitem action="Refresh"/>
-                <separator/>
-                <menuitem action="Quit"/>
-            </menu>
-            <menu action="Help">
-                <menuitem action="Info"/>
-                <menuitem action="About"/>
-            </menu>
-        </menubar>
-        <toolbar name="Toolbar">
-            <toolitem action="Delete"/>
-            <toolitem action="Refresh"/>
-            <toolitem action="Quit"/>
-        </toolbar>
-        </ui>
-        ''')
-
 class CheckButton(gtk.CheckButton):
     def __init__(self, label, use_underline=False):
         gtk.CheckButton.__init__(self, label, use_underline)
@@ -177,7 +126,7 @@ class ListStore(gtk.ListStore):
         return gtk.ListStore.get_value(self, iter, 0)
 
     def populate(self):
-        for file in all_files('.', '*:*.log', False, True):
+        for file in all_files(elog_dir, '*:*.log', False, True):
             self.append(Elog(file))
 
 class About(gtk.AboutDialog):
@@ -209,14 +158,10 @@ class Info(gtk.MessageDialog):
         self.destroy()
 
 
+import os
 class ElogviewerGUI:
 
     def __init__(self):
-
-        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.connect( 'destroy', lambda w: self.destroy() )
-        self.window.set_title( _appname_ )
-        self.window.set_default_size( 800, 600 )
 
         self.treeview = gtk.TreeView()
         category_col = gtk.TreeViewColumn(
@@ -339,15 +284,20 @@ class Filter(FilterCommon):
 		return self._button
 
 
-class Elogviewer(ElogviewerGUI):
+class Elogviewer:
 
     filter_counter_class = 0
     filter_counter_stage = 0
     filter_columns_class = 2
     filter_columns_stage = filter_columns_class 
     
-    def __init__(self):
-        ElogviewerGUI.__init__(self)
+    def create_gui(self):
+		self.gui = gtk.Builder()
+		self.gui.add_from_file("elogviewer.glade")
+	
+	def show(self):
+		main_window = self.gui.get_object("window")
+		main_window.show()
 
     def add_filter(self, filter):
         if filter.is_class():
@@ -478,7 +428,6 @@ Read /etc/make.conf.example for more information
     
 
 import getopt
-import os
 import portage
 def main(argv):
     try:
@@ -497,22 +446,25 @@ def main(argv):
             usage()
             exit (0)
     
+	global elog_dir
     if _debug:
-        os.chdir("elog/elog")
+		elog_dir = "elog/elog"
     else:
         logdir = portage.settings["PORT_LOGDIR"]
         if logdir is not "":
-            os.chdir(logdir)
+			elog_dir = logdir
         else:
-            os.chdir("/var/log/portage")
+			elog_dir = "/var/log/portage"
         try:
-            os.chdir("./elog")
+			elog_dir += "/elog"
         except:
             usage()
             exit(2)
 
-    gui = Elogviewer()
-    gui.main()
+	elogviewer = Elogviewer()
+	elogviewer.create_gui()
+	elogviewer.show()
+    elogviewer.main()
 
 
 if __name__ == "__main__":
