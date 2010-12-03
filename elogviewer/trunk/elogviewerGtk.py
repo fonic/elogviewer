@@ -14,6 +14,8 @@ try:
 except:
     print "a recent version of pygtk is required"
  
+_debug = False
+
 class CheckButton(gtk.CheckButton):
     def __init__(self, label, use_underline=False):
         gtk.CheckButton.__init__(self, label, use_underline)
@@ -90,16 +92,6 @@ class About(gtk.AboutDialog):
         self.run()
         self.destroy()
 
-
-import os
-class ElogviewerGUI:
-    def __init__(self):
-
-        self.statusbar.push(0, "0 of 0")
-        self.statusbar.push(1, os.getcwd())
-        self.refresh()
-
-
 from elogviewerCommon import FilterCommon, Elog, all_files
 class Filter(FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
@@ -158,6 +150,9 @@ class Elogviewer:
 
 		self.textview = self.gui.get_object("textview")
 		self.textview.set_buffer(TextBuffer())
+
+		self.statusbar = self.gui.get_object("statusbar")
+		self.statusbar.push(0, "0 of 0")
  
 	def connect(self):
 		self.gui.connect_signals({
@@ -309,7 +304,7 @@ def main(argv):
         exit(1)
     for opt, arg in opts:
         if opt in ("-d", "--debug"):
-            global _debug
+			global _debug
             _debug = True
             print "debug mode is set"
         elif opt in ("-h", "--help"):
