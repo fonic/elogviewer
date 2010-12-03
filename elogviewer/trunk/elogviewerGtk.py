@@ -65,7 +65,6 @@ class ElogTextBuffer(gtk.TextBuffer):
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
-from elogviewerCommon import Elog, all_files
 class ListStore(gtk.ListStore):
     def __init__(self):
         gtk.ListStore.__init__(self,
@@ -77,11 +76,6 @@ class ListStore(gtk.ListStore):
     
     def get_value(self, iter):
         return gtk.ListStore.get_value(self, iter, 0)
-
-    def populate(self):
-        for file in all_files(elog_dir, '*:*.log', False, True):
-            self.append(Elog(file))
-
 
 class About(gtk.AboutDialog):
     def __init__(self, identity):
@@ -106,7 +100,7 @@ class ElogviewerGUI:
         self.refresh()
 
 
-from elogviewerCommon import FilterCommon
+from elogviewerCommon import FilterCommon, Elog, all_files
 class Filter(FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
         self._button = CheckButton(label, False)
@@ -159,6 +153,8 @@ class Elogviewer:
         self.treeview.append_column(filename_col)
         self.treeview.set_enable_search(False)
         #self.treeview.set_search_column(FILENAME)
+
+		self.treeview.set_model(ListStore())
  
 	def connect(self):
 		self.gui.connect_signals({
@@ -264,9 +260,10 @@ class Elogviewer:
             + '\t' +
             filename)
 
-    def populate(self):
+	def populate(self):
         model = self.treeview.get_model()
-        model.populate()
+        for file in all_files(elog_dir, '*:*.log', False, True):
+            model.append(Elog(file))
 
     def main(self):
         gtk.main()
