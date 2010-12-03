@@ -163,7 +163,7 @@ class ElogTextBuffer(gtk.TextBuffer):
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
-from elogviewer-common import Elog
+from elogviewerCommon import Elog, all_files
 class ListStore(gtk.ListStore):
     def __init__(self):
         gtk.ListStore.__init__(self,
@@ -325,15 +325,18 @@ class ElogviewerGUI:
         gtk.main_quit()
     
 
-from elogviewer-common import FilterCommon
+from elogviewerCommon import FilterCommon
 class Filter(FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
         self._button = CheckButton(label, False)
         self._button.set_active(True)
-		self.FilterCommon.__init__(self, label, match, is_class, color)
+		FilterCommon.__init__(self, label, match, is_class, color)
     
     def is_active(self):
-        return self.button().get_active()
+        return self._button.get_active()
+
+	def button(self):
+		return self._button
 
 
 class Elogviewer(ElogviewerGUI):

@@ -4,7 +4,6 @@
 
 class FilterCommon:
     def __init__(self, label, match="", is_class=False, color='black'):
-        self._button = CheckButton(label, False)
         self._name = label
         if match is "":
             self._match = label
@@ -24,7 +23,7 @@ class FilterCommon:
         return self._match
 
     def button(self):
-        return self._button
+		pass
         
     def is_class(self):
         return self._is_class
