@@ -27,6 +27,7 @@
         <col id="5"></col>
       </row>
     </data>
+    <signal name="row_deleted" handler="on_liststore_row_deleted"/>
   </object>
   <object class="GtkWindow" id="window">
     <property name="title">elogviewer</property>
@@ -189,6 +190,9 @@
                   <object class="GtkTextView" id="textview">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="editable">False</property>
+                    <property name="wrap_mode">word</property>
+                    <property name="cursor_visible">False</property>
                     <property name="buffer">textbuffer</property>
                   </object>
                 </child>
@@ -243,6 +247,7 @@
                 </child>
               </object>
               <packing>
+                <property name="expand">False</property>
                 <property name="position">1</property>
               </packing>
             </child>
