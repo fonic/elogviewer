@@ -190,72 +190,6 @@ class ElogviewerGUI:
         self.treeview.set_enable_search(False)
         #self.treeview.set_search_column(FILENAME)
         
-        self.textview = gtk.TextView()
-        self.textview.set_editable(False)
-        self.textview.set_cursor_visible(False)
-        self.textview.set_wrap_mode(gtk.WRAP_WORD)
-        buffer = ElogTextBuffer()
-        self.textview.set_buffer(buffer)
-
-        treeview_win = gtk.ScrolledWindow()
-        #treeview_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        treeview_win.add(self.treeview)
-        textview_win = gtk.ScrolledWindow()
-        #textview_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-        textview_win.add(self.textview)
-
-        #self.filter_class_table = gtk.Table()
-        #self.filter_stage_table = gtk.Table() 
-        #self.model_selector_table = gtk.Table()
-        #tables_container = gtk.VBox(False)
-        #tables_container.pack_start(self.filter_class_table)
-        #tables_container.pack_start(gtk.HSeparator(), False)
-        #tables_container.pack_start(self.filter_stage_table)
-
-        ui = UIManager()
-        ui.insert_action_group(ActionGroup(self.UI_callback), 0)
-        menubar = ui.get_widget('/Menubar')
-        toolbar = ui.get_widget('/Toolbar')
-        self.window.add_accel_group(ui.get_accel_group())
-        self.statusbar = gtk.Statusbar()
-        
-        top_pane = gtk.VBox()
-        top_pane.pack_start(treeview_win)
-        bottom_pane = gtk.HBox()
-        bottom_pane.pack_start(textview_win)
-        bottom_pane.pack_start(tables_container, False)
-    
-        rootbox = gtk.VBox(False, 0)
-        rootbox.pack_start(menubar, False)
-        rootbox.pack_start(toolbar, False)
-        rootbox.pack_start(top_pane)
-        rootbox.pack_start(bottom_pane)
-        rootbox.pack_start(self.statusbar, False)
-
-        self.window.add(rootbox)
-
-        #self.add_filter(Filter("info", "INFO", True, 'darkgreen'))
-        #self.add_filter(Filter("warning", "WARN", True, 'red'))
-        #self.add_filter(Filter("error", "ERROR", True, 'orange'))
-        #self.add_filter(Filter("log", "LOG", True))
-        #self.add_filter(Filter("QA", "QA", True))
-
-        #self.add_filter(Filter("preinst"))
-        #self.add_filter(Filter("postinst"))
-        #self.add_filter(Filter("prerm"))
-        #self.add_filter(Filter("postrm"))
-        #self.add_filter(Filter("unpack"))
-        #self.add_filter(Filter("compile"))
-        #self.add_filter(Filter("setup"))
-        #self.add_filter(Filter("test"))
-        #self.add_filter(Filter("install"))
-        #self.add_filter(Filter("prepare"))
-        #self.add_filter(Filter("configure"))
-        #self.add_filter(Filter("other"))
-
-        model = ListStore()
-        self.treeview.set_model(model)
-
         self.window.show_all()
 
         # connect
@@ -266,9 +200,6 @@ class ElogviewerGUI:
         self.statusbar.push(1, os.getcwd())
         self.refresh()
 
-    def destroy(self):
-        gtk.main_quit()
-    
 
 from elogviewerCommon import FilterCommon
 class Filter(FilterCommon):
@@ -353,6 +284,10 @@ class Elogviewer:
             selection.select_path(selected_path)
         elif len(model) is not 0:
             selection.select_path(0)
+
+	def on_liststore_row_deleted(self, sth):
+		print sth
+	
     def on_filter_btn(self, widget):
         selection = self.treeview.get_selection()
         self.read_elog(selection)
