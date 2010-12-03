@@ -4,8 +4,6 @@
 # (c) 2010 Mathias Laurin, GPL2
 # see elogviewerCommon.py for details
 
-_debug = False
-
 # Redirect messages to stderr
 import sys
 sys.stdout = sys.stderr
@@ -84,6 +82,7 @@ class ListStore(gtk.ListStore):
         for file in all_files(elog_dir, '*:*.log', False, True):
             self.append(Elog(file))
 
+
 class About(gtk.AboutDialog):
     def __init__(self, identity):
         gtk.AboutDialog.__init__(self)
@@ -96,6 +95,7 @@ class About(gtk.AboutDialog):
         self.set_license( identity.LICENSE() )
         self.run()
         self.destroy()
+
 
 import os
 class ElogviewerGUI:
@@ -120,6 +120,7 @@ class Filter(FilterCommon):
 		return self._button
 
 
+from elogviewerCommon import ElogviewerIdentity
 class Elogviewer:
 
 	def __init__(self):
@@ -128,9 +129,6 @@ class Elogviewer:
 		self.filter_columns_class = 2
 		self.filter_columns_stage = self.filter_columns_class 
     
-	def quit(self):
-		gtk.main_quit()
-
     def create_gui(self):
 		self.gui = gtk.Builder()
 		self.gui.add_from_file("elogviewer.glade")
@@ -177,6 +175,9 @@ class Elogviewer:
 		main_window = self.gui.get_object("window")
 		main_window.show()
 
+	def quit(self):
+		gtk.main_quit()
+
     def add_filter(self, filter):
 		filter_class_table = self.gui.get_object("filter_class_table")
 		filter_stage_table = self.gui.get_object("filter_stage_table")
@@ -200,7 +201,7 @@ class Elogviewer:
 		self.quit()
 	
 	def on_actionAbout(self, action):
-		pass
+		About(ElogviewerIdentity())
 	
     def on_actionDelete(self, model, path, iter):
         model.get_value(iter).delete()
@@ -269,7 +270,7 @@ class Elogviewer:
 
     def main(self):
         gtk.main()
-	
+
 
 def help():
     print '''
