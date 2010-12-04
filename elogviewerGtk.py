@@ -108,7 +108,7 @@ class Elogviewer:
     
     def create_gui(self):
 		self.gui = gtk.Builder()
-		self.gui.add_from_file("elogviewer.glade")
+		self.gui.add_from_file("elogviewerGtk.glade")
 
 		self.treeview = self.gui.get_object("treeview")
         category_col = gtk.TreeViewColumn(
@@ -193,6 +193,9 @@ class Elogviewer:
         model.remove(iter)
     
     def on_actionRefresh(self, action):
+		self.refresh()
+
+	def refresh(self):
         selected_path = 0
         selection = self.treeview.get_selection()
         (model, iter) = selection.get_selected()
@@ -340,6 +343,7 @@ def main(argv):
 
 	elogviewer.connect()
 	elogviewer.show()
+	elogviewer.refresh()
     elogviewer.main()
 
 
