@@ -16,11 +16,6 @@ except:
  
 _debug = False
 
-class CheckButton(gtk.CheckButton):
-    def __init__(self, label, use_underline=False):
-        gtk.CheckButton.__init__(self, label, use_underline)
-        self.set_active(True)
-
 class TextBuffer(gtk.TextBuffer):
 
     def __init__(self):
@@ -64,7 +59,7 @@ class About(gtk.AboutDialog):
 from elogviewerCommon import FilterCommon, Elog, all_files
 class Filter(FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
-        self._button = CheckButton(label, False)
+        self._button = gtk.CheckButton(label)
         self._button.set_active(True)
 		FilterCommon.__init__(self, label, match, is_class, color)
     
