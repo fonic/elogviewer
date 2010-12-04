@@ -35,10 +35,18 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
-          <widget class="QTableWidget" name="tableWidget_2"/>
+          <widget class="QGroupBox" name="groupBox">
+           <property name="title">
+            <string>Class</string>
+           </property>
+          </widget>
          </item>
          <item>
-          <widget class="QTableWidget" name="tableWidget"/>
+          <widget class="QGroupBox" name="groupBox_2">
+           <property name="title">
+            <string>Stage</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
