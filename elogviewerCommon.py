@@ -148,6 +148,15 @@ class Elog:
         
     def filename(self):
         return self._filename
+
+	def contents(self):
+		'''Parse file'''
+		file_object = open(self.filename(), 'r')
+		try:
+			lines = file_object.read().splitlines()
+		finally:
+			file_object.close()
+		return lines
         
     def delete(self):
         if not _debug:

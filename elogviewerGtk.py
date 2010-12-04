@@ -38,31 +38,22 @@ class TextBuffer(gtk.TextBuffer):
         self.delete(self.get_start_iter(), self.get_end_iter())
 
     def read(self, elog):
+		header = section = None
         self.clear()
-        filename = elog.filename()
-        if not filename:
-            return
-        file_obj = open(filename, 'r')
-        try:
-            # Parse file
-            header = None
-            section = None
-            for line in file_obj.read().splitlines():
-                L = line.split(': ')
-                if len(L) is 2 and (L[0] and L[1]) in self.filters.keys():
-                    (header, section) = L
-                    self.insert_with_tags(
-                        self.get_end_iter(),
-                        header + ' (' + section + ')\n\n',
-                        self.get_tag_table().lookup(header))
-                elif self.filters[header].is_active() \
-                    and self.filters[section].is_active():
-                    self.insert_with_tags(
-                        self.get_end_iter(),
-                        line,
-                        self.get_tag_table().lookup(header))
-        finally:
-            file_obj.close()
+		for line in elog.contents():
+			L = line.split(': ')
+			if len(L) is 2 and (L[0] and L[1]) in self.filters.keys():
+				(header, section) = L
+				self.insert_with_tags(
+					self.get_end_iter(),
+					header + ' (' + section + ')\n\n',
+					self.get_tag_table().lookup(header))
+			elif self.filters[header].is_active() and self.filters[section].is_active():
+
+				self.insert_with_tags(
+					self.get_end_iter(),
+					line,
+					self.get_tag_table().lookup(header))
 
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
