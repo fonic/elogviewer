@@ -23,37 +23,15 @@ class CheckButton(gtk.CheckButton):
 
 class TextBuffer(gtk.TextBuffer):
 
-    filters = {}
-
     def __init__(self):
         gtk.TextBuffer.__init__(self)
-    
+
     def create_tag(self, filter):
-        if filter.is_class():
-            gtk.TextBuffer.create_tag(self, 
-                filter.match(), foreground=filter.color())
-        self.filters[filter.match()] = filter
+		gtk.TextBuffer.create_tag(self, 
+			filter.match(), foreground=filter.color())
 
     def clear(self):
         self.delete(self.get_start_iter(), self.get_end_iter())
-
-    def read(self, elog):
-		header = section = None
-        self.clear()
-		for line in elog.contents():
-			L = line.split(': ')
-			if len(L) is 2 and (L[0] and L[1]) in self.filters.keys():
-				(header, section) = L
-				self.insert_with_tags(
-					self.get_end_iter(),
-					header + ' (' + section + ')\n\n',
-					self.get_tag_table().lookup(header))
-			elif self.filters[header].is_active() and self.filters[section].is_active():
-
-				self.insert_with_tags(
-					self.get_end_iter(),
-					line,
-					self.get_tag_table().lookup(header))
 
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
@@ -105,6 +83,7 @@ class Elogviewer:
 		self.filter_counter_stage = 0
 		self.filter_columns_class = 2
 		self.filter_columns_stage = self.filter_columns_class 
+		self.filter_list = {}
     
     def create_gui(self):
 		self.gui = gtk.Builder()
@@ -164,6 +143,8 @@ class Elogviewer:
 		gtk.main_quit()
 
     def add_filter(self, filter):
+		self.filter_list[filter.match()] = filter
+
 		filter_class_table = self.gui.get_object("filter_class_table")
 		filter_stage_table = self.gui.get_object("filter_stage_table")
         if filter.is_class():
@@ -178,7 +159,8 @@ class Elogviewer:
             b = t + 1
             filter_stage_table.attach(filter.button(), l, r, t, b)
             self.filter_counter_stage += 1
-        self.textview.get_buffer().create_tag(filter)
+		if filter.is_class():
+			self.textview.get_buffer().create_tag(filter)
         filter.button().connect('toggled', self.on_filter_btn)
         filter.button().show()
 
@@ -229,11 +211,30 @@ class Elogviewer:
                 selection.select_path(path)
     
     def read_elog(self, selection):
+		buffer = self.textview.get_buffer()
+		buffer.clear()
         if selection.count_selected_rows() is not 0:
+			header = section = None
             (model, iter) = selection.get_selected()
-            self.textview.get_buffer().read(model.get_value(iter))
-        else:
-            self.textview.get_buffer().clear()
+			selected_elog = model.get_value(iter)
+			first_line = True
+			for line in selected_elog.contents():
+				L = line.split(': ')
+				if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
+					if first_line:
+						first_line = False
+					else:
+						buffer.insert(buffer.get_end_iter(), '\n\n')
+					(header, section) = L
+					buffer.insert_with_tags(
+							buffer.get_end_iter(),
+							header + ' (' + section + ')\n',
+							buffer.get_tag_table().lookup(header))
+				elif self.filter_list[header].is_active() and self.filter_list[section].is_active():
+					buffer.insert_with_tags(
+							buffer.get_end_iter(),
+							line,
+							buffer.get_tag_table().lookup(header))
         self.update_statusbar(selection)
 
     def update_statusbar(self, selection):
