@@ -217,23 +217,21 @@ class Elogviewer:
 			header = section = None
             (model, iter) = selection.get_selected()
 			selected_elog = model.get_value(iter)
-			first_line = True
 			for line in selected_elog.contents():
 				L = line.split(': ')
+				(start_iter, end_iter) = buffer.get_bounds()
 				if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
-					if first_line:
-						first_line = False
-					else:
-						buffer.insert(buffer.get_end_iter(), '\n\n')
+					if not start_iter.equal(end_iter):
+						buffer.insert(end_iter, '\n\n')
 					(header, section) = L
 					buffer.insert_with_tags(
-							buffer.get_end_iter(),
+							end_iter,
 							header + ' (' + section + ')\n',
 							buffer.get_tag_table().lookup(header))
 				elif self.filter_list[header].is_active() and self.filter_list[section].is_active():
 					buffer.insert_with_tags(
-							buffer.get_end_iter(),
-							line,
+							end_iter,
+							line + ' ',
 							buffer.get_tag_table().lookup(header))
         self.update_statusbar(selection)
 
