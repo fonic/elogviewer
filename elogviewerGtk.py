@@ -16,18 +16,6 @@ except:
  
 _debug = False
 
-class TextBuffer(gtk.TextBuffer):
-
-    def __init__(self):
-        gtk.TextBuffer.__init__(self)
-
-    def create_tag(self, filter):
-		gtk.TextBuffer.create_tag(self, 
-			filter.match(), foreground=filter.color())
-
-    def clear(self):
-        self.delete(self.get_start_iter(), self.get_end_iter())
-
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
@@ -78,6 +66,7 @@ class Elogviewer:
 		self.filter_counter_stage = 0
 		self.filter_columns_class = 2
 		self.filter_columns_stage = self.filter_columns_class 
+		self.texttagtable = gtk.TextTagTable()
 		self.filter_list = {}
     
     def create_gui(self):
@@ -114,7 +103,6 @@ class Elogviewer:
 		self.treeview.set_model(ListStore())
 
 		self.textview = self.gui.get_object("textview")
-		self.textview.set_buffer(TextBuffer())
 
 		self.statusbar = self.gui.get_object("statusbar")
 		self.statusbar.push(0, "0 of 0")
@@ -155,7 +143,9 @@ class Elogviewer:
             filter_stage_table.attach(filter.button(), l, r, t, b)
             self.filter_counter_stage += 1
 		if filter.is_class():
-			self.textview.get_buffer().create_tag(filter)
+			tag = gtk.TextTag(filter.match())
+			tag.set_property('foreground', filter.color())
+			self.texttagtable.add(tag)
         filter.button().connect('toggled', self.on_filter_btn)
         filter.button().show()
 
@@ -206,8 +196,7 @@ class Elogviewer:
                 selection.select_path(path)
     
     def read_elog(self, selection):
-		buffer = self.textview.get_buffer()
-		buffer.clear()
+		buffer = gtk.TextBuffer(self.texttagtable)
         if selection.count_selected_rows() is not 0:
 			header = section = None
             (model, iter) = selection.get_selected()
@@ -228,6 +217,7 @@ class Elogviewer:
 							end_iter,
 							line + ' ',
 							buffer.get_tag_table().lookup(header))
+		self.textview.set_buffer(buffer)
         self.update_statusbar(selection)
 
     def update_statusbar(self, selection):
