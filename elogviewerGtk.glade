@@ -166,7 +166,6 @@
                     <property name="editable">False</property>
                     <property name="wrap_mode">word</property>
                     <property name="cursor_visible">False</property>
-                    <property name="buffer">textbuffer</property>
                   </object>
                 </child>
               </object>
@@ -241,7 +240,6 @@
       </object>
     </child>
   </object>
-  <object class="GtkTextBuffer" id="textbuffer"/>
   <object class="GtkAction" id="actionQuit">
     <property name="stock_id">gtk-quit</property>
     <signal name="activate" handler="on_actionQuit_activate"/>
