@@ -113,19 +113,17 @@ def all_files(root, patterns='*', single_level=False, yield_folders=False):
 
 import time
 class Elog:
-    def __init__(self, filename):
+    def __init__(self, filename, elog_dir):
         itime = '%Y%m%d-%H%M%S.log'
         # see modules time and locale
         locale_time_fmt = '%x %X'
         sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
-
-        split_filename = filename[2:]
-        split_filename = split_filename.split(':')
+		
+		split_filename = filename.split(elog_dir)[1].split(':')
         t = self._category = self._package = ""
         if len(split_filename) is 3:
             (self._category, self._package, t) = split_filename
         elif len(split_filename) is 2:
-            print split_filename
             (self._category, self._package) = split_filename[0].split('/')
             t = split_filename[1]
         t = time.strptime(t, itime)
