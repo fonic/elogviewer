@@ -252,7 +252,7 @@ class Elogviewer:
 	def populate(self):
         model = self.treeview.get_model()
         for file in all_files(elog_dir, '*:*.log', False, True):
-            model.append(Elog(file))
+            model.append(Elog(file, elog_dir))
 
     def main(self):
         gtk.main()
@@ -305,18 +305,16 @@ def main(argv):
     
 	global elog_dir
     if _debug:
-		elog_dir = "elog/elog"
+		elog_dir = "./elog/elog/"
     else:
         logdir = portage.settings["PORT_LOGDIR"]
-        if logdir is not "":
-			elog_dir = logdir
-        else:
-			elog_dir = "/var/log/portage"
-        try:
-			elog_dir += "/elog"
-        except:
-            usage()
-            exit(2)
+        if logdir is "":
+			logdir = "/var/log/portage"
+		elog_dir = logdir + "/elog/"
+	# FIXME
+	# test if directory exists, spit error if not
+    #	usage()
+    #   exit(2)
 
 	elogviewer = Elogviewer()
 	elogviewer.create_gui()
