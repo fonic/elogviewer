@@ -22,7 +22,7 @@ class ElogviewerIdentity:
 		return 'elogviewer'
 
 	def version(self):
-		return '0.6.2'
+		return '0.7.0'
 
 	def website(self):
 		return 'http://sourceforge.net/projects/elogviewer'
