@@ -1,0 +1,598 @@
+#!/usr/bin/env python
+
+# vi:ts=4 st=4 sw=4 et
+
+_debug = False
+
+_author     = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
+        'Timothy Kilbourn', 'Jeremy Wickersheimer',
+        '',
+        'contribution by',
+        'Radice David, gentoo bug #187595',
+        'Christian Faulhammer, gentoo bug #192701',]
+_documenter = ['Christian Faulhammer <opfer@gentoo.org>']
+_artists    = ['elogviewer needs a logo, artists are welcome to\ncontribute, please contact the author.']
+_appname_    = 'elogviewer'
+_version    = '0.6.2'
+_website    = 'http://sourceforge.net/projects/elogviewer'
+_copyright  = 'Copyright (c) 2007, 2010 Mathias Laurin'
+_license    = 'GNU General Public License (GPL) version 2'
+
+
+_LICENSE    = _copyright + '''
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.'''
+
+
+_description = '''
+<b>Elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of the Gentoo linux distribution.  So all warnings or informational messages generated during an update can be reviewed at one glance.
+
+Read
+<tt>man 1 elogviewer</tt>
+and
+<tt>man 1 /etc/make.conf</tt>
+for more information.
+
+Timothy Kilbourn (nmbrthry) has written the first version of elogviewer.
+Jeremy Wickersheimer adapted elogviewer to KDE, some features he added are now imported in elogviewer.
+Christian Faulhammer (V-Li) has written the man page.
+'''
+
+# Redirect messages to stderr
+import sys
+sys.stdout = sys.stderr
+
+try:
+    import gtk
+except:
+    print "a recent version of pygtk is required"
+ 
+class ActionGroup(gtk.ActionGroup):
+    def __init__(self, activate_action=None):
+        gtk.ActionGroup.__init__(self, 'Main')
+        self.add_actions( (
+                ( 'File', None, '_File' ),       # name, stock_id, label
+                ( 'Help', None, '_Help' ),
+                ( 'About', None, '_About...', 
+                    None, None,                  # accelerator, tooltip
+                    activate_action ),
+                ( 'Info', None, '_Info', 
+                    None, None, 
+                    activate_action ),
+                ( 'Quit', gtk.STOCK_QUIT,        # name, stock_id
+                    None, None,          # label, accelerator
+                    'Quit Elogviewer',       # tooltip
+                    activate_action ),
+                ( 'Delete', gtk.STOCK_DELETE,
+                    'Delete', 'Delete',
+                    'Delete selected file',
+                    activate_action ),
+                ( 'Refresh', gtk.STOCK_REFRESH,
+                    '_Refresh', '<control>R',
+                    'Refresh the list',
+                    activate_action ),
+                ) )
+
+class UIManager(gtk.UIManager):
+    def __init__ (self):
+        gtk.UIManager.__init__ (self)
+        self.add_ui_from_string('''
+        <ui>
+        <menubar name="Menubar">
+            <menu action="File">
+                <menuitem action="Delete" />
+                <menuitem action="Refresh"/>
+                <separator/>
+                <menuitem action="Quit"/>
+            </menu>
+            <menu action="Help">
+                <menuitem action="Info"/>
+                <menuitem action="About"/>
+            </menu>
+        </menubar>
+        <toolbar name="Toolbar">
+            <toolitem action="Delete"/>
+            <toolitem action="Refresh"/>
+            <toolitem action="Quit"/>
+        </toolbar>
+        </ui>
+        ''')
+
+class CheckButton(gtk.CheckButton):
+    def __init__(self, label, use_underline=False):
+        gtk.CheckButton.__init__(self, label, use_underline)
+        self.set_active(True)
+
+
+class ElogTextBuffer(gtk.TextBuffer):
+
+    filters = {}
+
+    def __init__(self):
+        gtk.TextBuffer.__init__(self)
+    
+    def create_tag(self, filter):
+        if filter.is_class():
+            gtk.TextBuffer.create_tag(self, 
+                filter.match(), foreground=filter.color())
+        self.filters[filter.match()] = filter
+
+    def clear(self):
+        self.delete(self.get_start_iter(), self.get_end_iter())
+
+    def read(self, elog):
+        self.clear()
+        filename = elog.filename()
+        if not filename:
+            return
+        file_obj = open(filename, 'r')
+        try:
+            # Parse file
+            header = None
+            section = None
+            for line in file_obj.read().splitlines():
+                L = line.split(': ')
+                if len(L) is 2 and (L[0] and L[1]) in self.filters.keys():
+                    (header, section) = L
+                    self.insert_with_tags(
+                        self.get_end_iter(),
+                        header + ' (' + section + ')\n\n',
+                        self.get_tag_table().lookup(header))
+                elif self.filters[header] == True \
+                    and self.filters[section] == True:
+                    self.insert_with_tags(
+                        self.get_end_iter(),
+                        line + '\n',
+                        self.get_tag_table().lookup(header))
+        finally:
+            file_obj.close()
+
+
+( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
+from gobject import TYPE_STRING, TYPE_PYOBJECT
+class ListStore(gtk.ListStore):
+    def __init__(self):
+        gtk.ListStore.__init__(self,
+            TYPE_PYOBJECT, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
+    
+    def append(self, elog):
+        return gtk.ListStore.append(self, [elog, elog.category(), elog.package(),
+            elog.locale_time(), elog.sorted_time(), elog.filename()])
+    
+    def get_value(self, iter):
+        return gtk.ListStore.get_value(self, iter, 0)
+
+    def populate(self):
+        for file in all_files('.', '*:*.log', False, True):
+            self.append(Elog(file))
+
+class About(gtk.AboutDialog):
+
+    def __init__(self):
+        gtk.AboutDialog.__init__(self)
+        self.set_version( _version )
+        self.set_website( _website )
+        self.set_authors( _author )
+        self.set_artists( _artists )
+        self.set_copyright( _copyright )
+        self.set_documenters( _documenter )
+        self.set_license( _LICENSE )
+        self.run()
+        self.destroy()
+
+
+class Info(gtk.MessageDialog):
+
+    def __init__(self):
+        gtk.MessageDialog.__init__(self, 
+                parent=None, 
+                #flasgs=0, 
+                type=gtk.MESSAGE_INFO, 
+                buttons=gtk.BUTTONS_OK, 
+                message_format=None)
+        self.set_markup ( _description )
+        self.run()
+        self.destroy()
+
+
+class ElogviewerGUI:
+
+    def __init__(self):
+
+        self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.window.connect( 'destroy', lambda w: self.destroy() )
+        self.window.set_title( _appname_ )
+        self.window.set_default_size( 800, 600 )
+
+        self.treeview = gtk.TreeView()
+        category_col = gtk.TreeViewColumn(
+            'Category', gtk.CellRendererText(), text=CATEGORY)
+        package_col = gtk.TreeViewColumn(
+            'Package', gtk.CellRendererText(), text=PACKAGE)
+        locale_time_col = gtk.TreeViewColumn(
+            'Time', gtk.CellRendererText(), text=TIMESTAMP)
+        sorted_time_col = gtk.TreeViewColumn(
+            'Sort time', gtk.CellRendererText(), text=TIMESORT)
+        filename_col = gtk.TreeViewColumn(
+            'Filename', gtk.CellRendererText(), text=FILENAME)
+
+        category_col.set_sort_column_id(CATEGORY)
+        package_col.set_sort_column_id(PACKAGE)
+        locale_time_col.set_sort_column_id(TIMESORT)
+        if not _debug:
+            sorted_time_col.set_visible(False)
+            filename_col.set_visible(False)
+
+        self.treeview.append_column(category_col)
+        self.treeview.append_column(package_col)
+        self.treeview.append_column(locale_time_col)
+        self.treeview.append_column(sorted_time_col)
+        self.treeview.append_column(filename_col)
+        self.treeview.set_enable_search(False)
+        #self.treeview.set_search_column(FILENAME)
+        
+        self.textview = gtk.TextView()
+        self.textview.set_editable(False)
+        self.textview.set_cursor_visible(False)
+        self.textview.set_wrap_mode(gtk.WRAP_WORD)
+        buffer = ElogTextBuffer()
+        self.textview.set_buffer(buffer)
+
+        treeview_win = gtk.ScrolledWindow()
+        #treeview_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        treeview_win.add(self.treeview)
+        textview_win = gtk.ScrolledWindow()
+        #textview_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        textview_win.add(self.textview)
+
+        self.filter_class_table = gtk.Table()
+        self.filter_stage_table = gtk.Table() 
+        self.model_selector_table = gtk.Table()
+        tables_container = gtk.VBox(False)
+        tables_container.pack_start(self.filter_class_table)
+        tables_container.pack_start(gtk.HSeparator(), False)
+        tables_container.pack_start(self.filter_stage_table)
+
+        ui = UIManager()
+        ui.insert_action_group(ActionGroup(self.UI_callback), 0)
+        menubar = ui.get_widget('/Menubar')
+        toolbar = ui.get_widget('/Toolbar')
+        self.window.add_accel_group(ui.get_accel_group())
+        self.statusbar = gtk.Statusbar()
+        
+        top_pane = gtk.VBox()
+        top_pane.pack_start(treeview_win)
+        bottom_pane = gtk.HBox()
+        bottom_pane.pack_start(textview_win)
+        bottom_pane.pack_start(tables_container, False)
+    
+        rootbox = gtk.VBox(False, 0)
+        rootbox.pack_start(menubar, False)
+        rootbox.pack_start(toolbar, False)
+        rootbox.pack_start(top_pane)
+        rootbox.pack_start(bottom_pane)
+        rootbox.pack_start(self.statusbar, False)
+
+        self.window.add(rootbox)
+
+        self.add_filter(Filter("info", "INFO", True, 'darkgreen'))
+        self.add_filter(Filter("warning", "WARN", True, 'red'))
+        self.add_filter(Filter("error", "ERROR", True, 'orange'))
+        self.add_filter(Filter("log", "LOG", True))
+        self.add_filter(Filter("QA", "QA", True))
+
+        self.add_filter(Filter("preinst"))
+        self.add_filter(Filter("postinst"))
+        self.add_filter(Filter("prerm"))
+        self.add_filter(Filter("postrm"))
+        self.add_filter(Filter("unpack"))
+        self.add_filter(Filter("compile"))
+        self.add_filter(Filter("setup"))
+        self.add_filter(Filter("test"))
+        self.add_filter(Filter("install"))
+        self.add_filter(Filter("prepare"))
+        self.add_filter(Filter("configure"))
+        self.add_filter(Filter("other"))
+
+        model = ListStore()
+        self.treeview.set_model(model)
+
+        self.window.show_all()
+
+        # connect
+        model.connect('row_deleted', self.on_row_deleted)
+        self.treeview.get_selection().connect('changed', self.on_selection_changed)
+
+        self.statusbar.push(0, "0 of 0")
+        self.statusbar.push(1, os.getcwd())
+        self.refresh()
+
+    def destroy(self):
+        gtk.main_quit()
+    
+
+class Filter:
+    def __init__(self, label, match="", is_class=False, color='black'):
+        self._button = CheckButton(label, False)
+        self._name = label
+        if match is "":
+            self._match = label
+        else:
+            self._match = match
+        self._is_class = is_class
+        self._color = color
+        self._button.set_active(True)
+    
+    def __eq__(self, other):
+        return self.button().get_active()
+    
+    def name(self):
+        return self._name
+    
+    def match(self):
+        return self._match
+
+    def button(self):
+        return self._button
+        
+    def is_class(self):
+        return self._is_class
+    
+    def color(self):
+        return self._color
+
+
+import os, fnmatch
+def all_files(root, patterns='*', single_level=False, yield_folders=False):
+    ''' Expand patterns for semicolon-separated strin of list '''
+    patterns = patterns.split(';')
+    for path, subdirs, files in os.walk(root):
+        if yield_folders:
+            files.extend(subdirs)
+        files.sort()
+        for name in files:
+            for pattern in patterns:
+                if fnmatch.fnmatch(name, pattern):
+                    yield os.path.join(path, name)
+                    break
+        if single_level:
+            break
+
+
+import time
+class Elog:
+    def __init__(self, filename):
+        itime = '%Y%m%d-%H%M%S.log'
+        # see modules time and locale
+        locale_time_fmt = '%x %X'
+        sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
+
+        split_filename = filename[2:]
+        split_filename = split_filename.split(':')
+        t = self._category = self._package = ""
+        if len(split_filename) is 3:
+            (self._category, self._package, t) = split_filename
+        elif len(split_filename) is 2:
+            print split_filename
+            (self._category, self._package) = split_filename[0].split('/')
+            t = split_filename[1]
+        t = time.strptime(t, itime)
+        self._sorted_time = time.strftime(sorted_time_fmt, t)
+        self._locale_time = time.strftime(locale_time_fmt, t)
+        
+        self._filename = filename
+        
+    def category(self):
+        return self._category
+        
+    def package(self):
+        return self._package
+            
+    def locale_time(self):
+        return self._locale_time
+        
+    def sorted_time(self):
+        return self._sorted_time
+        
+    def filename(self):
+        return self._filename
+        
+    def delete(self):
+        if not _debug:
+            os.remove(self._filename)
+        else:
+            print self._filename
+        return self
+
+
+class Elogviewer(ElogviewerGUI):
+
+    filter_counter_class = 0
+    filter_counter_stage = 0
+    filter_columns_class = 2
+    filter_columns_stage = filter_columns_class 
+    
+    def __init__(self):
+        ElogviewerGUI.__init__(self)
+
+    def add_filter(self, filter):
+        if filter.is_class():
+            (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
+            r = l + 1
+            b = t + 1
+            self.filter_class_table.attach(filter.button(), l, r, t, b)
+            self.filter_counter_class += 1
+        else:
+            (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
+            r = l + 1
+            b = t + 1
+            self.filter_stage_table.attach(filter.button(), l, r, t, b)
+            self.filter_counter_stage += 1
+        self.textview.get_buffer().create_tag(filter)
+        filter.button().connect('toggled', self.on_filter_btn)
+        filter.button().show()
+    
+    def UI_callback(self, action_obj):
+        action = action_obj.get_name()
+        if action == "Delete":
+            selection = self.treeview.get_selection()
+            if selection.count_selected_rows() is not 0:
+                (model, iter) = selection.get_selected()
+                self.delete(model, model.get_path(iter), iter)
+        elif action == "Refresh":
+            self.refresh()
+        elif action == "Quit":
+            self.destroy()
+        elif action == "Info":
+            Info()
+        elif action == "About":
+            About()
+    
+    def on_filter_btn(self, widget):
+        selection = self.treeview.get_selection()
+        self.read_elog(selection)
+    
+    def on_selection_changed(self, selection):
+        if selection.count_selected_rows() is not 0:
+            (model, iter) = selection.get_selected()
+            if not model.iter_has_child(iter):
+                self.read_elog(selection)
+        self.update_statusbar(selection)
+    
+    def on_row_deleted(self, model, path):
+        selection = self.treeview.get_selection()
+        path = path[0]
+        if len(model) is not 0:
+            if path is len(model):
+                selection.select_path(path-1)
+            else:
+                selection.select_path(path)
+    
+    def read_elog(self, selection):
+        if selection.count_selected_rows() is not 0:
+            (model, iter) = selection.get_selected()
+            self.textview.get_buffer().read(model.get_value(iter))
+        else:
+            self.textview.get_buffer().clear()
+        self.update_statusbar(selection)
+
+    def update_statusbar(self, selection):
+        selected_path = -1
+        model_size = 0
+        filename = ""
+        if selection.count_selected_rows() is not 0:
+            (model, iter) = selection.get_selected()
+            selected_path = model.get_path(iter)[0]
+            model_size = len(model)
+            filename = model.get_value(iter).filename()
+        self.statusbar.push(0, 
+            str(selected_path + 1)
+            + ' of ' +
+            str(model_size)
+            + '\t' +
+            filename)
+
+    def delete(self, model, path, iter):
+        model.get_value(iter).delete()
+        model.remove(iter)
+    
+    def refresh(self):
+        selected_path = 0
+        selection = self.treeview.get_selection()
+        (model, iter) = selection.get_selected()
+        if selection.count_selected_rows() is not 0:
+            selected_path = model.get_path(iter)[0]
+        model.clear()
+        self.populate()
+        if selected_path <= len(model):
+            selection.select_path(selected_path)
+        elif len(model) is not 0:
+            selection.select_path(0)
+
+    def populate(self):
+        model = self.treeview.get_model()
+        model.populate()
+
+    def main(self):
+        gtk.main()
+
+
+def help():
+    print '''
+Elogviewer should help you not to miss important information like: 
+
+If you have just upgraded from an older version of python you
+will need to run:
+    /usr/sbin/python-updater
+
+please do run it and restart elogviewer.
+'''
+
+def usage():
+    print '''
+You need to enable the elog feature by setting at least one of 
+    PORTAGE_ELOG_CLASSES="info warn error log qa"
+and
+    PORTAGE_ELOG_SYSTEM="save"
+in /etc/make.conf
+
+You need to add yourself to the portage group to use 
+elogviewer without privileges.
+
+Read /etc/make.conf.example for more information
+'''
+    
+
+import getopt
+import os
+import portage
+def main(argv):
+    try:
+        opts, args = getopt.getopt(argv, "dh", ["debug", "help"])
+    except getopt.GetoptError:
+        help()
+        usage()
+        exit(1)
+    for opt, arg in opts:
+        if opt in ("-d", "--debug"):
+            global _debug
+            _debug = True
+            print "debug mode is set"
+        elif opt in ("-h", "--help"):
+            help()
+            usage()
+            exit (0)
+    
+    if _debug:
+        os.chdir("elog/elog")
+    else:
+        logdir = portage.settings["PORT_LOGDIR"]
+        if logdir is not "":
+            os.chdir(logdir)
+        else:
+            os.chdir("/var/log/portage")
+        try:
+            os.chdir("./elog")
+        except:
+            usage()
+            exit(2)
+
+    gui = Elogviewer()
+    gui.main()
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+
