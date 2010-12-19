@@ -73,7 +73,6 @@ class FilterCommon:
             self._match = match
         self._is_class = is_class
         self._color = color
-        self._button.set_active(True)
     
 	def is_active(self):
 		pass
