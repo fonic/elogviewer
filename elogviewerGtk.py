@@ -58,16 +58,16 @@ class Filter(FilterCommon):
 		return self._button
 
 
-from elogviewerCommon import ElogviewerIdentity
-class Elogviewer:
+from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
+class Elogviewer(ElogviewerCommon):
 
 	def __init__(self):
+		ElogviewerCommon.__init__(self)
 		self.filter_counter_class = 0
 		self.filter_counter_stage = 0
 		self.filter_columns_class = 2
 		self.filter_columns_stage = self.filter_columns_class 
 		self.texttagtable = gtk.TextTagTable()
-		self.filter_list = {}
     
     def create_gui(self):
 		self.gui = gtk.Builder()
@@ -126,7 +126,7 @@ class Elogviewer:
 		gtk.main_quit()
 
     def add_filter(self, filter):
-		self.filter_list[filter.match()] = filter
+		ElogviewerCommon.add_filter(self, filter)
 
 		filter_class_table = self.gui.get_object("filter_class_table")
 		filter_stage_table = self.gui.get_object("filter_stage_table")
@@ -215,7 +215,7 @@ class Elogviewer:
 				elif self.filter_list[header].is_active() and self.filter_list[section].is_active():
 					buffer.insert_with_tags(
 							end_iter,
-							line + ' ',
+							line + '\n',
 							buffer.get_tag_table().lookup(header))
 		self.textview.set_buffer(buffer)
         self.update_statusbar(selection)
