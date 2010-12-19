@@ -163,3 +163,25 @@ class Elog:
             print self._filename
         return self
 
+class ElogviewerCommon:
+
+	def __init__(self):
+		self.filter_list = {}
+
+	def create_gui(self):
+		pass
+
+	def connect(self):
+		pass
+
+	def show(self):
+		pass
+
+	def quit(self):
+		pass
+
+	def add_filter(self, filter):
+		self.filter_list[filter.match()] = filter
+
+	def read_elog(self, selection):
+		pass
