@@ -110,6 +110,14 @@ def all_files(root, patterns='*', single_level=False, yield_folders=False):
         if single_level:
             break
 
+class ElogContentPart:
+	def __init__(self, complete_header):
+		self.header = complete_header[0]
+		self.section = complete_header[1]
+		self.content = self.header + ' (' + self.section +')\n'
+
+	def add_content(self, content):
+		self.content += content + '\n'
 
 import time
 class Elog:
@@ -183,5 +191,14 @@ class ElogviewerCommon:
 	def add_filter(self, filter):
 		self.filter_list[filter.match()] = filter
 
-	def read_elog(self, selection):
-		pass
+	def parse_elog(self, elog):
+		now = 0
+		elog_content = []
+		for line in elog.contents():
+			L = line.split(': ')
+			if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
+				elog_content.append(ElogContentPart(L))
+			elif self.filter_list[elog_content[now].header].is_active() and self.filter_list[elog_content[now].section].is_active():
+				elog_content[now].add_content(line)
+		return elog_content
+

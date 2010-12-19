@@ -201,22 +201,24 @@ class Elogviewer(ElogviewerCommon):
 			header = section = None
             (model, iter) = selection.get_selected()
 			selected_elog = model.get_value(iter)
+			header = ''
 			for line in selected_elog.contents():
 				L = line.split(': ')
+				formatted_line = ''
 				(start_iter, end_iter) = buffer.get_bounds()
 				if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
-					if not start_iter.equal(end_iter):
-						buffer.insert(end_iter, '\n\n')
 					(header, section) = L
-					buffer.insert_with_tags(
-							end_iter,
-							header + ' (' + section + ')\n',
-							buffer.get_tag_table().lookup(header))
+					formatted_line += header + ' (' + section + ')\n'
 				elif self.filter_list[header].is_active() and self.filter_list[section].is_active():
-					buffer.insert_with_tags(
-							end_iter,
-							line + '\n',
-							buffer.get_tag_table().lookup(header))
+					formatted_line += line + '\n'
+				buffer.insert_with_tags(
+						end_iter,
+						formatted_line,
+						buffer.get_tag_table().lookup(header))
+
+			ec = ElogviewerCommon.parse_elog(self, selected_elog)
+			print len(ec)
+
 		self.textview.set_buffer(buffer)
         self.update_statusbar(selection)
 
