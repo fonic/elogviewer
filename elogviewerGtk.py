@@ -200,7 +200,7 @@ class Elogviewer(ElogviewerCommon):
         if selection.count_selected_rows() is not 0:
             (model, iter) = selection.get_selected()
 			selected_elog = model.get_value(iter)
-			for elog_section in ElogviewerCommon.parse_elog(self, selected_elog):
+			for elog_section in selected_elog.contents(self.filter_list):
 				(start_iter, end_iter) = buffer.get_bounds()
 				buffer.insert_with_tags(
 						end_iter,
