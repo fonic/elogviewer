@@ -198,26 +198,14 @@ class Elogviewer(ElogviewerCommon):
     def read_elog(self, selection):
 		buffer = gtk.TextBuffer(self.texttagtable)
         if selection.count_selected_rows() is not 0:
-			header = section = None
             (model, iter) = selection.get_selected()
 			selected_elog = model.get_value(iter)
-			header = ''
-			for line in selected_elog.contents():
-				L = line.split(': ')
-				formatted_line = ''
+			for elog_section in ElogviewerCommon.parse_elog(self, selected_elog):
 				(start_iter, end_iter) = buffer.get_bounds()
-				if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
-					(header, section) = L
-					formatted_line += header + ' (' + section + ')\n'
-				elif self.filter_list[header].is_active() and self.filter_list[section].is_active():
-					formatted_line += line + '\n'
 				buffer.insert_with_tags(
 						end_iter,
-						formatted_line,
-						buffer.get_tag_table().lookup(header))
-
-			ec = ElogviewerCommon.parse_elog(self, selected_elog)
-			print len(ec)
+						elog_section.content,
+						buffer.get_tag_table().lookup(elog_section.header))
 
 		self.textview.set_buffer(buffer)
         self.update_statusbar(selection)

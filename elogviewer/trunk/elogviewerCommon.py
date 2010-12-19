@@ -192,11 +192,12 @@ class ElogviewerCommon:
 		self.filter_list[filter.match()] = filter
 
 	def parse_elog(self, elog):
-		now = 0
+		now = -1
 		elog_content = []
 		for line in elog.contents():
 			L = line.split(': ')
 			if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
+				now += 1
 				elog_content.append(ElogContentPart(L))
 			elif self.filter_list[elog_content[now].header].is_active() and self.filter_list[elog_content[now].section].is_active():
 				elog_content[now].add_content(line)
