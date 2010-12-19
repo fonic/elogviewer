@@ -114,10 +114,10 @@ class ElogContentPart:
 	def __init__(self, complete_header):
 		self.header = complete_header[0]
 		self.section = complete_header[1]
-		self.content = self.header + ' (' + self.section +')\n'
+		self.content = '%s (%s)\n' % (self.header, self.section)
 
 	def add_content(self, content):
-		self.content += content + '\n'
+		self.content = ''.join([self.content, content, '\n'])
 
 import time
 class Elog:
