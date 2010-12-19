@@ -59,7 +59,7 @@ class Filter(FilterCommon):
 
 
 from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
-class Elogviewer(ElogviewerCommon):
+class ElogviewerGtk(ElogviewerCommon):
 
 	def __init__(self):
 		ElogviewerCommon.__init__(self)
@@ -293,7 +293,7 @@ def main(argv):
     #	usage()
     #   exit(2)
 
-	elogviewer = Elogviewer()
+	elogviewer = ElogviewerGtk()
 	elogviewer.create_gui()
 
 	elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
