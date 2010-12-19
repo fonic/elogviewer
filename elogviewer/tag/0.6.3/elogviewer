@@ -385,7 +385,6 @@ class Elog:
         if len(split_filename) is 3:
             (self._category, self._package, t) = split_filename
         elif len(split_filename) is 2:
-            print split_filename
             (self._category, self._package) = split_filename[0].split('/')
             t = split_filename[1]
         t = time.strptime(t, itime)
