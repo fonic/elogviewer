@@ -156,8 +156,6 @@ class Elog:
         return self._filename
 
 	def contents(self, filter_list):
-		# filter_list would be a C-style static if I knew
-		# how to do that in Python
 		'''Parse file'''
 		file_object = open(self.filename(), 'r')
 		try:
@@ -194,6 +192,12 @@ class ElogviewerCommon:
 		pass
 
 	def show(self):
+		pass
+
+	def refresh(self):
+		pass
+
+	def main(self):
 		pass
 
 	def quit(self):
