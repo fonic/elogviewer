@@ -34,17 +34,27 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
-           <widget class="QGroupBox" name="groupBox">
+           <widget class="QGroupBox" name="filter_class_box">
             <property name="title">
              <string>Class Filter</string>
             </property>
+            <layout class="QGridLayout" name="gridLayout_4">
+             <item row="0" column="0">
+              <layout class="QFormLayout" name="filter_class_layout"/>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
-           <widget class="QGroupBox" name="groupBox_2">
+           <widget class="QGroupBox" name="filter_stage_box">
             <property name="title">
              <string>Stage Filter</string>
             </property>
+            <layout class="QGridLayout" name="gridLayout_5">
+             <item row="0" column="0">
+              <layout class="QFormLayout" name="filter_stage_layout"/>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
@@ -61,7 +71,7 @@
      <x>0</x>
      <y>0</y>
      <width>481</width>
-     <height>20</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>
