@@ -19,7 +19,7 @@ class Model(QtGui.QStandardItemModel):
 		self.setHeaderData( TIMESORT, QtCore.Qt.Horizontal, "Time sort order" )
 		self.setHeaderData( FILENAME, QtCore.Qt.Horizontal, "Filename" )
 	
-	def appendRow(self, elog):
+	def append(self, elog):
 		return QtGui.QStandardItemModel.appendRow(self, [ elog,
 			elog.category(), elog.package(), elog.locale_time(),
 			elog.sorted_time(), elog.filename()])
@@ -58,6 +58,8 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 		self.gui.treeView.setModel(model)
 		self.gui.treeView.setRootIsDecorated(False)
 
+		self.populate()
+
     def connect(self):
         pass
 
@@ -68,7 +70,9 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         pass
 
 	def populate(self):
-		pass
+		model = self.gui.treeView.model()
+		for file in all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
+			model.append(Elog(file, self.cmdline_args.get_elogdir()))
 
     def quit(self):
         pass
