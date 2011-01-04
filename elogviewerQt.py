@@ -52,8 +52,7 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 		model.appendColumn([QtGui.QStandardItem()])
 		model.appendColumn([QtGui.QStandardItem()])
 
-		self.gui.tableView.setModel(model)
-		self.gui.tableView.verticalHeader().setVisible(False)
+		self.gui.listView.setModel(model)
 
     def connect(self):
         pass
