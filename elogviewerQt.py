@@ -7,7 +7,7 @@
 import sys
 from PyQt4 import QtCore, QtGui
 
-class TreeViewModel(QtGui.QStandardItemModel):
+class Model(QtGui.QStandardItemModel):
 	def __init__(self):
 		QtGui.QStandardItemModel.__init__(self)
 	
@@ -32,6 +32,8 @@ class Filter(FilterCommon):
     def button(self):
         return self._button
 
+
+( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from elogviewerQt_ui import Ui_MainWindow
 from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
 class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
@@ -43,6 +45,15 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
     def create_gui(self):
         self.gui = Ui_MainWindow()
         self.gui.setupUi(self)
+
+		model = Model()
+		model.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
+		model.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
+		model.appendColumn([QtGui.QStandardItem()])
+		model.appendColumn([QtGui.QStandardItem()])
+
+		self.gui.tableView.setModel(model)
+		self.gui.tableView.verticalHeader().setVisible(False)
 
     def connect(self):
         pass
