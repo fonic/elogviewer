@@ -60,6 +60,9 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         self.gui.setupUi(self)
 
 		self.gui.treeView.setRootIsDecorated(False)
+	
+	def get_model(self):
+		return self.gui.treeView.model()
 
     def connect(self):
         pass
@@ -75,7 +78,7 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 		self.populate()
 
 	def populate(self):
-		model = self.gui.treeView.model()
+		model = self.get_model()
 		for file in all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
 			model.append(Elog(file, self.cmdline_args.get_elogdir()))
 
