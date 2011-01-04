@@ -47,15 +47,22 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         self.gui.setupUi(self)
 
 		model = Model()
+		model.setColumnCount(6)
 		model.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
 		model.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
+		model.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
+		model.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
+		model.setHeaderData( TIMESORT, QtCore.Qt.Horizontal, "Time sort order" )
+		model.setHeaderData( FILENAME, QtCore.Qt.Horizontal, "Filename" )
 
-		model = QtGui.QStandardItemModel(4, 2)
-		for row in range(4):
-			for col in range(2):
+		model.setRowCount(2)
+		for row in range(2):
+			for col in range(6):
 				idx = model.index(row, col, QtCore.QModelIndex())
 				model.setData(idx, QtCore.QVariant((row + 1) * (col + 1)))
+
 		self.gui.treeView.setModel(model)
+		self.gui.treeView.setRootIsDecorated(False)
 
     def connect(self):
         pass
