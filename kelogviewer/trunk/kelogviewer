@@ -1,0 +1,501 @@
+#!/usr/bin/env python
+
+try:
+	from kdecore import KApplication, KCmdLineArgs, KAboutData, i18n, KIcon, KIconLoader, KShortcut
+	from kdeui import  KMainWindow, KLineEdit, KStatusBar, KAction, KStdAction, KToggleAction, KFontSizeAction, KFontAction, KRadioAction, KActionSeparator, KActionMenu, KWindowListMenu, KMessageBox, KListView, KListViewItem, KTextEdit, KLineEdit
+except:
+	print """
+	Kelogviewer requires pykde and portage 2.1.
+	Vous n'avez pas installe pykde.
+
+	emerge pykde
+	"""
+
+from qt import QVBox, QHBox, QPopupMenu, SIGNAL, PYSIGNAL, QListView, QButtonGroup, QCheckBox, QColor, QIconSet, QPixmap, QLabel, QPushButton, QSplitter, QString, QListViewItemIterator, Qt
+import sys, os, portage
+import time, re
+
+
+try:
+	os.chdir( portage.settings["PORT_LOGDIR"] )
+except:
+	os.chdir( "/var/log/portage" )
+try:
+	os.chdir( "./elog" )
+except:
+	print """
+	Kelogviewer requires portage 2.1.
+
+	It seems you do not have the elog facility on your system:
+If you are already using portage 2.1, you need to edit your /etc/make.conf and add at least:
+
+	PORTAGE_ELOG_CLASSES="info warn error log"
+	PORTAGE_ELOG_SYSTEM="save"
+
+Please refer to /etc/make.conf.example for more info.
+
+	Il semble que vous n'avez pas d'elogs sur votre systeme. elogs est une nouvelle fonction \
+de portage 2.1. Si vous utilisez deja portage 2.1, vous avez besoin d'editer votre fichier /etc/make.conf \
+et d'y ajouter au moins les lignes suivantes:
+
+	PORTAGE_ELOG_CLASSES="info warn error log"
+	PORTAGE_ELOG_SYSTEM="save"
+
+Voir /etc/make.conf.example pour plus d'options.
+"""
+
+class Logentry:
+
+	def __init__(self, filename):
+		intimeformat  = "%Y%m%d-%H%M%S.log"
+		outtimeformat = "%Y-%m-%d %H:%M:%S"
+
+		(c, p, t) = re.split( ":", str(filename) )
+		self.category  = c
+		self.package   = p
+		t = time.strptime( t, intimeformat  )
+		t = time.strftime( outtimeformat, t )
+		self.timestamp = t
+		self.filename  = filename
+
+class KelogInfo(KTextEdit):
+
+	def __init__(self, parent):
+		KTextEdit.__init__(self, parent)
+		self.setReadOnly(True)
+		self.setUndoRedoEnabled(False)
+
+	def strip_nl(self, line):
+		return re.match( r'^([^\\\n]*)', line ).group( 1 )
+
+	def parselog(self, filename, efilter):
+
+		headerpattern = re.compile('^(INFO|WARN|ERROR|LOG)' )
+		self.clear()
+		firstline     = True
+		try:
+			file          = open( str(filename), 'r' )
+			#buf = ""
+			for readline in file:
+				readline = self.strip_nl(readline)
+				if headerpattern.match(readline):
+					l = readline.split( ": " )
+					header = l[0]
+					stage  = l[1]
+					if firstline:
+						firstline = False
+					else:
+						self.append("\n")
+						#buf = buf + "\n"
+
+					self.setColor(efilter.color(header, stage))
+
+				if efilter.filter(header) and efilter.filter(stage):
+					if readline is not "":
+						#buf = buf + "%s\n" % readline
+						self.append("%s\n" % readline)
+		except:
+			print "No file to read"
+
+		#self.setText(buf)
+
+		self.center(0,0)
+
+class KelogFilter(QVBox):
+
+	filter_headers_labels = { "INFO": QColor(0,0,0), "WARN": QColor(0,0,255), "ERROR": QColor(255,0,0), "LOG": QColor(0,255,0) }
+	filter_stage_labels = [  "preinst", "unpack", "setup", "compile", "install", "postinst", "test", "other", "prerm", "postrm" ]
+
+	def __init__(self, parent):
+		QVBox.__init__(self, parent)
+		self.groupHeaders = QButtonGroup(1,QButtonGroup.Horizontal,self)
+		self.groupStage = QButtonGroup(1,QButtonGroup.Horizontal,self)
+		self.cb = {}
+		for label in self.filter_headers_labels.keys():
+			self.cb[label] = QCheckBox(label, self.groupHeaders)
+		for label in self.filter_stage_labels:
+			self.cb[label] = QCheckBox(label, self.groupStage)
+		self.checkAll()
+		self.connect(self.groupHeaders, SIGNAL("clicked(int)"), self.slotButtonClicked)
+		self.connect(self.groupStage, SIGNAL("clicked(int)"), self.slotButtonClicked)
+
+	def checkAll (self):
+		for label in self.filter_headers_labels.keys():
+			self.cb[label].setChecked(True)
+		for label in self.filter_stage_labels:
+			self.cb[label].setChecked(True)
+		self.emit(PYSIGNAL("filterChanged"), ())
+
+	def toggle (self):
+		for label in self.filter_headers_labels.keys():
+			self.cb[label].setChecked( not self.cb[label].isChecked()  )
+		for label in self.filter_stage_labels:
+			self.cb[label].setChecked( not self.cb[label].isChecked()  )
+		self.emit(PYSIGNAL("filterChanged"), ())
+
+	def filter (self, lbl):
+		return self.cb[lbl].isChecked()
+
+	def color (self, header, stage):
+		return self.filter_headers_labels[header]
+
+	def slotButtonClicked (self, index):
+		self.emit(PYSIGNAL("filterChanged"), ())
+
+class KelogList(KListView):
+
+	NO_MATCH = 0
+	NO_OTHER_MATCH = -1
+	MATCH = 1
+
+	_mask_change = 0
+	_tree = {}
+	_tree_view = True
+
+	def __init__(self, parent, viewmode):
+		KListView.__init__(self,parent)
+
+		self.setTreeViewMode(viewmode)
+
+		self.setResizeMode(QListView.AllColumns)
+		self.setShowSortIndicator(True)
+		self.setAllColumnsShowFocus(True)
+		self.setSelectionModeExt(KListView.Single)
+		self.addColumn("Category");
+		self.addColumn("Package");
+		self.addColumn("Timestamp");
+
+		self.populate()
+
+	def setTreeViewMode (self, b):
+		self._tree_view = b
+		self.setRootIsDecorated(self._tree_view)
+
+	def expand (self):
+		it = QListViewItemIterator(self)
+		itm = it.current()
+		while itm:
+			itm.setOpen(True)
+			it += 1
+			itm = it.current()
+
+	def collapse (self):
+		it = QListViewItemIterator(self)
+		itm = it.current()
+		while itm:
+			itm.setOpen(False)
+			it += 1
+			itm = it.current()
+
+	def refresh (self):
+		self.clear()
+		if (self._tree_view):
+			self._tree = {}
+		self.populate()
+
+	def populate (self):
+		for f in os.listdir( os.getcwd() ):
+			try:
+				log = Logentry(f)
+				if (self._tree_view):
+					if (not self._tree.has_key(log.category)):
+						#print "No key found, creating : ", log.category
+						self._tree[log.category] = KListViewItem(self, log.category, "", "", "")
+					KListViewItem(self._tree[log.category], log.category, log.package, log.timestamp, log.filename)
+				else:
+					KListViewItem(self, log.category, log.package, log.timestamp, log.filename)
+			except:
+				print "Exception occured while loading : ", f
+		self.setCurrentItem(self.firstChild())
+		self.setSelected(self.currentItem(), True)
+
+
+	def deleteElog (self, item):
+		if not item:
+			return False
+		if item.text(3) == "":
+			return False
+		self.takeItem(item)
+		#print "Delete ", item.text(3)
+		os.remove( str(item.text(3)) )
+		self.setSelected(self.currentItem(), True)
+		return True
+
+	def deleteAllElogs (self):
+		it = QListViewItemIterator(self)
+		itm = it.current()
+		while itm:
+			if itm.text(3):
+				#print "Delete ", itm.text(3)
+				os.remove( str(itm.text(3)) )
+			it += 1
+			itm = it.current()
+		self.refresh()
+
+	def search (self, text):
+		self._mask_change = 1
+		current = self.currentItem()
+		res = self.findItem(text, 1, KListView.Contains)
+		if (res == current):
+			res = res.itemBelow()
+			if not res:
+				res = self.firstChild()
+			if not res:
+				self._mask_change = 0
+				return self.NO_MATCH
+			self.setCurrentItem(res)
+			res = self.findItem(text, 1, KListView.Contains)
+			if res == current:
+				self.setCurrentItem(current)
+				self._mask_change = 0
+				return self.NO_OTHER_MATCH
+		self._mask_change = 0
+		if res:
+			self.ensureItemVisible(res)
+			self.setCurrentItem(res)
+			return self.MATCH
+		else:
+			return self.NO_MATCH
+
+	def changedItem (self):
+		if self._mask_change:
+			return False
+		if not self.currentItem():
+			return False
+		return True
+
+class Kelogviewer(KMainWindow):
+
+	VIEW_MODE_LIST = 0
+	VIEW_MODE_TREE = 1
+
+	_view_mode = VIEW_MODE_LIST
+
+	def __init__(self, *args):
+        	apply (KMainWindow.__init__, (self,) + args)
+
+		self.setGeometry(0,0,600,600)
+
+		# define actions
+		self.initActions()
+		# build the menu
+		self.initMenus()
+		# init the tool bar
+		self.initToolBar()
+		# init the widgets
+		self.initWidgets()
+		# statusBar
+		self.initStatusBar()
+
+		# Set Signals
+		self.connect(self.elogList, SIGNAL("selectionChanged()"), self.slotElogSelected )
+		self.connect(self.elogFilter, PYSIGNAL("filterChanged"), self.slotElogFilterChanged )
+		self.connect(self.elogSearch, SIGNAL("returnPressed()"), self.slotSearch )
+		self.connect(self.btSearch, SIGNAL("clicked()"), self.slotSearch )
+
+		self.slotElogSelected()
+
+	def initActions (self):
+		 # Need to assign an icon to actionMenu below
+        	self.icons = KIconLoader ()
+        	self.refreshIconSet = QIconSet (self.icons.loadIcon ("reload", KIcon.Toolbar))
+		self.deleteIconSet  = QIconSet (self.icons.loadIcon ("editdelete", KIcon.Toolbar))
+		self.clearAllIconSet  = QIconSet (self.icons.loadIcon ("eraser", KIcon.Toolbar))
+
+		# "File" menu items
+		self.refreshAction  = KAction (i18n("&Refresh"), "refresh", KShortcut.null(), self.slotRefresh,  self.actionCollection ())
+		self.refreshAction.setIconSet(self.refreshIconSet)
+		self.refreshAction.setShortcut(KShortcut(Qt.Key_F5))
+		self.deleteAction   = KAction (i18n("&Delete"), "delte", KShortcut.null(), self.slotDelete,   self.actionCollection ())
+		self.deleteAction.setIconSet(self.deleteIconSet)
+		self.deleteAction.setShortcut(KShortcut(Qt.Key_Delete))
+		self.clearAllAction = KAction (i18n("&Clear All"), "clearall", KShortcut.null(), self.slotClearAll, self.actionCollection ())
+		self.clearAllAction.setIconSet(self.clearAllIconSet)
+		self.quitAction     = KStdAction.quit (self.slotQuit, self.actionCollection ())
+
+		# "Filter" menu items
+		self.checkAllAction  = KAction (i18n("Check &All"), "checkall", KShortcut.null(), self.slotCheckAll,  self.actionCollection ())
+		self.toggleAction   = KAction (i18n("&Toggle"), "toggle", KShortcut.null(), self.slotToggle,   self.actionCollection ())
+
+		# "View" menu items
+		self.expandTreeAction = KAction (i18n("&Expand Tree View"), "expandtree", KShortcut.null(), self.slotExpandTree,  self.actionCollection ())
+
+		self.collapseTreeAction = KAction (i18n("&Collapse Tree View"), "collapsetree", KShortcut.null(), self.slotCollapseTree,  self.actionCollection ())
+
+		self.switchViewModeAction = KAction (i18n("&Switch View Mode"), "switchview", KShortcut.null(), self.slotSwitchViewMode,  self.actionCollection ())
+
+		self.deleteAction.setEnabled(False)
+		self.clearAllAction.setEnabled(False)
+
+		if (self._view_mode == self.VIEW_MODE_TREE):
+			self.collapseTreeAction.setEnabled(True)
+			self.expandTreeAction.setEnabled(True)
+		else:
+			self.collapseTreeAction.setEnabled(False)
+			self.expandTreeAction.setEnabled(False)
+
+		# A separator - create once/use everywhere
+		self.separateAction = KActionSeparator ()
+
+	def initMenus (self):
+		fileMenu = QPopupMenu (self)
+		self.refreshAction.plug (fileMenu)
+		self.deleteAction.plug (fileMenu)
+		self.clearAllAction.plug (fileMenu)
+		fileMenu.insertSeparator ()
+		self.quitAction.plug (fileMenu)
+		self.menuBar ().insertItem (i18n ("&File"), fileMenu)
+
+		filterMenu = QPopupMenu (self)
+		self.checkAllAction.plug(filterMenu)
+		self.toggleAction.plug(filterMenu)
+		self.menuBar ().insertItem (i18n ("&Filter"), filterMenu)
+
+		viewMenu = QPopupMenu (self)
+		self.expandTreeAction.plug(viewMenu)
+		self.collapseTreeAction.plug(viewMenu)
+		viewMenu.insertSeparator ()
+		self.switchViewModeAction.plug(viewMenu)
+		self.menuBar ().insertItem (i18n ("&View"), viewMenu)
+
+		helpMenu = self.helpMenu ("")
+		self.menuBar ().insertItem (i18n ("&Help"), helpMenu)
+
+	def initToolBar (self):
+		self.refreshAction.plug (self.toolBar ())
+		self.deleteAction.plug (self.toolBar ())
+		self.clearAllAction.plug (self.toolBar ())
+		self.quitAction.plug (self.toolBar ())
+
+	def initWidgets (self):
+		# define the layout
+		self.mainBox = QSplitter(QSplitter.Vertical, self)
+		self.setCentralWidget(self.mainBox)
+		self.topBox = QVBox(self.mainBox)
+
+		# Search widget
+		self.searchBar = QHBox(self.topBox)
+		QLabel("Search",self.searchBar)
+		self.elogSearch = KLineEdit(self.searchBar)
+		self.btSearch = QPushButton("Find &Next", self.searchBar)
+		self.elogSearchComp = self.elogSearch.completionObject()
+		self.elogSearch.connect(self.elogSearch,SIGNAL("returnPressed(const QString&)"),self.elogSearchComp.addItem);
+		# List view
+		self.elogList = KelogList(self.topBox, self._view_mode)
+
+		# Add HBox for info panel and filters
+		self.secondBox = QHBox(self.mainBox)
+		self.elogInfo = KelogInfo(self.secondBox)
+		self.elogFilter = KelogFilter(self.secondBox)
+
+	def initStatusBar (self):
+		# Status bar in the bottom
+		self.statusBar().insertItem("Status:", 0)
+		self.statusBar().insertItem("Ok", 1)
+
+	def setStatus (self, txt):
+		#self.statusBar().changeItem(txt, 1)
+		self.statusBar().message(txt, 3000)
+
+	#Slots for Widgets
+	def slotElogSelected (self):
+		if ( self.elogList.changedItem() and self.elogList.currentItem().text(3)):
+			self.elogInfo.parselog(self.elogList.currentItem().text(3), self.elogFilter)
+			self.setStatus("Loaded elog %s / %s / %s" % (self.elogList.currentItem().text(0), self.elogList.currentItem().text(1), self.elogList.currentItem().text(2)))
+			self.clearAllAction.setEnabled(True)
+			self.deleteAction.setEnabled(True)
+
+	def slotElogFilterChanged (self):
+		self.slotElogSelected()
+
+	#Slots for Actions
+	def slotRefresh (self):
+		self.elogInfo.clear()
+		self.elogList.refresh()
+		if self.elogList.currentItem():
+			self.clearAllAction.setEnabled(True)
+			self.deleteAction.setEnabled(True)
+			self.setStatus("Refreshed.")
+		else:
+			self.setStatus("Refreshed but no item found.")
+
+	def slotDelete (self):
+		if (self.elogList.currentItem()):
+			i = self.elogList.currentItem()
+			if self.elogList.deleteElog( i ):
+				self.setStatus("Deleted : %s" % i.text(3))
+				if not self.elogList.currentItem():
+					self.elogInfo.clear()
+					self.clearAllAction.setEnabled(False)
+
+	def slotClearAll (self):
+        	rep = KMessageBox.warningYesNo (self, "The whole elog directory is going to be wiped out.\nAre you sure you want to proceed?", "Delete All")
+		if rep == KMessageBox.Yes:
+			self.elogList.deleteAllElogs()
+			self.elogInfo.clear()
+			self.setStatus("All Elogs have been cleared.")
+			self.clearAllAction.setEnabled(False)
+
+
+	def slotQuit (self):
+		self.close()
+
+	def slotCheckAll (self):
+		self.elogFilter.checkAll()
+		self.setStatus("All filters activated.")
+
+	def slotToggle (self):
+		self.elogFilter.toggle()
+		self.setStatus("Filters toggled.")
+
+	def slotExpandTree (self):
+		self.elogList.expand()
+
+	def slotCollapseTree (self):
+		self.elogList.collapse()
+
+	def slotSwitchViewMode (self):
+		self._view_mode = not self._view_mode
+		if (self._view_mode == self.VIEW_MODE_TREE):
+			self.collapseTreeAction.setEnabled(True)
+			self.expandTreeAction.setEnabled(True)
+		else:
+			self.collapseTreeAction.setEnabled(False)
+			self.expandTreeAction.setEnabled(False)
+		self.elogList.setTreeViewMode(self._view_mode)
+		self.elogList.refresh()
+
+
+	def slotSearch (self, text=0):
+		if not text:
+			text = self.elogSearch.text()
+		res = self.elogList.search(text)
+		if res == KelogList.NO_MATCH:
+			self.setStatus("%s not found" % text)
+		elif res == KelogList.NO_OTHER_MATCH:
+			self.setStatus("No more match for %s" % text)
+
+
+####################################
+# Main
+####################################
+
+application = "KElogViewer"
+description = "A KDE elog viewer"
+version     = "0.4.0.7"
+aboutData   = KAboutData ("klogviewer", application, version, description, KAboutData.License_GPL,"(C) 2006 Wickersheimer Jeremy", None, None, "jwickers@gmail.com")
+
+aboutData.addAuthor ( "Wickersheimer Jeremy", "Adapted Elogviewer to KDE", "jwickers@gmail.com")
+aboutData.addAuthor ( "Mathias Laurin (synss)", "Wrote first Elogviewer in py-gtk", "http://forums.gentoo.org/viewtopic-t-465493-highlight-.html")
+
+aboutData.addCredit ( "Timothy Kilbourn (nmbrthry)", "Original idea", "", "http://forums.gentoo.org/viewtopic-t-441228-start-0-postdays-0-postorder-asc-highlight-.html" )
+
+KCmdLineArgs.init (sys.argv, aboutData)
+
+KCmdLineArgs.addCmdLineOptions ([("+url", "Url to open")])
+
+app = KApplication ()
+win = Kelogviewer(None, "Main Window")
+win.show()
+app.exec_loop()
+

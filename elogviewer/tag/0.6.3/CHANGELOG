@@ -1,0 +1,40 @@
+CHANGELOG
+
+0.6.3   Correct regression SF#3134975
+0.6.2	Add support for split-elog (#310345) and remove 'clear' option
+0.6.1	correct bugs #253552 and #240275
+0.6.0	rewrite with better OO and most bugs corrected
+0.5.1	colors for INFO, LOG, ERROR and WARN
+		status bar
+		search: just type a few letters in the file list
+		update logview immediately upon filter selection
+		default sort has found his way back
+		a lot of cleaning
+0.5.0   completely rewritten with a better object orientation
+        clearer and more complete licensing
+		minor bugs corrected
+		not that many changes from the user's point of view
+0.4.1   now uses gtk.UIManager
+        added shortcuts
+        error redirected to stderr
+0.4.0.8 added postrm and prerm phases
+0.4.0.7 selects the next file when deleting an elog (instead of the first in the list)
+0.4.0.6 fixes decoration bug: the size of the border should now be the same as for other apps.
+        no error message on empty elog directory (thanks to maxima)
+0.4.0.5 incorporates feedback from nmbrthry
+        o Tooltips - I added tooltips to the tool bar
+        o Menu - I added a menubar and moved the About button to the help menu (it doesn't really need a toolbar button)
+        o Default sort - I really think viewing the most recent elogs should be the default behavior
+        o Toolbar class - I renamed this "Actions" so it can generate the menu as well.
+0.4.0.4 Bug fix: the prog was probably not working with PORT_LOGDIR unset
+        Added a small online help and a few tests in the header for checking missing dependencies (thanks to Yoyo -- Moderator on the French forums)
+0.4.0.3 I'll put the parsing of regular logfiles back when it works, now you've got the 99% working elog parser
+0.4.0.2 corrects the working directory, working on parsing regular logs as well
+0.4.0.1 the elog format has changed and partly broke the filter (that is the current status -- am working on it, it is not that bad)
+0.4.0.0 dialog on clear
+        adds a filter (show INFO or not, etc.)
+        bug tracking
+0.3.5 improves reading
+        uses sortable table
+        adds buttons
+<0.3.5 not public
