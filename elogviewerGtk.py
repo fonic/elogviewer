@@ -14,9 +14,6 @@ try:
 except:
     print "a recent version of pygtk is required"
  
-_debug = False
-
-
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
 class ListStore(gtk.ListStore):
@@ -61,13 +58,14 @@ class Filter(FilterCommon):
 from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
 class ElogviewerGtk(ElogviewerCommon):
 
-	def __init__(self):
+	def __init__(self, cmdline_args):
 		ElogviewerCommon.__init__(self)
 		self.filter_counter_class = 0
 		self.filter_counter_stage = 0
 		self.filter_columns_class = 2
 		self.filter_columns_stage = self.filter_columns_class 
 		self.texttagtable = gtk.TextTagTable()
+		self.cmdline_args = cmdline_args
     
     def create_gui(self):
 		self.gui = gtk.Builder()
@@ -88,7 +86,7 @@ class ElogviewerGtk(ElogviewerCommon):
         category_col.set_sort_column_id(CATEGORY)
         package_col.set_sort_column_id(PACKAGE)
         locale_time_col.set_sort_column_id(TIMESORT)
-        if not _debug:
+        if not self.cmdline_args.get_debug_status():
             sorted_time_col.set_visible(False)
             filename_col.set_visible(False)
 
@@ -228,18 +226,18 @@ class ElogviewerGtk(ElogviewerCommon):
 
 	def populate(self):
         model = self.treeview.get_model()
-        for file in all_files(elog_dir, '*:*.log', False, True):
-            model.append(Elog(file, elog_dir))
+        for file in all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
+            model.append(Elog(file, self.cmdline_args.get_elogdir()))
 
     def main(self):
         gtk.main()
 
 
-from elogviewerCommon import parseArguments
+from elogviewerCommon import parseArguments, CommandLineArguments
 def main(argv):
-	parseArguments(argv)
+	cmdline = parseArguments(argv)
 
-	elogviewer = ElogviewerGtk()
+	elogviewer = ElogviewerGtk(cmdline)
 	elogviewer.create_gui()
 
 	elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
