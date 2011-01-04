@@ -49,10 +49,13 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 		model = Model()
 		model.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
 		model.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
-		model.appendColumn([QtGui.QStandardItem()])
-		model.appendColumn([QtGui.QStandardItem()])
 
-		self.gui.listView.setModel(model)
+		model = QtGui.QStandardItemModel(4, 2)
+		for row in range(4):
+			for col in range(2):
+				idx = model.index(row, col, QtCore.QModelIndex())
+				model.setData(idx, QtCore.QVariant((row + 1) * (col + 1)))
+		self.gui.treeView.setModel(model)
 
     def connect(self):
         pass
