@@ -59,12 +59,7 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         self.gui = Ui_MainWindow()
         self.gui.setupUi(self)
 
-		model = Model()
-
-		self.gui.treeView.setModel(model)
 		self.gui.treeView.setRootIsDecorated(False)
-
-		self.populate()
 
     def connect(self):
         pass
@@ -72,8 +67,12 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
     def show(self):
         QtGui.QMainWindow.show(self)
 
+	def clear(self):
+		self.gui.treeView.setModel(Model())
+
     def refresh(self):
-        pass
+		self.clear()
+		self.populate()
 
 	def populate(self):
 		model = self.gui.treeView.model()
