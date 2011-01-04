@@ -24,9 +24,10 @@ class Filter(FilterCommon):
 from elogviewerQt_ui import Ui_MainWindow
 from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
 class elogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
-    def __init__(self):
+    def __init__(self, cmdline_args):
         QtGui.QMainWindow.__init__(self)
         ElogviewerCommon.__init__(self)
+		self.cmdline_args = cmdline_args
 
     def create_gui(self):
         self.gui = Ui_MainWindow()
