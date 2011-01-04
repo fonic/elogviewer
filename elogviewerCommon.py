@@ -234,6 +234,7 @@ Read /etc/make.conf.example for more information
 class CommandLineArguments:
 	_debug = False
 	_elog_dir = "."
+	_gui_frontend = "GTK"
 
 	def set_debug_status(self, debug_status):
 		self._debug = debug_status
@@ -246,6 +247,13 @@ class CommandLineArguments:
 
 	def get_elogdir(self):
 		return self._elog_dir
+
+	def set_gui_frontend(self, frontend_str):
+		''' string GTK or QT '''
+		self._gui_frontend = frontend_str
+
+	def get_gui_frontend(self):
+		return self._gui_frontend
 
 import getopt
 import portage
