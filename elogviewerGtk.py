@@ -235,38 +235,9 @@ class ElogviewerGtk(ElogviewerCommon):
         gtk.main()
 
 
-from elogviewerCommon import usage, help
-import getopt
-import portage
+from elogviewerCommon import parseArguments
 def main(argv):
-    try:
-        opts, args = getopt.getopt(argv, "dh", ["debug", "help"])
-    except getopt.GetoptError:
-        help()
-        usage()
-        exit(1)
-    for opt, arg in opts:
-        if opt in ("-d", "--debug"):
-			global _debug
-            _debug = True
-            print "debug mode is set"
-        elif opt in ("-h", "--help"):
-            help()
-            usage()
-            exit (0)
-    
-	global elog_dir
-    if _debug:
-		elog_dir = "./elog/elog/"
-    else:
-        logdir = portage.settings["PORT_LOGDIR"]
-        if logdir is "":
-			logdir = "/var/log/portage"
-		elog_dir = logdir + "/elog/"
-	# FIXME
-	# test if directory exists, spit error if not
-    #	usage()
-    #   exit(2)
+	parseArguments(argv)
 
 	elogviewer = ElogviewerGtk()
 	elogviewer.create_gui()
