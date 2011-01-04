@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'elogviewerQt.ui'
 #
-# Created: Tue Jan  4 19:13:16 2011
+# Created: Tue Jan  4 19:32:07 2011
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -24,9 +24,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.verticalLayout_2 = QtGui.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.listView = QtGui.QListView(self.centralwidget)
-        self.listView.setObjectName("listView")
-        self.verticalLayout_2.addWidget(self.listView)
+        self.treeView = QtGui.QTreeView(self.centralwidget)
+        self.treeView.setObjectName("treeView")
+        self.verticalLayout_2.addWidget(self.treeView)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.textEdit = QtGui.QTextEdit(self.centralwidget)
