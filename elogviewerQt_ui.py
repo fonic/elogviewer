@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'elogviewerQt.ui'
 #
-# Created: Sun Dec 19 18:27:02 2010
+# Created: Tue Jan  4 18:31:01 2011
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -24,9 +24,9 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.verticalLayout_2 = QtGui.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.listView = QtGui.QListView(self.centralwidget)
-        self.listView.setObjectName("listView")
-        self.verticalLayout_2.addWidget(self.listView)
+        self.tableView = QtGui.QTableView(self.centralwidget)
+        self.tableView.setObjectName("tableView")
+        self.verticalLayout_2.addWidget(self.tableView)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.textEdit = QtGui.QTextEdit(self.centralwidget)
@@ -55,7 +55,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addLayout(self.verticalLayout_2)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 481, 25))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 481, 20))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
