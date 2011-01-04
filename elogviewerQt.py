@@ -7,6 +7,17 @@
 import sys
 from PyQt4 import QtCore, QtGui
 
+class TreeViewModel(QtGui.QStandardItemModel):
+	def __init__(self):
+		QtGui.QStandardItemModel.__init__(self)
+	
+	def append(self, elog):
+		return QtGui.QStandardItemModel.appendRow(self, [ elog,
+			elog.category(), elog.package(), elog.locale_time(),
+			elog.sorted_time(), elog.filename()])
+	
+	def get_value(self, row):
+		return QtGui.QStandardItemModel.item(row, 0)
 
 from elogviewerCommon import FilterCommon, Elog, all_files
 class Filter(FilterCommon):
@@ -32,7 +43,7 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
     def create_gui(self):
         self.gui = Ui_MainWindow()
         self.gui.setupUi(self)
-    
+
     def connect(self):
         pass
 
