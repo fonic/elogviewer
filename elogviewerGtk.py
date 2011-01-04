@@ -232,39 +232,3 @@ class ElogviewerGtk(ElogviewerCommon):
     def main(self):
         gtk.main()
 
-
-from elogviewerCommon import parseArguments, CommandLineArguments
-def main(argv):
-	cmdline = parseArguments(argv)
-
-	elogviewer = ElogviewerGtk(cmdline)
-	elogviewer.create_gui()
-
-	elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
-	elogviewer.add_filter(Filter("warning", "WARN", True, 'red'))
-	elogviewer.add_filter(Filter("error", "ERROR", True, 'orange'))
-	elogviewer.add_filter(Filter("log", "LOG", True))
-	elogviewer.add_filter(Filter("QA", "QA", True))
-
-	elogviewer.add_filter(Filter("preinst"))
-	elogviewer.add_filter(Filter("postinst"))
-	elogviewer.add_filter(Filter("prerm"))
-	elogviewer.add_filter(Filter("postrm"))
-	elogviewer.add_filter(Filter("unpack"))
-	elogviewer.add_filter(Filter("compile"))
-	elogviewer.add_filter(Filter("setup"))
-	elogviewer.add_filter(Filter("test"))
-	elogviewer.add_filter(Filter("install"))
-	elogviewer.add_filter(Filter("prepare"))
-	elogviewer.add_filter(Filter("configure"))
-	elogviewer.add_filter(Filter("other"))
-
-	elogviewer.connect()
-	elogviewer.show()
-	elogviewer.refresh()
-    elogviewer.main()
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
-
