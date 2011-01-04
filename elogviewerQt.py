@@ -67,6 +67,9 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
     def refresh(self):
         pass
 
+	def populate(self):
+		pass
+
     def quit(self):
         pass
 
