@@ -7,16 +7,24 @@
 import sys
 from PyQt4 import QtCore, QtGui
 
+( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 class Model(QtGui.QStandardItemModel):
 	def __init__(self):
 		QtGui.QStandardItemModel.__init__(self)
+		self.setColumnCount(6)
+		self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
+		self.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
+		self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
+		self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
+		self.setHeaderData( TIMESORT, QtCore.Qt.Horizontal, "Time sort order" )
+		self.setHeaderData( FILENAME, QtCore.Qt.Horizontal, "Filename" )
 	
-	def append(self, elog):
+	def appendRow(self, elog):
 		return QtGui.QStandardItemModel.appendRow(self, [ elog,
 			elog.category(), elog.package(), elog.locale_time(),
 			elog.sorted_time(), elog.filename()])
 	
-	def get_value(self, row):
+	def getItem(self, row):
 		return QtGui.QStandardItemModel.item(row, 0)
 
 from elogviewerCommon import FilterCommon, Elog, all_files
@@ -33,7 +41,6 @@ class Filter(FilterCommon):
         return self._button
 
 
-( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from elogviewerQt_ui import Ui_MainWindow
 from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
 class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
@@ -47,19 +54,6 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         self.gui.setupUi(self)
 
 		model = Model()
-		model.setColumnCount(6)
-		model.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
-		model.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
-		model.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
-		model.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
-		model.setHeaderData( TIMESORT, QtCore.Qt.Horizontal, "Time sort order" )
-		model.setHeaderData( FILENAME, QtCore.Qt.Horizontal, "Filename" )
-
-		model.setRowCount(2)
-		for row in range(2):
-			for col in range(6):
-				idx = model.index(row, col, QtCore.QModelIndex())
-				model.setData(idx, QtCore.QVariant((row + 1) * (col + 1)))
 
 		self.gui.treeView.setModel(model)
 		self.gui.treeView.setRootIsDecorated(False)
