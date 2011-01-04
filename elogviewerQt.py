@@ -23,7 +23,7 @@ class Filter(FilterCommon):
 
 from elogviewerQt_ui import Ui_MainWindow
 from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
-class elogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
+class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
     def __init__(self, cmdline_args):
         QtGui.QMainWindow.__init__(self)
         ElogviewerCommon.__init__(self)
@@ -66,9 +66,12 @@ class elogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         self.gui.textEdit.setDocument(document)
 
 
+from elogviewerCommon import parseArguments
 def main():
+	cmdline = parseArguments(sys.argv)
+	
     app = QtGui.QApplication(sys.argv)
-    elogviewer = elogviewerQt()
+    elogviewer = ElogviewerQt(cmdline)
     elogviewer.create_gui()
 
     elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
