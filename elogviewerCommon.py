@@ -261,7 +261,7 @@ def parseArguments(argv):
 	cmdline_args = CommandLineArguments()
 
 	try:
-		opts, args = getopt.getopt(argv, "dh", ["debug", "help"])
+		opts, args = getopt.getopt(argv, "dhgq", ["debug", "help", "gtk", "qt"])
     except getopt.GetoptError:
         help()
         usage()
@@ -270,6 +270,8 @@ def parseArguments(argv):
         if opt in ("-d", "--debug"):
 			cmdline_args.set_debug_status(True)
             print "debug mode is set"
+		elif opt in ("-q", "--qt"):
+			cmdline_args.set_gui_frontend("QT")
         elif opt in ("-h", "--help"):
             help()
             usage()
