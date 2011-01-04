@@ -4,4 +4,11 @@
 # (c) 2010 Mathias Laurin, GPL2
 # see elogviewerCommon.py for details
 
+import sys
+from elogviewerCommon import CommandLineArguments
+def main(argv):
+	cmdline = parseArguments(argv)
+
+if __name__ = "__main__":
+	main(sys.argv[1:])
 
