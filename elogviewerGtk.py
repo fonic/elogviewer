@@ -235,32 +235,7 @@ class ElogviewerGtk(ElogviewerCommon):
         gtk.main()
 
 
-def help():
-    print '''
-Elogviewer should help you not to miss important information like: 
-
-If you have just upgraded from an older version of python you
-will need to run:
-    /usr/sbin/python-updater
-
-please do run it and restart elogviewer.
-'''
-
-def usage():
-    print '''
-You need to enable the elog feature by setting at least one of 
-    PORTAGE_ELOG_CLASSES="info warn error log qa"
-and
-    PORTAGE_ELOG_SYSTEM="save"
-in /etc/make.conf
-
-You need to add yourself to the portage group to use 
-elogviewer without privileges.
-
-Read /etc/make.conf.example for more information
-'''
-    
-
+from elogviewerCommon import usage, help
 import getopt
 import portage
 def main(argv):
