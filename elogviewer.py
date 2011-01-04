@@ -12,6 +12,9 @@ def main(argv):
 	if cmdline.get_gui_frontend() == "QT":
 		from elogviewerQt import ElogviewerQt as ElogviewerGui
 		from elogviewerQt import Filter
+		from PyQt4 import QtGui
+		global app
+		app = QtGui.QApplication(sys.argv)
 	else:
 		from elogviewerGtk import ElogviewerGtk as ElogviewerGui
 		from elogviewerGtk import Filter
@@ -42,6 +45,9 @@ def main(argv):
 	elogviewer.show()
 	elogviewer.refresh()
 	elogviewer.main()
+
+	if cmdline.get_gui_frontend() == "QT":
+		sys.exit(app.exec_())
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
