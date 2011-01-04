@@ -231,9 +231,27 @@ elogviewer without privileges.
 Read /etc/make.conf.example for more information
 '''
 
+class CommandLineArguments:
+	_debug = False
+	_elog_dir = "."
+
+	def set_debug_status(self, debug_status):
+		self._debug = debug_status
+	
+	def get_debug_status(self):
+		return self._debug
+
+	def set_elogdir(self, elog_dir):
+		self._elog_dir = elog_dir
+
+	def get_elogdir(self):
+		return self._elog_dir
+
 import getopt
 import portage
 def parseArguments(argv):
+	cmdline_args = CommandLineArguments()
+
 	try:
 		opts, args = getopt.getopt(argv, "dh", ["debug", "help"])
     except getopt.GetoptError:
@@ -242,25 +260,24 @@ def parseArguments(argv):
         exit(1)
     for opt, arg in opts:
         if opt in ("-d", "--debug"):
-			global _debug
-            _debug = True
+			cmdline_args.set_debug_status(True)
             print "debug mode is set"
         elif opt in ("-h", "--help"):
             help()
             usage()
             exit (0)
     
-	global elog_dir
-    if _debug:
-		elog_dir = "./elog/elog/"
+	if cmdline_args.get_debug_status():
+		cmdline_args.set_elogdir("./elog/elog/")
     else:
         logdir = portage.settings["PORT_LOGDIR"]
         if logdir is "":
 			logdir = "/var/log/portage"
-		elog_dir = logdir + "/elog/"
+		cmdline_args.set_elogdir(logdir + "/elog/")
 	# FIXME
 	# test if directory exists, spit error if not
     #	usage()
     #   exit(2)
+	return cmdline_args
 
 
