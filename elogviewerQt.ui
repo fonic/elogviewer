@@ -86,6 +86,10 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionRefresh"/>
+   <addaction name="actionDelete"/>
+   <addaction name="actionAbout"/>
+   <addaction name="actionQuit"/>
   </widget>
   <action name="actionQuit">
    <property name="text">

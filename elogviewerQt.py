@@ -65,8 +65,28 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 		return self.gui.treeView.model()
 
     def connect(self):
-        pass
+		print 'connect'
+		#self.gui.treeView.connect(self.gui.treeView, QtCore.SIGNAL("selectionChanged()"), self.selection_changed)
+		#self.gui.treeView.connect(self.gui.treeView, QtCore.SIGNAL("selectionChanged"), self.selection_changed)
+	
+	def on_treeView_clicked(self, *args, **kargs):
+		print "got ya!"
+	
+	def on_model_selectionChanged(self, *args, **kargs):
+		print "Hello world!"
+	
+	def on_actionQuit_triggered(self, *args, **kargs):
+		print "actionQuit"
+	
+	def on_actionDelete_triggered(self, *args, **kargs):
+		print "actionDelete"
 
+	def on_actionRefresh_triggered(self, *args, **kargs):
+		print "actionRefresh"
+
+	def on_actionAbout_triggered(self, *args, **kargs):
+		print "actionAbout"
+	
     def show(self):
         QtGui.QMainWindow.show(self)
 
