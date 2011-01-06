@@ -72,8 +72,7 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 				self.selection_changed)
 	
 	def selection_changed(self, new_selection, old_selection):
-		print new_selection
-		print old_selection
+		row = new_selection.indexes()[1].row()
 	
 	def on_actionQuit_triggered(self, checked=None):
 		if checked is None: return
