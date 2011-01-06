@@ -75,16 +75,21 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 	def on_model_selectionChanged(self, *args, **kargs):
 		print "Hello world!"
 	
-	def on_actionQuit_triggered(self, *args, **kargs):
-		print "actionQuit"
+	def on_actionQuit_triggered(self, checked=None):
+		if checked is None: return
+		self.quit()
 	
-	def on_actionDelete_triggered(self, *args, **kargs):
+	def on_actionDelete_triggered(self, checked=None):
+		if checked is None: return
 		print "actionDelete"
 
-	def on_actionRefresh_triggered(self, *args, **kargs):
-		print "actionRefresh"
+	def on_actionRefresh_triggered(self, checked=None):
+		if checked is None: return
+		self.clear()
+		self.populate()
 
-	def on_actionAbout_triggered(self, *args, **kargs):
+	def on_actionAbout_triggered(self, checked=None):
+		if checked is None: return
 		print "actionAbout"
 	
     def show(self):
@@ -103,7 +108,7 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 			model.append(Elog(file, self.cmdline_args.get_elogdir()))
 
     def quit(self):
-        pass
+		print "quit"
 
     def add_filter(self, filter):
         ElogviewerCommon.add_filter(self, filter)
