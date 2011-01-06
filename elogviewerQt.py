@@ -54,26 +54,26 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         QtGui.QMainWindow.__init__(self)
         ElogviewerCommon.__init__(self)
 		self.cmdline_args = cmdline_args
+		self.model = Model()
 
     def create_gui(self):
         self.gui = Ui_MainWindow()
         self.gui.setupUi(self)
 
 		self.gui.treeView.setRootIsDecorated(False)
+		self.gui.treeView.setModel(self.model)
 	
 	def get_model(self):
 		return self.gui.treeView.model()
 
     def connect(self):
-		print 'connect'
-		#self.gui.treeView.connect(self.gui.treeView, QtCore.SIGNAL("selectionChanged()"), self.selection_changed)
-		#self.gui.treeView.connect(self.gui.treeView, QtCore.SIGNAL("selectionChanged"), self.selection_changed)
+		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
+				QtCore.SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
+				self.selection_changed)
 	
-	def on_treeView_clicked(self, *args, **kargs):
-		print "got ya!"
-	
-	def on_model_selectionChanged(self, *args, **kargs):
-		print "Hello world!"
+	def selection_changed(self, new_selection, old_selection):
+		print new_selection
+		print old_selection
 	
 	def on_actionQuit_triggered(self, checked=None):
 		if checked is None: return
@@ -96,7 +96,7 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
         QtGui.QMainWindow.show(self)
 
 	def clear(self):
-		self.gui.treeView.setModel(Model())
+		pass
 
     def refresh(self):
 		self.clear()
