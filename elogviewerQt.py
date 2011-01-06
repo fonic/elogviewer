@@ -31,7 +31,7 @@ class Model(QtGui.QStandardItemModel):
 			sorted_time_it, filename_it])
 	
 	def getItem(self, row):
-		return QtGui.QStandardItemModel.item(row, 0)
+		return QtGui.QStandardItemModel.item(self, row, 0)
 
 from elogviewerCommon import FilterCommon, Elog, all_files
 class Filter(FilterCommon):
