@@ -66,32 +66,20 @@ Christian Faulhammer (V-Li) has written the man page.
 
 class FilterCommon:
     def __init__(self, label, match="", is_class=False, color='black'):
-        self._name = label
+        self.name = label
         if match is "":
-            self._match = label
+            self.match = label
         else:
-            self._match = match
+            self.match = match
         self._is_class = is_class
-        self._color = color
+        self.color = color
     
 	def is_active(self):
 		pass
     
-    def name(self):
-        return self._name
-    
-    def match(self):
-        return self._match
-
-    def button(self):
-		pass
-        
     def is_class(self):
         return self._is_class
     
-    def color(self):
-        return self._color
-
 
 import os, fnmatch
 def all_files(root, patterns='*', single_level=False, yield_folders=False):
@@ -203,7 +191,7 @@ class ElogviewerCommon:
 		pass
 
 	def add_filter(self, filter):
-		self.filter_list[filter.match()] = filter
+		self.filter_list[filter.match] = filter
 
 
 def help():

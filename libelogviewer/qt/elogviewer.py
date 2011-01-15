@@ -37,15 +37,12 @@ class Model(QtGui.QStandardItemModel):
 
 class Filter(ev.FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
-        self._button = QtGui.QCheckBox(label)
-        self._button.setCheckState(True)
+        self.button = QtGui.QCheckBox(label)
+        self.button.setCheckState(True)
         ev.FilterCommon.__init__(self, label, match, is_class, color)
 
     def is_active(self):
         return self._button.checkState() != 0
-
-    def button(self):
-        return self._button
 
 
 from libelogviewer.qt.elogviewer_ui import Ui_MainWindow
@@ -115,9 +112,9 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         filter_class_box = self.gui.filter_class_layout
         filter_stage_box = self.gui.filter_stage_layout
         if filter.is_class():
-            filter_class_box.addWidget(filter.button())
+            filter_class_box.addWidget(filter.button)
         else:
-            filter_stage_box.addWidget(filter.button())
+            filter_stage_box.addWidget(filter.button)
     
     def read_elog(self, elog): # self, selection
         html_elog_content = "<body>"

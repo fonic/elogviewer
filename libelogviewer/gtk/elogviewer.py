@@ -46,15 +46,12 @@ class About(gtk.AboutDialog):
 
 class Filter(ev.FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
-        self._button = gtk.CheckButton(label)
-        self._button.set_active(True)
+        self.button = gtk.CheckButton(label)
+        self.button.set_active(True)
 		ev.FilterCommon.__init__(self, label, match, is_class, color)
     
     def is_active(self):
-        return self._button.get_active()
-
-	def button(self):
-		return self._button
+        return self.button.get_active()
 
 
 class ElogviewerGtk(ev.ElogviewerCommon):
@@ -134,20 +131,20 @@ class ElogviewerGtk(ev.ElogviewerCommon):
             (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
             r = l + 1
             b = t + 1
-            filter_class_table.attach(filter.button(), l, r, t, b)
+            filter_class_table.attach(filter.button, l, r, t, b)
             self.filter_counter_class += 1
         else:
             (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
             r = l + 1
             b = t + 1
-            filter_stage_table.attach(filter.button(), l, r, t, b)
+            filter_stage_table.attach(filter.button, l, r, t, b)
             self.filter_counter_stage += 1
 		if filter.is_class():
-			tag = gtk.TextTag(filter.match())
-			tag.set_property('foreground', filter.color())
+			tag = gtk.TextTag(filter.match)
+			tag.set_property('foreground', filter.color)
 			self.texttagtable.add(tag)
-        filter.button().connect('toggled', self.on_filter_btn)
-        filter.button().show()
+        filter.button.connect('toggled', self.on_filter_btn)
+        filter.button.show()
 
 	def on_actionQuit(self, action):
 		self.quit()
