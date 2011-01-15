@@ -7,12 +7,15 @@
 # Redirect messages to stderr
 import sys
 sys.stdout = sys.stderr
+import os.path as path
 
 try:
     import gtk
 	import gtk.glade
 except:
     print "a recent version of pygtk is required"
+
+import libelogviewer.core as ev
  
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
@@ -41,12 +44,11 @@ class About(gtk.AboutDialog):
         self.run()
         self.destroy()
 
-from elogviewerCommon import FilterCommon, Elog, all_files
-class Filter(FilterCommon):
+class Filter(ev.FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
         self._button = gtk.CheckButton(label)
         self._button.set_active(True)
-		FilterCommon.__init__(self, label, match, is_class, color)
+		ev.FilterCommon.__init__(self, label, match, is_class, color)
     
     def is_active(self):
         return self._button.get_active()
@@ -55,11 +57,10 @@ class Filter(FilterCommon):
 		return self._button
 
 
-from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
-class ElogviewerGtk(ElogviewerCommon):
+class ElogviewerGtk(ev.ElogviewerCommon):
 
 	def __init__(self, cmdline_args):
-		ElogviewerCommon.__init__(self)
+		ev.ElogviewerCommon.__init__(self)
 		self.filter_counter_class = 0
 		self.filter_counter_stage = 0
 		self.filter_columns_class = 2
@@ -68,8 +69,9 @@ class ElogviewerGtk(ElogviewerCommon):
 		self.cmdline_args = cmdline_args
     
     def create_gui(self):
+		gladefile = '/'.join([path.split(__file__)[0], "elogviewer.glade"])
 		self.gui = gtk.Builder()
-		self.gui.add_from_file("elogviewerGtk.glade")
+		self.gui.add_from_file(gladefile)
 
 		self.treeview = self.gui.get_object("treeview")
         category_col = gtk.TreeViewColumn(
@@ -124,7 +126,7 @@ class ElogviewerGtk(ElogviewerCommon):
 		gtk.main_quit()
 
     def add_filter(self, filter):
-		ElogviewerCommon.add_filter(self, filter)
+		ev.ElogviewerCommon.add_filter(self, filter)
 
 		filter_class_table = self.gui.get_object("filter_class_table")
 		filter_stage_table = self.gui.get_object("filter_stage_table")
@@ -151,7 +153,7 @@ class ElogviewerGtk(ElogviewerCommon):
 		self.quit()
 	
 	def on_actionAbout(self, action):
-		About(ElogviewerIdentity())
+		About(ev.ElogviewerIdentity())
 	
     def on_actionDelete(self, model, path, iter):
         model.get_value(iter).delete()
@@ -226,8 +228,8 @@ class ElogviewerGtk(ElogviewerCommon):
 
 	def populate(self):
         model = self.treeview.get_model()
-        for file in all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
-            model.append(Elog(file, self.cmdline_args.get_elogdir()))
+        for file in ev.all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
+            model.append(ev.Elog(file, self.cmdline_args.get_elogdir()))
 
     def main(self):
         gtk.main()

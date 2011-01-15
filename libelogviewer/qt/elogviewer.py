@@ -6,6 +6,7 @@
 
 import sys
 from PyQt4 import QtCore, QtGui
+import libelogviewer.core as ev
 
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 class Model(QtGui.QStandardItemModel):
@@ -33,12 +34,12 @@ class Model(QtGui.QStandardItemModel):
 	def getItem(self, row):
 		return QtGui.QStandardItemModel.item(self, row, 0)
 
-from elogviewerCommon import FilterCommon, Elog, all_files
-class Filter(FilterCommon):
+
+class Filter(ev.FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
         self._button = QtGui.QCheckBox(label)
         self._button.setCheckState(True)
-        FilterCommon.__init__(self, label, match, is_class, color)
+        ev.FilterCommon.__init__(self, label, match, is_class, color)
 
     def is_active(self):
         return self._button.checkState() != 0
@@ -47,12 +48,11 @@ class Filter(FilterCommon):
         return self._button
 
 
-from elogviewerQt_ui import Ui_MainWindow
-from elogviewerCommon import ElogviewerIdentity, ElogviewerCommon
-class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
+from libelogviewer.qt.elogviewer_ui import Ui_MainWindow
+class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
     def __init__(self, cmdline_args):
         QtGui.QMainWindow.__init__(self)
-        ElogviewerCommon.__init__(self)
+        ev.ElogviewerCommon.__init__(self)
 		self.cmdline_args = cmdline_args
 		self.model = Model()
 
@@ -103,14 +103,14 @@ class ElogviewerQt(QtGui.QMainWindow, ElogviewerCommon):
 
 	def populate(self):
 		model = self.get_model()
-		for file in all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
-			model.append(Elog(file, self.cmdline_args.get_elogdir()))
+		for file in ev.all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
+			model.append(ev.Elog(file, self.cmdline_args.get_elogdir()))
 
     def quit(self):
 		print "quit"
 
     def add_filter(self, filter):
-        ElogviewerCommon.add_filter(self, filter)
+        ev.ElogviewerCommon.add_filter(self, filter)
 
         filter_class_box = self.gui.filter_class_layout
         filter_stage_box = self.gui.filter_stage_layout
