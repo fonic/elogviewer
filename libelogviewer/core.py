@@ -3,7 +3,7 @@
 # vi:ts=4 st=4 sw=4 et
 # (c) 2010 Mathias Laurin, GPL2
 
-class ElogviewerIdentity:
+class Identity:
 	author = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
 			'Timothy Kilbourn', 'Jeremy Wickersheimer',
 			'',

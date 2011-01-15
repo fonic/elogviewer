@@ -150,7 +150,7 @@ class ElogviewerGtk(ev.ElogviewerCommon):
 		self.quit()
 	
 	def on_actionAbout(self, action):
-		About(ev.ElogviewerIdentity())
+		About(ev.Identity())
 	
     def on_actionDelete(self, model, path, iter):
         model.get_value(iter).delete()
