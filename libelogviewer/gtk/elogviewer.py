@@ -34,13 +34,13 @@ class ListStore(gtk.ListStore):
 class About(gtk.AboutDialog):
     def __init__(self, identity):
         gtk.AboutDialog.__init__(self)
-        self.set_version( identity.version() )
-        self.set_website( identity.website() )
-        self.set_authors( identity.author() )
-        self.set_artists( identity.artists() )
-        self.set_copyright( identity.copyright() )
-        self.set_documenters( identity.documenter() )
-        self.set_license( identity.LICENSE() )
+        self.set_version(identity.version)
+        self.set_website(identity.website)
+        self.set_authors(identity.author)
+        self.set_artists(identity.artists)
+        self.set_copyright(identity.copyright)
+        self.set_documenters(identity.documenter)
+        self.set_license(identity.LICENSE)
         self.run()
         self.destroy()
 
