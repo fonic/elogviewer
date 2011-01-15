@@ -59,6 +59,9 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 
 		self.gui.treeView.setRootIsDecorated(False)
 		self.gui.treeView.setModel(self.model)
+		self.gui.treeView.setColumnHidden(ELOG, True)
+		self.gui.treeView.setColumnHidden(TIMESORT, True)
+		self.gui.treeView.setColumnHidden(FILENAME, True)
 	
 	def get_model(self):
 		return self.gui.treeView.model()
