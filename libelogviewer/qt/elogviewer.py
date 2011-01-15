@@ -22,11 +22,11 @@ class Model(QtGui.QStandardItemModel):
 	
 	def append(self, elog):
 		elog_it = QtGui.QStandardItem("elog")
-		category_it = QtGui.QStandardItem(elog.category())
-		package_it = QtGui.QStandardItem(elog.package())
-		locale_time_it = QtGui.QStandardItem(elog.locale_time())
-		sorted_time_it = QtGui.QStandardItem(elog.sorted_time())
-		filename_it = QtGui.QStandardItem(elog.filename())
+		category_it = QtGui.QStandardItem(elog.category)
+		package_it = QtGui.QStandardItem(elog.package)
+		locale_time_it = QtGui.QStandardItem(elog.locale_time)
+		sorted_time_it = QtGui.QStandardItem(elog.sorted_time)
+		filename_it = QtGui.QStandardItem(elog.filename)
 		return QtGui.QStandardItemModel.appendRow(self, [ elog_it,
 			category_it, package_it, locale_time_it,
 			sorted_time_it, filename_it])

@@ -115,36 +115,20 @@ class Elog:
         sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
 		
 		split_filename = filename.split(elog_dir)[1].split(':')
-        t = self._category = self._package = ""
+        t = self.category = self.package = ""
         if len(split_filename) is 3:
-            (self._category, self._package, t) = split_filename
+            (self.category, self.package, t) = split_filename
         elif len(split_filename) is 2:
-            (self._category, self._package) = split_filename[0].split('/')
+            (self.category, self.package) = split_filename[0].split('/')
             t = split_filename[1]
         t = time.strptime(t, itime)
-        self._sorted_time = time.strftime(sorted_time_fmt, t)
-        self._locale_time = time.strftime(locale_time_fmt, t)
+        self.sorted_time = time.strftime(sorted_time_fmt, t)
+        self.locale_time = time.strftime(locale_time_fmt, t)
+        self.filename = filename
         
-        self._filename = filename
-        
-    def category(self):
-        return self._category
-        
-    def package(self):
-        return self._package
-            
-    def locale_time(self):
-        return self._locale_time
-        
-    def sorted_time(self):
-        return self._sorted_time
-        
-    def filename(self):
-        return self._filename
-
 	def contents(self, filter_list):
 		'''Parse file'''
-		file_object = open(self.filename(), 'r')
+		file_object = open(self.filename, 'r')
 		try:
 			lines = file_object.read().splitlines()
 		finally:
@@ -162,9 +146,9 @@ class Elog:
         
     def delete(self):
         if not _debug:
-            os.remove(self._filename)
+            os.remove(self.filename)
         else:
-            print self._filename
+            print self.filename
         return self
 
 class ElogviewerCommon:

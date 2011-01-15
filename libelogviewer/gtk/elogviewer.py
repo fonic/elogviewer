@@ -25,8 +25,8 @@ class ListStore(gtk.ListStore):
             TYPE_PYOBJECT, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
     
     def append(self, elog):
-        return gtk.ListStore.append(self, [elog, elog.category(), elog.package(),
-            elog.locale_time(), elog.sorted_time(), elog.filename()])
+        return gtk.ListStore.append(self, [elog, elog.category, elog.package,
+            elog.locale_time, elog.sorted_time, elog.filename])
     
     def get_value(self, iter):
         return gtk.ListStore.get_value(self, iter, 0)
@@ -215,7 +215,7 @@ class ElogviewerGtk(ev.ElogviewerCommon):
             (model, iter) = selection.get_selected()
             selected_path = model.get_path(iter)[0]
             model_size = len(model)
-            filename = model.get_value(iter).filename()
+            filename = model.get_value(iter).filename
         self.statusbar.push(0, 
             str(selected_path + 1)
             + ' of ' +
