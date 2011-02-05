@@ -69,7 +69,6 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         ev.ElogviewerCommon.__init__(self)
 		self.cmdline_args = cmdline_args
 		self.model = Model()
-		self.current_elog = None
 
     def create_gui(self):
         self.gui = Ui_MainWindow()
@@ -91,9 +90,9 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		idx = new_selection.indexes()
 		if idx[PACKAGE].isValid():
 			filename = idx[PACKAGE].data(FILENAME).toString()
-			self.selected_elog = self.model.elog_dict[str(filename)]
+			elog = self.model.elog_dict[str(filename)]
 		else:
-			self.selected_elog = None
+			elog = None
 	
 	def on_actionQuit_triggered(self, checked=None):
 		if checked is None: return
