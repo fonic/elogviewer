@@ -20,9 +20,6 @@ class ElogInstanceItem(QtGui.QStandardItem):
 	def data(self, role=0):
 		return QtGui.QStandardItem.data(self, role)
 
-	def elog(self):
-		return self.elog
-
 
 ( CATEGORY, PACKAGE, TIMESTAMP, ELOG ) = range(4)
 FILENAME = QtCore.Qt.UserRole
