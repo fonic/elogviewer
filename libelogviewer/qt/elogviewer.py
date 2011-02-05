@@ -149,7 +149,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         for elog_section in selected_elog.contents(self.filter_list):
             html_elog_content = '%s <p style="color: %s">%s</p>' % (html_elog_content, 'red', elog_section)
         html_elog_content = '%s </body>' % (html_elog_content)
-        document = QTextDocument()
+        document = QtGui.QTextDocument()
         document.setHtml(html_elog_content)
         self.gui.textEdit.setDocument(document)
 
