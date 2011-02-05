@@ -59,7 +59,7 @@ class Filter(ev.FilterCommon):
         ev.FilterCommon.__init__(self, label, match, is_class, color)
 
     def is_active(self):
-        return self._button.checkState() != 0
+        return self.button.checkState() != 0
 
 
 from libelogviewer.qt.elogviewer_ui import Ui_MainWindow
@@ -93,6 +93,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 			elog = self.model.elog_dict[str(filename)]
 		else:
 			elog = None
+		self.read_elog(elog)
 	
 	def on_actionQuit_triggered(self, checked=None):
 		if checked is None: return
@@ -140,7 +141,9 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         else:
             filter_stage_box.addWidget(filter.button)
     
-    def read_elog(self, elog): # self, selection
+    def read_elog(self, elog=None):
+		if elog is None:
+			self.gui.textEdit.clear()
         html_elog_content = "<body>"
         selected_elog = elog
         for elog_section in selected_elog.contents(self.filter_list):
