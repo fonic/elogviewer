@@ -8,28 +8,40 @@ import sys
 from PyQt4 import QtCore, QtGui
 import libelogviewer.core as ev
 
-( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
+
+class ElogInstanceItem(QtGui.QStandardItem):
+	def __init__(self, elog):
+		QtGui.QStandardItem.__init__(self)
+		self.data = elog
+	
+	def type(self):
+		return 1000
+
+	def data(self, role=0):
+		return QtGui.QStandardItem.data(self, role)
+
+
+( CATEGORY, PACKAGE, TIMESTAMP, ELOG ) = range(4)
+FILENAME = QtCore.Qt.UserRole
+TIMESORT = QtCore.Qt.UserRole
 class Model(QtGui.QStandardItemModel):
-	def __init__(self):
-		QtGui.QStandardItemModel.__init__(self)
-		self.setColumnCount(6)
-		self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
+	def __init__(self, parent=None):
+		QtGui.QStandardItemModel.__init__(self, parent)
+		self.setColumnCount(4)
 		self.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
 		self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
 		self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
-		self.setHeaderData( TIMESORT, QtCore.Qt.Horizontal, "Time sort order" )
-		self.setHeaderData( FILENAME, QtCore.Qt.Horizontal, "Filename" )
+		self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
 	
-	def append(self, elog):
-		elog_it = QtGui.QStandardItem("elog")
+	def appendRow(self, elog):
 		category_it = QtGui.QStandardItem(elog.category)
 		package_it = QtGui.QStandardItem(elog.package)
-		locale_time_it = QtGui.QStandardItem(elog.locale_time)
-		sorted_time_it = QtGui.QStandardItem(elog.sorted_time)
-		filename_it = QtGui.QStandardItem(elog.filename)
-		return QtGui.QStandardItemModel.appendRow(self, [ elog_it,
-			category_it, package_it, locale_time_it,
-			sorted_time_it, filename_it])
+		package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
+		time_it = QtGui.QStandardItem(elog.locale_time)
+		time_it.setData(QtCore.QVariant(elog.sorted_time), TIMESORT)
+		elog_it = ElogInstanceItem(elog)
+		return QtGui.QStandardItemModel.appendRow(self, [
+			category_it, package_it, time_it, elog_it ])
 	
 	def getItem(self, row):
 		return QtGui.QStandardItemModel.item(self, row, 0)
@@ -60,8 +72,6 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setRootIsDecorated(False)
 		self.gui.treeView.setModel(self.model)
 		self.gui.treeView.setColumnHidden(ELOG, True)
-		self.gui.treeView.setColumnHidden(TIMESORT, True)
-		self.gui.treeView.setColumnHidden(FILENAME, True)
 	
 	def get_model(self):
 		return self.gui.treeView.model()
@@ -72,7 +82,10 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 				self.selection_changed)
 	
 	def selection_changed(self, new_selection, old_selection):
-		row = new_selection.indexes()[1].row()
+		idx = new_selection.indexes()
+		filename_selected = idx[PACKAGE].data(FILENAME).toString()
+		print filename_selected
+		#print idx[ELOG].data().convert(ev.Elog)
 	
 	def on_actionQuit_triggered(self, checked=None):
 		if checked is None: return
@@ -80,12 +93,13 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 	
 	def on_actionDelete_triggered(self, checked=None):
 		if checked is None: return
-		print "actionDelete"
+		idx = self.gui.treeView.selectedIndexes()
+		filename_selected = idx[PACKAGE].data(FILENAME).toString()
+		print "Delete " + filename_selected
 
 	def on_actionRefresh_triggered(self, checked=None):
 		if checked is None: return
-		self.clear()
-		self.populate()
+		self.refresh()
 
 	def on_actionAbout_triggered(self, checked=None):
 		if checked is None: return
@@ -104,7 +118,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 	def populate(self):
 		model = self.get_model()
 		for file in ev.all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
-			model.append(ev.Elog(file, self.cmdline_args.get_elogdir()))
+			model.appendRow(ev.Elog(file, self.cmdline_args.get_elogdir()))
 
     def quit(self):
 		print "quit"
