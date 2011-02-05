@@ -17,9 +17,6 @@ class ElogInstanceItem(QtGui.QStandardItem):
 	def type(self):
 		return 1000
 
-	def data(self, role=0):
-		return QtGui.QStandardItem.data(self, role)
-
 
 ( CATEGORY, PACKAGE, TIMESTAMP, ELOG ) = range(4)
 FILENAME = QtCore.Qt.UserRole
@@ -76,9 +73,6 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setModel(self.model)
 		self.gui.treeView.setColumnHidden(ELOG, True)
 	
-	def get_model(self):
-		return self.gui.treeView.model()
-
     def connect(self):
 		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
 				QtCore.SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
@@ -118,9 +112,8 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.populate()
 
 	def populate(self):
-		model = self.get_model()
 		for file in ev.all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
-			model.appendRow(ev.Elog(file, self.cmdline_args.get_elogdir()))
+			self.model.appendRow(ev.Elog(file, self.cmdline_args.get_elogdir()))
 
     def add_filter(self, filter):
         ev.ElogviewerCommon.add_filter(self, filter)
