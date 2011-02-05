@@ -69,6 +69,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         ev.ElogviewerCommon.__init__(self)
 		self.cmdline_args = cmdline_args
 		self.model = Model()
+		self.selected_elog = None
 
     def create_gui(self):
         self.gui = Ui_MainWindow()
@@ -90,10 +91,10 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		idx = new_selection.indexes()
 		if idx[PACKAGE].isValid():
 			filename = idx[PACKAGE].data(FILENAME).toString()
-			elog = self.model.elog_dict[str(filename)]
+			self.selected_elog = self.model.elog_dict[str(filename)]
 		else:
-			elog = None
-		self.read_elog(elog)
+			self.selected_elog = None
+		self.read_elog()
 	
 	def on_actionDelete_triggered(self, checked=None):
 		if checked is None: return
@@ -134,12 +135,14 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         else:
             filter_stage_box.addWidget(filter.button)
     
-    def read_elog(self, elog=None):
-		if elog is None:
+    def read_elog(self):
+		if self.selected_elog is None:
 			self.gui.textEdit.clear()
         html_elog_content = "<body>"
-        for elog_section in elog.contents(self.filter_list):
+        for elog_section in self.selected_elog.contents(self.filter_list):
             html_elog_content = '%s <p style="color: %s">%s</p>' % (html_elog_content, 'red', elog_section)
+		print self.selected_elog.filename
+		return
         html_elog_content = '%s </body>' % (html_elog_content)
         document = QtGui.QTextDocument()
         document.setHtml(html_elog_content)
