@@ -95,10 +95,6 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 			elog = None
 		self.read_elog(elog)
 	
-	def on_actionQuit_triggered(self, checked=None):
-		if checked is None: return
-		self.quit()
-	
 	def on_actionDelete_triggered(self, checked=None):
 		if checked is None: return
 		idx = self.gui.treeView.selectedIndexes()
@@ -128,9 +124,6 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		for file in ev.all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
 			model.appendRow(ev.Elog(file, self.cmdline_args.get_elogdir()))
 
-    def quit(self):
-		print "quit"
-
     def add_filter(self, filter):
         ev.ElogviewerCommon.add_filter(self, filter)
 
@@ -145,8 +138,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		if elog is None:
 			self.gui.textEdit.clear()
         html_elog_content = "<body>"
-        selected_elog = elog
-        for elog_section in selected_elog.contents(self.filter_list):
+        for elog_section in elog.contents(self.filter_list):
             html_elog_content = '%s <p style="color: %s">%s</p>' % (html_elog_content, 'red', elog_section)
         html_elog_content = '%s </body>' % (html_elog_content)
         document = QtGui.QTextDocument()
