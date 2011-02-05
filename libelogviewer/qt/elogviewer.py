@@ -138,12 +138,12 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
     def read_elog(self):
 		if self.selected_elog is None:
 			self.gui.textEdit.clear()
-        html_elog_content = "<body>"
-        for elog_section in self.selected_elog.contents(self.filter_list):
-            html_elog_content = '<p style="color: %s">%s</p>' % ('red', elog_section.content)
+        html = "<body>"
+        for elog_part in self.selected_elog.contents(self.filter_list):
+            html = '<p style="color: %s">%s</p>' % ('red', elog_part.content)
 		return
-        html_elog_content = '%s </body>' % (html_elog_content)
+        html = '%s </body>' % (html)
         document = QtGui.QTextDocument()
-        document.setHtml(html_elog_content)
+        document.setHtml(html)
         self.gui.textEdit.setDocument(document)
 
