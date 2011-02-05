@@ -12,13 +12,16 @@ import libelogviewer.core as ev
 class ElogInstanceItem(QtGui.QStandardItem):
 	def __init__(self, elog):
 		QtGui.QStandardItem.__init__(self)
-		self.data = elog
+		self.elog = elog
 	
 	def type(self):
 		return 1000
 
 	def data(self, role=0):
 		return QtGui.QStandardItem.data(self, role)
+
+	def elog(self):
+		return self.elog
 
 
 ( CATEGORY, PACKAGE, TIMESTAMP, ELOG ) = range(4)
@@ -32,8 +35,13 @@ class Model(QtGui.QStandardItemModel):
 		self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
 		self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
 		self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
+		
+		# maintain separate list of elog
+		self.elog_dict = {}
 	
 	def appendRow(self, elog):
+		# maintain separate list of elogs
+		self.elog_dict[elog.filename] = elog
 		category_it = QtGui.QStandardItem(elog.category)
 		package_it = QtGui.QStandardItem(elog.package)
 		package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
@@ -43,9 +51,6 @@ class Model(QtGui.QStandardItemModel):
 		return QtGui.QStandardItemModel.appendRow(self, [
 			category_it, package_it, time_it, elog_it ])
 	
-	def getItem(self, row):
-		return QtGui.QStandardItemModel.item(self, row, 0)
-
 
 class Filter(ev.FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
@@ -64,6 +69,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         ev.ElogviewerCommon.__init__(self)
 		self.cmdline_args = cmdline_args
 		self.model = Model()
+		self.current_elog = None
 
     def create_gui(self):
         self.gui = Ui_MainWindow()
@@ -83,9 +89,11 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 	
 	def selection_changed(self, new_selection, old_selection):
 		idx = new_selection.indexes()
-		filename_selected = idx[PACKAGE].data(FILENAME).toString()
-		print filename_selected
-		#print idx[ELOG].data().convert(ev.Elog)
+		if idx[PACKAGE].isValid():
+			filename = idx[PACKAGE].data(FILENAME).toString()
+			self.selected_elog = self.model.elog_dict[str(filename)]
+		else:
+			self.selected_elog = None
 	
 	def on_actionQuit_triggered(self, checked=None):
 		if checked is None: return
