@@ -34,7 +34,6 @@ class Model(QtGui.QStandardItemModel):
 		self.elog_dict = {}
 	
 	def appendRow(self, elog):
-		# maintain separate list of elogs
 		self.elog_dict[elog.filename] = elog
 		category_it = QtGui.QStandardItem(elog.category)
 		package_it = QtGui.QStandardItem(elog.package)
@@ -44,6 +43,24 @@ class Model(QtGui.QStandardItemModel):
 		elog_it = ElogInstanceItem(elog)
 		return QtGui.QStandardItemModel.appendRow(self, [
 			category_it, package_it, time_it, elog_it ])
+	
+	def removeRow(self, row, parent=QModelIndex()):
+		idx = self.index(row, column=PACKAGE, parent)
+		filename = str(idx.data(FILENAME).toString())
+		if filename in self.elog_dict:
+			del self.elog_dict[filename]
+			return QtGui.QStandardItemModel.removeRow(self, row, parent)
+		else:
+			print '1. error in Model' + filename # DEBUG
+	
+	def removeRows(self, row, count, parent=QModelIndex()):
+		idx = self.index(row, column=PACKAGE, parent)
+		filename = str(idx.data(FILENAME).toString())
+		if filename in self.elog_dict:
+			del self.elog_dict[key]
+			return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
+		else:
+			print '2. error in Model' + filename # DEBUG
 	
 
 class Filter(ev.FilterCommon):
@@ -103,9 +120,10 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 	
     def show(self):
         QtGui.QMainWindow.show(self)
-
+	
 	def clear(self):
 		pass
+		#self.model.removeRows(0, self.model.rowCount(), self.model.rootIndex()) 
 
     def refresh(self):
 		self.clear()
