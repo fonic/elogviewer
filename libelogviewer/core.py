@@ -41,7 +41,7 @@ and
 for more information.
 
 Timothy Kilbourn (nmbrthry) has written the first version of elogviewer.
-Jeremy Wickersheimer adapted elogviewer to KDE, some features he added are now imported in elogviewer.
+Jeremy Wickersheimer adapted elogviewer to KDE.
 Christian Faulhammer (V-Li) has written the man page.
 '''
 
