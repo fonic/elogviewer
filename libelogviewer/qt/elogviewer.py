@@ -44,23 +44,15 @@ class Model(QtGui.QStandardItemModel):
 		return QtGui.QStandardItemModel.appendRow(self, [
 			category_it, package_it, time_it, elog_it ])
 	
-	def removeRow(self, row, parent=QModelIndex()):
-		idx = self.index(row, column=PACKAGE, parent)
-		filename = str(idx.data(FILENAME).toString())
-		if filename in self.elog_dict:
-			del self.elog_dict[filename]
-			return QtGui.QStandardItemModel.removeRow(self, row, parent)
-		else:
-			print '1. error in Model' + filename # DEBUG
-	
-	def removeRows(self, row, count, parent=QModelIndex()):
-		idx = self.index(row, column=PACKAGE, parent)
-		filename = str(idx.data(FILENAME).toString())
-		if filename in self.elog_dict:
-			del self.elog_dict[key]
-			return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
-		else:
-			print '2. error in Model' + filename # DEBUG
+	def removeRows(self, row, count, parent=QtCore.QModelIndex()):
+		for current_row in xrange(row, row+count):
+			idx = self.index(current_row, PACKAGE, parent)
+			filename = str(idx.data(FILENAME).toString())
+			print filename
+			if filename in self.elog_dict:
+				# self.elog_dict[FILENAME].delete()
+				del self.elog_dict[filename]
+		return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
 	
 
 class Filter(ev.FilterCommon):
@@ -97,9 +89,10 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 	
 	def selection_changed(self, new_selection, old_selection):
 		idx = new_selection.indexes()
-		if idx[PACKAGE].isValid():
-			filename = idx[PACKAGE].data(FILENAME).toString()
-			self.selected_elog = self.model.elog_dict[str(filename)]
+		if len(idx) is not 0:
+			idx = idx[PACKAGE]
+			filename = str(idx.data(FILENAME).toString())
+			self.selected_elog = self.model.elog_dict[filename]
 		else:
 			self.selected_elog = None
 		self.read_elog()
@@ -107,8 +100,8 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 	def on_actionDelete_triggered(self, checked=None):
 		if checked is None: return
 		idx = self.gui.treeView.selectedIndexes()
-		filename_selected = idx[PACKAGE].data(FILENAME).toString()
-		print "Delete " + filename_selected
+		if len(idx) is not 0:
+			self.model.removeRow(idx[0].row())
 
 	def on_actionRefresh_triggered(self, checked=None):
 		if checked is None: return
@@ -122,8 +115,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         QtGui.QMainWindow.show(self)
 	
 	def clear(self):
-		pass
-		#self.model.removeRows(0, self.model.rowCount(), self.model.rootIndex()) 
+		self.model.removeRows(0, self.model.rowCount()) 
 
     def refresh(self):
 		self.clear()
