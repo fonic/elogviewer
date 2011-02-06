@@ -74,6 +74,9 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.model = Model()
 		self.selected_elog = None
 
+		self.class_counter = self.stage_counter = 0
+		self.class_columns = self.stage_columns = 2
+
     def create_gui(self):
         self.gui = Ui_MainWindow()
         self.gui.setupUi(self)
@@ -125,15 +128,19 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		for file in ev.all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
 			self.model.appendRow(ev.Elog(file, self.cmdline_args.get_elogdir()))
 
-    def add_filter(self, filter):
+	def add_filter(self, filter):
         ev.ElogviewerCommon.add_filter(self, filter)
 
         filter_class_box = self.gui.filter_class_layout
         filter_stage_box = self.gui.filter_stage_layout
         if filter.is_class():
-            filter_class_box.addWidget(filter.button)
+			(t, l) = divmod(self.class_counter, self.class_columns)
+            filter_class_box.addWidget(filter.button, t, l)
+			self.class_counter += 1
         else:
-            filter_stage_box.addWidget(filter.button)
+			(t, l) = divmod(self.stage_counter, self.stage_columns)
+            filter_stage_box.addWidget(filter.button, t, l)
+			self.stage_counter += 1
     
     def read_elog(self):
 		if self.selected_elog is None:
