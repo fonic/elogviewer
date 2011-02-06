@@ -129,6 +129,8 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 			self.model.appendRow(ev.Elog(file, self.cmdline_args.get_elogdir()))
 
 	def add_filter(self, filter):
+		filter.button.connect(filter.button, QtCore.SIGNAL("stateChanged(int)"),
+				self.read_elog)
         ev.ElogviewerCommon.add_filter(self, filter)
 
         filter_class_box = self.gui.filter_class_layout
