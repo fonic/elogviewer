@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'elogviewerQt.ui'
+# Form implementation generated from reading ui file 'elogviewer.ui'
 #
-# Created: Thu Jan  6 16:58:15 2011
+# Created: Sun Feb  6 12:02:34 2011
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -30,6 +30,12 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.textEdit = QtGui.QTextEdit(self.centralwidget)
+        self.textEdit.setReadOnly(True)
+        self.textEdit.setHtml("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'Sans Serif\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"></p></body></html>")
         self.textEdit.setObjectName("textEdit")
         self.horizontalLayout.addWidget(self.textEdit)
         self.verticalLayout = QtGui.QVBoxLayout()
@@ -38,7 +44,7 @@ class Ui_MainWindow(object):
         self.filter_class_box.setObjectName("filter_class_box")
         self.gridLayout_4 = QtGui.QGridLayout(self.filter_class_box)
         self.gridLayout_4.setObjectName("gridLayout_4")
-        self.filter_class_layout = QtGui.QFormLayout()
+        self.filter_class_layout = QtGui.QGridLayout()
         self.filter_class_layout.setObjectName("filter_class_layout")
         self.gridLayout_4.addLayout(self.filter_class_layout, 0, 0, 1, 1)
         self.verticalLayout.addWidget(self.filter_class_box)
@@ -46,7 +52,7 @@ class Ui_MainWindow(object):
         self.filter_stage_box.setObjectName("filter_stage_box")
         self.gridLayout_5 = QtGui.QGridLayout(self.filter_stage_box)
         self.gridLayout_5.setObjectName("gridLayout_5")
-        self.filter_stage_layout = QtGui.QFormLayout()
+        self.filter_stage_layout = QtGui.QGridLayout()
         self.filter_stage_layout.setObjectName("filter_stage_layout")
         self.gridLayout_5.addLayout(self.filter_stage_layout, 0, 0, 1, 1)
         self.verticalLayout.addWidget(self.filter_stage_box)

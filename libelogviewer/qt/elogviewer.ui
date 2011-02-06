@@ -51,7 +51,7 @@ p, li { white-space: pre-wrap; }
             </property>
             <layout class="QGridLayout" name="gridLayout_4">
              <item row="0" column="0">
-              <layout class="QFormLayout" name="filter_class_layout"/>
+              <layout class="QGridLayout" name="filter_class_layout"/>
              </item>
             </layout>
            </widget>
@@ -63,7 +63,7 @@ p, li { white-space: pre-wrap; }
             </property>
             <layout class="QGridLayout" name="gridLayout_5">
              <item row="0" column="0">
-              <layout class="QFormLayout" name="filter_stage_layout"/>
+              <layout class="QGridLayout" name="filter_stage_layout"/>
              </item>
             </layout>
            </widget>
