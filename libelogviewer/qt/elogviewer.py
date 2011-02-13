@@ -48,7 +48,6 @@ class Model(QtGui.QStandardItemModel):
 		for current_row in xrange(row, row+count):
 			idx = self.index(current_row, PACKAGE, parent)
 			filename = str(idx.data(FILENAME).toString())
-			print filename
 			if filename in self.elog_dict:
 				del self.elog_dict[filename]
 		return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
@@ -144,9 +143,11 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		if checked is None: return
 		idx = self.gui.treeView.selectedIndexes()
 		if len(idx) is not 0:
-			filename = str(self.model.index(idx[0].row(), PACKAGE).data(FILENAME).toString())
-			#print self.model.elog_dict[filename].filename + ' deleted'
-			self.model.elog_dict[filename].delete()
+			filename = self.model.index(idx[0].row(), PACKAGE).data(FILENAME).toString()
+			if self.cmdline_args.debug:
+				print "%s deleted" % str(filename)
+			else:
+				self.model.elog_dict[filename].delete()
 			self.model.removeRow(idx[0].row())
 
 	def on_actionRefresh_triggered(self, checked=None):

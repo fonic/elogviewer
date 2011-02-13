@@ -126,11 +126,7 @@ class Elog:
 		return elog_content
         
     def delete(self):
-        if not _debug:
-            os.remove(self.filename)
-        else:
-            print self.filename
-        return self
+		os.remove(self.filename)
 
 class Elogviewer:
 
@@ -192,7 +188,7 @@ class CommandLineArguments:
 				usage()
 				exit (0)
 		
-		if self.debug:
+		if False: #self.debug:
 			self.elog_dir = "./elog/elog/"
 		else:
 			logdir = portage.settings["PORT_LOGDIR"]

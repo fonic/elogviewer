@@ -153,7 +153,10 @@ class ElogviewerGtk(core.Elogviewer):
 		About(core.Identity())
 	
     def on_actionDelete(self, model, path, iter):
-        model.get_value(iter).delete()
+		if self.cmdline_args.debug:
+			print "%s deleted" % model.get_value(iter).filename
+		else:
+			model.get_value(iter).delete()
         model.remove(iter)
     
     def on_actionRefresh(self, action):
