@@ -50,8 +50,6 @@ class Model(QtGui.QStandardItemModel):
 			filename = str(idx.data(FILENAME).toString())
 			print filename
 			if filename in self.elog_dict:
-				print "%s deleted" % filename
-				# self.elog_dict[FILENAME].delete()
 				del self.elog_dict[filename]
 		return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
 	
@@ -87,7 +85,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setColumnHidden(ELOG, True)
 
 		# DEBUG test w Tango icon theme
-		QtGui.QIcon.setThemeName("Tango")
+		#QtGui.QIcon.setThemeName("Tango")
 		icon_names = ["view-refresh", "edit-delete", "help-about", "application-exit" ]
 		# test if icons available in current theme
 		print [ QtGui.QIcon.hasThemeIcon(i) for i in icon_names ]
@@ -113,7 +111,6 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.actionQuit.triggered.connect(QtGui.qApp.quit)
 
 		self.update_statusbar()
-
 	
     def connect(self):
 		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
@@ -137,6 +134,9 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		if checked is None: return
 		idx = self.gui.treeView.selectedIndexes()
 		if len(idx) is not 0:
+			filename = str(self.model.index(idx[0].row(), PACKAGE).data(FILENAME).toString())
+			print self.model.elog_dict[filename].filename + ' deleted'
+			#self.model.elog_dict[filename].delete()
 			self.model.removeRow(idx[0].row())
 
 	def on_actionRefresh_triggered(self, checked=None):
