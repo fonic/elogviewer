@@ -86,17 +86,27 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setModel(self.model)
 		self.gui.treeView.setColumnHidden(ELOG, True)
 
-		refreshicon = QtGui.QIcon.fromTheme("view-refresh")
+		# DEBUG test w Tango icon theme
+		QtGui.QIcon.setThemeName("Tango")
+		icon_names = ["view-refresh", "edit-delete", "help-about", "application-exit" ]
+		# test if icons available in current theme
+		print [ QtGui.QIcon.hasThemeIcon(i) for i in icon_names ]
+
+		refreshicon = QtGui.QIcon.fromTheme("view-refresh", 
+				QtGui.QIcon(":/trolltech/styles/commonstyle/images/refresh-32.png"))
 		self.gui.actionRefresh.setIcon(refreshicon)
 
-		deleteicon = QtGui.QIcon.fromTheme("edit-delete")
+		deleteicon = QtGui.QIcon.fromTheme("edit-delete",
+				QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png"))
 		self.gui.actionDelete.setIcon(deleteicon)
 
 		abouticon = QtGui.QIcon.fromTheme("help-about")
+				#QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-help-32.png"))
 		self.gui.actionAbout.setIcon(abouticon)
 		self.gui.actionAbout.setMenuRole(QtGui.QAction.AboutRole)
 
 		quiticon = QtGui.QIcon.fromTheme("application-exit")
+				#QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-close-32.png"))
 		self.gui.actionQuit.setIcon(quiticon)
 		self.gui.actionQuit.setIconVisibleInMenu(True)
 		self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
