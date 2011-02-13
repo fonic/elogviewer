@@ -29,7 +29,7 @@ class Model(QtGui.QStandardItemModel):
 		self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
 		self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
 		self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
-		
+
 		# maintain separate list of elog
 		self.elog_dict = {}
 	
@@ -84,6 +84,13 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setModel(self.model)
 		self.gui.treeView.setColumnHidden(ELOG, True)
 
+		header = self.gui.treeView.header()
+		header.setSortIndicatorShown(True)
+		header.setClickable(True)
+
+		# see http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html#names
+		# http://www.qtcentre.org/wiki/index.php?title=Embedded_resources
+
 		# DEBUG test w Tango icon theme
 		#QtGui.QIcon.setThemeName("Tango")
 		icon_names = ["view-refresh", "edit-delete", "help-about", "application-exit" ]
@@ -116,6 +123,9 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
 				QtCore.SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
 				self.selection_changed)
+		self.gui.treeView.header().connect(self.gui.treeView.header(),
+				QtCore.SIGNAL("sortIndicatorChanged(int, Qt::SortOrder)"),
+				self.model.sort)
 	
 	def selection_changed(self, new_selection, old_selection):
 		idx = new_selection.indexes()
