@@ -84,6 +84,8 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setRootIsDecorated(False)
 		self.gui.treeView.setModel(self.model)
 		self.gui.treeView.setColumnHidden(ELOG, True)
+
+		self.update_statusbar()
 	
     def connect(self):
 		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
@@ -98,6 +100,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 			self.selected_elog = self.model.elog_dict[filename]
 		else:
 			self.selected_elog = None
+		self.update_statusbar(idx.row() + 1)
 		self.read_elog()
 	
 	def on_actionDelete_triggered(self, checked=None):
@@ -155,4 +158,13 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		html = ''.join(html)
 		self.gui.textEdit.clear()
 		self.gui.textEdit.append(html)
+	
+	def update_statusbar(self, idx=0):
+		if self.selected_elog is None:
+			filename = "no selection"
+		else:
+			filename = self.selected_elog.package
+		model_size = self.model.rowCount()
+		message = "%i of %i\t%s" % (idx, model_size, filename)
+		self.gui.statusbar.showMessage(message)
 
