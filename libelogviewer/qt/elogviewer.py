@@ -58,7 +58,7 @@ class Model(QtGui.QStandardItemModel):
 class Filter(ev.FilterCommon):
     def __init__(self, label, match="", is_class=False, color='black'):
         self.button = QtGui.QCheckBox(label)
-        self.button.setCheckState(True)
+        self.button.setCheckState(QtCore.Qt.Checked)
         ev.FilterCommon.__init__(self, label, match, is_class, color)
 
     def is_active(self):
@@ -147,6 +147,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
     def read_elog(self):
 		if self.selected_elog is None:
 			self.gui.textEdit.clear()
+			return
 		html = []
         for elog_part in self.selected_elog.contents(self.filter_list):
 			html.append('<p style="color: %s">%s</p>' % 
