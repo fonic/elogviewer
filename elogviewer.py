@@ -44,10 +44,11 @@ def main(argv):
 	elogviewer.connect()
 	elogviewer.show()
 	elogviewer.refresh()
-	elogviewer.main()
 
 	if cmdline.gui_frontend == "QT":
 		sys.exit(app.exec_())
+	elif cmdline.gui_frontend == "GTK":
+		elogviewer.main()
 
 if __name__ == "__main__":
 	main(sys.argv[1:])

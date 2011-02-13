@@ -137,24 +137,6 @@ class ElogviewerCommon:
 	def __init__(self):
 		self.filter_list = {}
 
-	def create_gui(self):
-		pass
-
-	def connect(self):
-		pass
-
-	def show(self):
-		pass
-
-	def refresh(self):
-		pass
-
-	def main(self):
-		pass
-
-	def quit(self):
-		pass
-
 	def add_filter(self, filter):
 		self.filter_list[filter.match] = filter
 
