@@ -13,7 +13,7 @@ class Identity:
 	documenter = ['Christian Faulhammer <opfer@gentoo.org>']
 	artists = ['elogviewer needs a logo, artists are welcome to\ncontribute, please contact the author.']
 	appname = 'elogviewer'
-	version = '0.7.0'
+	version = '1.0.0'
 	website = 'http://sourceforge.net/projects/elogviewer'
 	copyright = 'Copyright (c) 2007, 2011 Mathias Laurin'
 	license = 'GNU General Public License (GPL) version 2'
