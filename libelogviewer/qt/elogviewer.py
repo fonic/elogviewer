@@ -50,6 +50,7 @@ class Model(QtGui.QStandardItemModel):
 			filename = str(idx.data(FILENAME).toString())
 			print filename
 			if filename in self.elog_dict:
+				print "%s deleted" % filename
 				# self.elog_dict[FILENAME].delete()
 				del self.elog_dict[filename]
 		return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
@@ -85,17 +86,17 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setModel(self.model)
 		self.gui.treeView.setColumnHidden(ELOG, True)
 
-		refreshicon = QtGui.QIcon(QtGui.QPixmap("refresh.png"))
+		refreshicon = QtGui.QIcon.fromTheme("view-refresh")
 		self.gui.actionRefresh.setIcon(refreshicon)
 
-		deleteicon = QtGui.QIcon(QtGui.QPixmap("delete.png"))
+		deleteicon = QtGui.QIcon.fromTheme("edit-delete")
 		self.gui.actionDelete.setIcon(deleteicon)
 
-		abouticon = QtGui.QIcon(QtGui.QPixmap("about.png"))
+		abouticon = QtGui.QIcon.fromTheme("help-about")
 		self.gui.actionAbout.setIcon(abouticon)
 		self.gui.actionAbout.setMenuRole(QtGui.QAction.AboutRole)
 
-		quiticon = QtGui.QIcon(QtGui.QPixmap("quit.png"))
+		quiticon = QtGui.QIcon.fromTheme("application-exit")
 		self.gui.actionQuit.setIcon(quiticon)
 		self.gui.actionQuit.setIconVisibleInMenu(True)
 		self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
@@ -112,11 +113,13 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		idx = new_selection.indexes()
 		if len(idx) is not 0:
 			idx = idx[PACKAGE]
+			row = idx.row() + 1
 			filename = str(idx.data(FILENAME).toString())
 			self.selected_elog = self.model.elog_dict[filename]
 		else:
 			self.selected_elog = None
-		self.update_statusbar(idx.row() + 1)
+			row = 0
+		self.update_statusbar(row)
 		self.read_elog()
 	
 	def on_actionDelete_triggered(self, checked=None):
@@ -137,6 +140,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         QtGui.QMainWindow.show(self)
 	
     def refresh(self):
+		# BUG: will delete the files!
 		self.model.removeRows(0, self.model.rowCount()) 
 		self.populate()
 
