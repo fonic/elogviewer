@@ -15,7 +15,7 @@ try:
 except:
     print "a recent version of pygtk is required"
 
-import libelogviewer.core as ev
+import libelogviewer.core as core
  
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
@@ -44,20 +44,20 @@ class About(gtk.AboutDialog):
         self.run()
         self.destroy()
 
-class Filter(ev.FilterCommon):
+class Filter(core.Filter):
     def __init__(self, label, match="", is_class=False, color='black'):
         self.button = gtk.CheckButton(label)
         self.button.set_active(True)
-		ev.FilterCommon.__init__(self, label, match, is_class, color)
+		core.Filter.__init__(self, label, match, is_class, color)
     
     def is_active(self):
         return self.button.get_active()
 
 
-class ElogviewerGtk(ev.ElogviewerCommon):
+class ElogviewerGtk(core.Elogviewer):
 
 	def __init__(self, cmdline_args):
-		ev.ElogviewerCommon.__init__(self)
+		core.Elogviewer.__init__(self)
 		self.filter_counter_class = 0
 		self.filter_counter_stage = 0
 		self.filter_columns_class = 2
@@ -123,7 +123,7 @@ class ElogviewerGtk(ev.ElogviewerCommon):
 		gtk.main_quit()
 
     def add_filter(self, filter):
-		ev.ElogviewerCommon.add_filter(self, filter)
+		core.Elogviewer.add_filter(self, filter)
 
 		filter_class_table = self.gui.get_object("filter_class_table")
 		filter_stage_table = self.gui.get_object("filter_stage_table")
@@ -150,7 +150,7 @@ class ElogviewerGtk(ev.ElogviewerCommon):
 		self.quit()
 	
 	def on_actionAbout(self, action):
-		About(ev.Identity())
+		About(core.Identity())
 	
     def on_actionDelete(self, model, path, iter):
         model.get_value(iter).delete()
@@ -225,8 +225,8 @@ class ElogviewerGtk(ev.ElogviewerCommon):
 
 	def populate(self):
         model = self.treeview.get_model()
-        for file in ev.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
-            model.append(ev.Elog(file, self.cmdline_args.elog_dir))
+        for file in core.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
+            model.append(core.Elog(file, self.cmdline_args.elog_dir))
 
     def main(self):
         gtk.main()

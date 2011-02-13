@@ -6,7 +6,7 @@
 
 import sys
 from PyQt4 import QtCore, QtGui
-import libelogviewer.core as ev
+import libelogviewer.core as core
 
 
 class ElogInstanceItem(QtGui.QStandardItem):
@@ -54,21 +54,21 @@ class Model(QtGui.QStandardItemModel):
 		return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
 	
 
-class Filter(ev.FilterCommon):
+class Filter(core.Filter):
     def __init__(self, label, match="", is_class=False, color='black'):
         self.button = QtGui.QCheckBox(label)
         self.button.setCheckState(QtCore.Qt.Checked)
-        ev.FilterCommon.__init__(self, label, match, is_class, color)
+        core.Filter.__init__(self, label, match, is_class, color)
 
     def is_active(self):
         return self.button.checkState() != 0
 
 
 from libelogviewer.qt.elogviewer_ui import Ui_MainWindow
-class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
+class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     def __init__(self, cmdline_args):
         QtGui.QMainWindow.__init__(self)
-        ev.ElogviewerCommon.__init__(self)
+        core.Elogviewer.__init__(self)
 		self.cmdline_args = cmdline_args
 		self.model = Model()
 		self.selected_elog = None
@@ -165,13 +165,13 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.populate()
 
 	def populate(self):
-		for file in ev.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
-			self.model.appendRow(ev.Elog(file, self.cmdline_args.elog_dir))
+		for file in core.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
+			self.model.appendRow(core.Elog(file, self.cmdline_args.elog_dir))
 
 	def add_filter(self, filter):
 		filter.button.connect(filter.button, QtCore.SIGNAL("stateChanged(int)"),
 				self.read_elog)
-        ev.ElogviewerCommon.add_filter(self, filter)
+        core.Elogviewer.add_filter(self, filter)
 
         filter_class_box = self.gui.filter_class_layout
         filter_stage_box = self.gui.filter_stage_layout

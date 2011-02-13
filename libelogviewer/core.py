@@ -45,7 +45,7 @@ Jeremy Wickersheimer adapted elogviewer to KDE.
 Christian Faulhammer (V-Li) has written the man page.
 '''
 
-class FilterCommon:
+class Filter:
     def __init__(self, label, match="", is_class=False, color='black'):
         self.name = label
         if match is "":
@@ -132,7 +132,7 @@ class Elog:
             print self.filename
         return self
 
-class ElogviewerCommon:
+class Elogviewer:
 
 	def __init__(self):
 		self.filter_list = {}
