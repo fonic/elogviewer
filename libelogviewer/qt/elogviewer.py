@@ -145,8 +145,8 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		idx = self.gui.treeView.selectedIndexes()
 		if len(idx) is not 0:
 			filename = str(self.model.index(idx[0].row(), PACKAGE).data(FILENAME).toString())
-			print self.model.elog_dict[filename].filename + ' deleted'
-			#self.model.elog_dict[filename].delete()
+			#print self.model.elog_dict[filename].filename + ' deleted'
+			self.model.elog_dict[filename].delete()
 			self.model.removeRow(idx[0].row())
 
 	def on_actionRefresh_triggered(self, checked=None):
@@ -161,13 +161,12 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
         QtGui.QMainWindow.show(self)
 	
     def refresh(self):
-		# BUG: will delete the files!
 		self.model.removeRows(0, self.model.rowCount()) 
 		self.populate()
 
 	def populate(self):
-		for file in ev.all_files(self.cmdline_args.get_elogdir(), '*:*.log', False, True):
-			self.model.appendRow(ev.Elog(file, self.cmdline_args.get_elogdir()))
+		for file in ev.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
+			self.model.appendRow(ev.Elog(file, self.cmdline_args.elog_dir))
 
 	def add_filter(self, filter):
 		filter.button.connect(filter.button, QtCore.SIGNAL("stateChanged(int)"),

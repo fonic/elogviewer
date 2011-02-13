@@ -184,63 +184,41 @@ elogviewer without privileges.
 Read /etc/make.conf.example for more information
 '''
 
-class CommandLineArguments:
-	_debug = False
-	_elog_dir = "."
-	_gui_frontend = "GTK"
-
-	def set_debug_status(self, debug_status):
-		self._debug = debug_status
-	
-	def get_debug_status(self):
-		return self._debug
-
-	def set_elogdir(self, elog_dir):
-		self._elog_dir = elog_dir
-
-	def get_elogdir(self):
-		return self._elog_dir
-
-	def set_gui_frontend(self, frontend_str):
-		''' string GTK or QT '''
-		self._gui_frontend = frontend_str
-
-	def get_gui_frontend(self):
-		return self._gui_frontend
-
 import getopt
 import portage
-def parseArguments(argv):
-	cmdline_args = CommandLineArguments()
+class CommandLineArguments:
+	def __init__(self, argv):
+		self.debug = False
+		self.elog_dir = "."
+		''' string GTK or QT '''
+		self.gui_frontend = "GTK"
 
-	try:
-		opts, args = getopt.getopt(argv, "dhgq", ["debug", "help", "gtk", "qt"])
-    except getopt.GetoptError:
-        help()
-        usage()
-        exit(1)
-    for opt, arg in opts:
-        if opt in ("-d", "--debug"):
-			cmdline_args.set_debug_status(True)
-            print "debug mode is set"
-		elif opt in ("-q", "--qt"):
-			cmdline_args.set_gui_frontend("QT")
-        elif opt in ("-h", "--help"):
-            help()
-            usage()
-            exit (0)
-    
-	if cmdline_args.get_debug_status():
-		cmdline_args.set_elogdir("./elog/elog/")
-    else:
-        logdir = portage.settings["PORT_LOGDIR"]
-        if logdir is "":
-			logdir = "/var/log/portage"
-		cmdline_args.set_elogdir(logdir + "/elog/")
-	# FIXME
-	# test if directory exists, spit error if not
-    #	usage()
-    #   exit(2)
-	return cmdline_args
-
+		try:
+			opts, args = getopt.getopt(argv, "dhgq", ["debug", "help", "gtk", "qt"])
+		except getopt.GetoptError:
+			help()
+			usage()
+			exit(1)
+		for opt, arg in opts:
+			if opt in ("-d", "--debug"):
+				self.debug = True
+				print "debug mode is set"
+			elif opt in ("-q", "--qt"):
+				self.gui_frontend = "QT"
+			elif opt in ("-h", "--help"):
+				help()
+				usage()
+				exit (0)
+		
+		if self.debug:
+			self.elog_dir = "./elog/elog/"
+		else:
+			logdir = portage.settings["PORT_LOGDIR"]
+			if logdir is "":
+				logdir = "/var/log/portage"
+			self.elog_dir = logdir + "/elog/"
+		# FIXME
+		# test if directory exists, spit error if not
+		#	usage()
+		#   exit(2)
 

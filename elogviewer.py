@@ -7,9 +7,9 @@
 import sys
 import libelogviewer.core as ev
 def main(argv):
-	cmdline = ev.parseArguments(argv)
+	cmdline = ev.CommandLineArguments(argv)
 
-	if cmdline.get_gui_frontend() == "QT":
+	if cmdline.gui_frontend == "QT":
 		from libelogviewer.qt.elogviewer import ElogviewerQt as ElogviewerGui
 		from libelogviewer.qt.elogviewer import Filter
 		from PyQt4 import QtGui
@@ -46,7 +46,7 @@ def main(argv):
 	elogviewer.refresh()
 	elogviewer.main()
 
-	if cmdline.get_gui_frontend() == "QT":
+	if cmdline.gui_frontend == "QT":
 		sys.exit(app.exec_())
 
 if __name__ == "__main__":
