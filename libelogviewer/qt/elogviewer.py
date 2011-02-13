@@ -100,6 +100,7 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.actionQuit.setIcon(quiticon)
 		self.gui.actionQuit.setIconVisibleInMenu(True)
 		self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
+		self.gui.actionQuit.triggered.connect(QtGui.qApp.quit)
 
 		self.update_statusbar()
 
