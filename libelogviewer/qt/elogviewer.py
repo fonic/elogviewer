@@ -85,7 +85,23 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
 		self.gui.treeView.setModel(self.model)
 		self.gui.treeView.setColumnHidden(ELOG, True)
 
+		refreshicon = QtGui.QIcon(QtGui.QPixmap("refresh.png"))
+		self.gui.actionRefresh.setIcon(refreshicon)
+
+		deleteicon = QtGui.QIcon(QtGui.QPixmap("delete.png"))
+		self.gui.actionDelete.setIcon(deleteicon)
+
+		abouticon = QtGui.QIcon(QtGui.QPixmap("about.png"))
+		self.gui.actionAbout.setIcon(abouticon)
+		self.gui.actionAbout.setMenuRole(QtGui.QAction.AboutRole)
+
+		quiticon = QtGui.QIcon(QtGui.QPixmap("quit.png"))
+		self.gui.actionQuit.setIcon(quiticon)
+		self.gui.actionQuit.setIconVisibleInMenu(True)
+		self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
+
 		self.update_statusbar()
+
 	
     def connect(self):
 		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
