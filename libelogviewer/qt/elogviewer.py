@@ -136,11 +136,8 @@ class ElogviewerQt(QtGui.QMainWindow, ev.ElogviewerCommon):
     def show(self):
         QtGui.QMainWindow.show(self)
 	
-	def clear(self):
-		self.model.removeRows(0, self.model.rowCount()) 
-
     def refresh(self):
-		self.clear()
+		self.model.removeRows(0, self.model.rowCount()) 
 		self.populate()
 
 	def populate(self):
