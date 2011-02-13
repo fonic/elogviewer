@@ -64,6 +64,7 @@ class ElogviewerGtk(core.Elogviewer):
 		self.filter_columns_stage = self.filter_columns_class 
 		self.texttagtable = gtk.TextTagTable()
 		self.cmdline_args = cmdline_args
+		self.selected_elog = None
     
     def create_gui(self):
 		gladefile = '/'.join([path.split(__file__)[0], "elogviewer.glade"])
@@ -152,7 +153,10 @@ class ElogviewerGtk(core.Elogviewer):
 	def on_actionAbout(self, action):
 		About(core.Identity())
 	
-    def on_actionDelete(self, model, path, iter):
+	def on_actionDelete(self, a):
+		print a
+
+    def on_actionDeleteOLD(self, model, path, iter):
 		if self.cmdline_args.debug:
 			print "%s deleted" % model.get_value(iter).filename
 		else:
@@ -176,15 +180,19 @@ class ElogviewerGtk(core.Elogviewer):
             selection.select_path(0)
 
     def on_filter_btn(self, widget):
-        selection = self.treeview.get_selection()
-        self.read_elog(selection)
+        self.read_elog()
     
     def on_selection_changed(self, selection):
-        if selection.count_selected_rows() is not 0:
+        if selection.count_selected_rows() is 0:
+			self.selected_elog = None
+			row = 0
+		else:
             (model, iter) = selection.get_selected()
+			self.selected_elog = model.get_value(iter)
             if not model.iter_has_child(iter):
-                self.read_elog(selection)
-        self.update_statusbar(selection)
+                self.read_elog()
+				row = model.get_path(iter)[0] + 1
+        self.update_statusbar(row)
     
     def on_row_deleted(self, model, path):
         selection = self.treeview.get_selection()
@@ -195,12 +203,10 @@ class ElogviewerGtk(core.Elogviewer):
             else:
                 selection.select_path(path)
     
-    def read_elog(self, selection):
+    def read_elog(self):
 		buffer = gtk.TextBuffer(self.texttagtable)
-        if selection.count_selected_rows() is not 0:
-            (model, iter) = selection.get_selected()
-			selected_elog = model.get_value(iter)
-			for elog_section in selected_elog.contents(self.filter_list):
+		if self.selected_elog is not None:
+			for elog_section in self.selected_elog.contents(self.filter_list):
 				(start_iter, end_iter) = buffer.get_bounds()
 				buffer.insert_with_tags(
 						end_iter,
@@ -208,23 +214,15 @@ class ElogviewerGtk(core.Elogviewer):
 						buffer.get_tag_table().lookup(elog_section.header))
 
 		self.textview.set_buffer(buffer)
-        self.update_statusbar(selection)
 
-    def update_statusbar(self, selection):
-        selected_path = -1
-        model_size = 0
-        filename = ""
-        if selection.count_selected_rows() is not 0:
-            (model, iter) = selection.get_selected()
-            selected_path = model.get_path(iter)[0]
-            model_size = len(model)
-            filename = model.get_value(iter).filename
-        self.statusbar.push(0, 
-            str(selected_path + 1)
-            + ' of ' +
-            str(model_size)
-            + '\t' +
-            filename)
+    def update_statusbar(self, idx=0):
+		if self.selected_elog is None:
+			filename = "no selection"
+		else:
+			filename = self.selected_elog.filename
+		model_size = len(self.treeview.get_model())
+		message = "%i of %i\t%s" % (idx, model_size, filename)
+		self.statusbar.push(0, message)
 
 	def populate(self):
         model = self.treeview.get_model()
