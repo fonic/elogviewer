@@ -1,0 +1,5 @@
+#!/bin/sh
+
+STARTER="./elogviewer.py"
+
+$STARTER "$@"
