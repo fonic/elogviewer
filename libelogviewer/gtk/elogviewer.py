@@ -171,15 +171,11 @@ class ElogviewerGtk(core.Elogviewer):
         filter_stage_table = self.gui.get_object("filter_stage_table")
         if filter.is_class():
             (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
-            r = l + 1
-            b = t + 1
-            filter_class_table.attach(filter.button, l, r, t, b)
+            filter_class_table.attach(filter.button, l, l+1, t, t+1)
             self.filter_counter_class += 1
         else:
             (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
-            r = l + 1
-            b = t + 1
-            filter_stage_table.attach(filter.button, l, r, t, b)
+            filter_stage_table.attach(filter.button, l, l+1, t, t+1)
             self.filter_counter_stage += 1
         if filter.is_class():
             tag = gtk.TextTag(filter.match)
