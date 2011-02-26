@@ -186,7 +186,7 @@ class ElogviewerGtk(core.Elogviewer):
     def read_elog(self):
         textview = self.gui.get_object("textview")
         if self.selected_elog is None:
-            textview.set_buffer(gtk.TextBuffer())
+            textview.get_buffer().set_text("")
             return
         buffer = gtk.TextBuffer(self.texttagtable)
         for elog_section in self.selected_elog.contents(self.filter_list):
