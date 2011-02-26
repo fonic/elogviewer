@@ -90,23 +90,19 @@ class ElogContentPart:
 import time
 class Elog:
     def __init__(self, filename, elog_dir):
-        itime = '%Y%m%d-%H%M%S.log'
-        # see modules time and locale
-        locale_time_fmt = '%x %X'
-        sorted_time_fmt = '%Y-%m-%d %H:%M:%S'
-		
-		split_filename = filename.split(elog_dir)[1].split(':')
-        t = self.category = self.package = ""
-        if len(split_filename) is 3:
-            (self.category, self.package, t) = split_filename
-        elif len(split_filename) is 2:
-            (self.category, self.package) = split_filename[0].split('/')
-            t = split_filename[1]
-        t = time.strptime(t, itime)
-        self.sorted_time = time.strftime(sorted_time_fmt, t)
-        self.locale_time = time.strftime(locale_time_fmt, t)
-        self.filename = filename
-        
+		self.filename = filename
+
+		basename = os.path.basename(filename)
+		split_filename = basename.split(":")
+		if len(split_filename) is 3:
+			(self.category, self.package, date) = split_filename
+		if len(split_filename) is 2:
+			self.category = os.path.dirname(filename).split("/")[-1]
+			(self.package, date) = split_filename
+		date = time.strptime(date, "%Y%m%d-%H%M%S.log")
+		self.sorted_time = time.strftime("%Y-%m-%d %H:%M:%S", date)
+		self.locale_time = time.strftime("%x %X", date)
+
 	def contents(self, filter_list):
 		'''Parse file'''
 		file_object = open(self.filename, 'r')
@@ -166,13 +162,17 @@ import getopt
 import portage
 class CommandLineArguments:
 	def __init__(self, argv):
+		# default arguments
 		self.debug = False
-		self.elog_dir = "."
-		''' string GTK or QT '''
-		self.gui_frontend = "GTK"
+		self.elog_dir = portage.settings["PORT_LOGDIR"]
+		if self.elog_dir is "":
+			self.elog_dir = "/var/log/portage"
+		self.gui_frontend = "GTK" # GTK or QT
 
+		# parse commandline
 		try:
-			opts, args = getopt.getopt(argv, "dhgq", ["debug", "help", "gtk", "qt"])
+			opts, args = getopt.getopt(argv, 
+					"dhgqp:", ["debug", "help", "gtk", "qt", "elogpath"])
 		except getopt.GetoptError:
 			help()
 			usage()
@@ -187,16 +187,11 @@ class CommandLineArguments:
 				help()
 				usage()
 				exit (0)
-		
-		if False: #self.debug:
-			self.elog_dir = "./elog/elog/"
-		else:
-			logdir = portage.settings["PORT_LOGDIR"]
-			if logdir is "":
-				logdir = "/var/log/portage"
-			self.elog_dir = logdir + "/elog/"
-		# FIXME
-		# test if directory exists, spit error if not
-		#	usage()
-		#   exit(2)
+			elif opt in ("-p", "--elogpath"):
+				self.elog_dir = arg
+
+		# post process arguments
+		elog_dir = "/".join([self.elog_dir, "elog", ""])
+		if os.path.isdir(elog_dir): 
+			self.elog_dir = elog_dir
 
