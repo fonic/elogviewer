@@ -126,9 +126,6 @@ class ElogviewerGtk(core.Elogviewer):
         self.update_statusbar(row)
         self.read_elog()
     
-    def on_filter_btn(self, widget):
-        self.read_elog()
-    
     def on_actionDelete(self, a):
         print a
 
@@ -167,6 +164,7 @@ class ElogviewerGtk(core.Elogviewer):
             self.model.append(core.Elog(file, self.cmdline_args.elog_dir))
 
     def add_filter(self, filter):
+        filter.button.connect('toggled', self.read_elog)
         core.Elogviewer.add_filter(self, filter)
 
         filter_class_table = self.gui.get_object("filter_class_table")
@@ -187,7 +185,6 @@ class ElogviewerGtk(core.Elogviewer):
             tag = gtk.TextTag(filter.match)
             tag.set_property('foreground', filter.color)
             self.texttagtable.add(tag)
-        filter.button.connect('toggled', self.on_filter_btn)
         filter.button.show()
 
     def read_elog(self):
