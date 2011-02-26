@@ -162,17 +162,8 @@ class ElogviewerGtk(core.Elogviewer):
         main_window.show()
 
     def refresh(self):
-        selected_path = 0
-        selection = self.treeview.get_selection()
-        (model, iter) = selection.get_selected()
-        if selection.count_selected_rows() is not 0:
-            selected_path = model.get_path(iter)[0]
-        model.clear()
+        self.model.clear()
         self.populate()
-        if selected_path <= len(model):
-            selection.select_path(selected_path)
-        elif len(model) is not 0:
-            selection.select_path(0)
 
     def populate(self):
         for file in core.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
@@ -205,7 +196,7 @@ class ElogviewerGtk(core.Elogviewer):
     def read_elog(self):
         textview = self.gui.get_object("textview")
         if self.selected_elog is None:
-            textview.set_buffer()
+            textview.set_buffer(gtk.TextBuffer())
             return
         buffer = gtk.TextBuffer(self.texttagtable)
         for elog_section in self.selected_elog.contents(self.filter_list):
