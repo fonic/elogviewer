@@ -126,8 +126,16 @@ class ElogviewerGtk(core.Elogviewer):
         self.update_statusbar(row)
         self.read_elog()
     
-    def on_actionDelete(self, a):
-        print a
+    def on_actionDelete(self, action=None):
+        if self.selected_elog is None:
+            return
+        filename = self.selected_elog.filename
+        if self.cmdline_args.debug:
+            print "%s deleted" % str(filename)
+        else:
+            self.selected_elog.delete()
+        iter = self.gui.get_object("treeview").get_selection().get_selected()[1]
+        self.model.remove(iter)
 
     def on_actionDeleteOLD(self, model, path, iter):
         if self.cmdline_args.debug:
