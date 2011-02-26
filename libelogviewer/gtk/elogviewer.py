@@ -106,7 +106,7 @@ class ElogviewerGtk(core.Elogviewer):
     def connect(self):
         self.gui.connect_signals({
             "on_window_destroy" : gtk.main_quit,
-            "on_actionQuit_activate" : self.on_actionQuit,
+            "on_actionQuit_activate" : gtk.main_quit,
             "on_actionDelete_activate" : self.on_actionDelete,
             "on_actionRefresh_activate" : self.on_actionRefresh,
             "on_actionAbout_activate" : self.on_actionAbout,
@@ -153,9 +153,6 @@ class ElogviewerGtk(core.Elogviewer):
 
     def on_actionAbout(self, action):
         About(core.Identity())
-    
-    def on_actionQuit(self, action):
-        self.quit()
     
     def show(self):
         main_window = self.gui.get_object("window")
@@ -218,7 +215,4 @@ class ElogviewerGtk(core.Elogviewer):
 
     def main(self):
         gtk.main()
-
-    def quit(self):
-        gtk.main_quit()
 
