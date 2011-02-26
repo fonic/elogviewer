@@ -121,12 +121,12 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     def connect(self):
 		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
 				QtCore.SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
-				self.selection_changed)
+				self.on_selection_changed)
 		self.gui.treeView.header().connect(self.gui.treeView.header(),
 				QtCore.SIGNAL("sortIndicatorChanged(int, Qt::SortOrder)"),
 				self.model.sort)
 	
-	def selection_changed(self, new_selection, old_selection):
+	def on_selection_changed(self, new_selection, old_selection):
 		idx = new_selection.indexes()
 		if len(idx) is not 0:
 			idx = idx[PACKAGE]
