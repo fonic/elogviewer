@@ -43,7 +43,6 @@ def main(argv):
 
 	elogviewer.connect()
 	elogviewer.show()
-	elogviewer.refresh()
 
 	if cmdline.gui_frontend == "QT":
 		sys.exit(app.exec_())

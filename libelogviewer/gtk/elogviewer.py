@@ -101,7 +101,9 @@ class ElogviewerGtk(core.Elogviewer):
         #self.treeview.set_search_column(FILENAME)
 
         self.statusbar = self.gui.get_object("statusbar")
-        self.statusbar.push(0, "0 of 0")
+
+        self.populate()
+        self.update_statusbar()
  
     def connect(self):
         self.gui.connect_signals({
@@ -137,13 +139,6 @@ class ElogviewerGtk(core.Elogviewer):
         iter = self.gui.get_object("treeview").get_selection().get_selected()[1]
         self.model.remove(iter)
 
-    def on_actionDeleteOLD(self, model, path, iter):
-        if self.cmdline_args.debug:
-            print "%s deleted" % model.get_value(iter).filename
-        else:
-            model.get_value(iter).delete()
-        model.remove(iter)
-    
     def on_row_deleted(self, model, path):
         selection = self.treeview.get_selection()
         path = path[0]

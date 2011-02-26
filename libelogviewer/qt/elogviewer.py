@@ -116,6 +116,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
 		self.gui.actionQuit.triggered.connect(QtGui.qApp.quit)
 
+		self.populate()
 		self.update_statusbar()
 	
     def connect(self):
