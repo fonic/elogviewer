@@ -102,9 +102,6 @@ class ElogviewerGtk(core.Elogviewer):
 
         self.statusbar = self.gui.get_object("statusbar")
 
-        self.populate()
-        self.update_statusbar()
- 
     def connect(self):
         self.gui.connect_signals({
             "on_window_destroy" : gtk.main_quit,
@@ -157,6 +154,8 @@ class ElogviewerGtk(core.Elogviewer):
     def show(self):
         main_window = self.gui.get_object("window")
         main_window.show()
+        self.populate()
+        self.update_statusbar()
 
     def refresh(self):
         self.model.clear()
