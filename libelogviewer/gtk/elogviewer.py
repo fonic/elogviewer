@@ -116,16 +116,15 @@ class ElogviewerGtk(core.Elogviewer):
                 'changed', self.on_selection_changed)
 
     def on_selection_changed(self, selection):
-        if selection.count_selected_rows() is 0:
+        if selection.count_selected_rows() is not 0:
+            (model, iter) = selection.get_selected()
+            row = model.get_path(iter)[0] + 1
+            self.selected_elog = model.get_value(iter)
+        else:
             self.selected_elog = None
             row = 0
-        else:
-            (model, iter) = selection.get_selected()
-            self.selected_elog = model.get_value(iter)
-            if not model.iter_has_child(iter):
-                self.read_elog()
-                row = model.get_path(iter)[0] + 1
         self.update_statusbar(row)
+        self.read_elog()
     
     def on_filter_btn(self, widget):
         self.read_elog()
@@ -204,23 +203,24 @@ class ElogviewerGtk(core.Elogviewer):
         filter.button.show()
 
     def read_elog(self):
-        buffer = gtk.TextBuffer(self.texttagtable)
-        if self.selected_elog is not None:
-            for elog_section in self.selected_elog.contents(self.filter_list):
-                (start_iter, end_iter) = buffer.get_bounds()
-                buffer.insert_with_tags(
-                        end_iter,
-                        elog_section.content,
-                        buffer.get_tag_table().lookup(elog_section.header))
-
         textview = self.gui.get_object("textview")
+        if self.selected_elog is None:
+            textview.set_buffer()
+            return
+        buffer = gtk.TextBuffer(self.texttagtable)
+        for elog_section in self.selected_elog.contents(self.filter_list):
+            (start_iter, end_iter) = buffer.get_bounds()
+            buffer.insert_with_tags(
+                    end_iter,
+                    elog_section.content,
+                    buffer.get_tag_table().lookup(elog_section.header))
         textview.set_buffer(buffer)
 
     def update_statusbar(self, idx=0):
         if self.selected_elog is None:
             filename = "no selection"
         else:
-            filename = self.selected_elog.filename
+            filename = self.selected_elog.package
         model_size = len(self.model)
         message = "%i of %i\t%s" % (idx, model_size, filename)
         self.statusbar.push(0, message)
