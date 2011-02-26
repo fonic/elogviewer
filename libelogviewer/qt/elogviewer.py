@@ -116,9 +116,6 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
 		self.gui.actionQuit.triggered.connect(QtGui.qApp.quit)
 
-		self.populate()
-		self.update_statusbar()
-	
     def connect(self):
 		self.gui.treeView.connect(self.gui.treeView.selectionModel(),
 				QtCore.SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
@@ -161,6 +158,8 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 	
     def show(self):
         QtGui.QMainWindow.show(self)
+		self.populate()
+		self.update_statusbar()
 	
     def refresh(self):
 		self.model.removeRows(0, self.model.rowCount()) 
