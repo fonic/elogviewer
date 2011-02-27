@@ -160,6 +160,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         QtGui.QMainWindow.show(self)
 		self.populate()
 		self.update_statusbar()
+		self.read_elog()
 	
     def refresh(self):
 		self.model.removeRows(0, self.model.rowCount()) 
@@ -187,13 +188,13 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     
     def read_elog(self):
 		if self.selected_elog is None:
-			self.gui.textEdit.clear()
-			return
-		html = []
-        for elog_part in self.selected_elog.contents(self.filter_list):
-			html.append('<p style="color: %s">%s</p>' % 
-					(self.filter_list[elog_part.header].color, elog_part.content))
-		html = ''.join(html)
+			html = "<H1>(k)elogviewer 1.0.0</H1>"
+		else:
+			html = []
+			for elog_part in self.selected_elog.contents(self.filter_list):
+				html.append('<p style="color: %s">%s</p>' % 
+						(self.filter_list[elog_part.header].color, elog_part.content))
+			html = ''.join(html)
 		self.gui.textEdit.clear()
 		self.gui.textEdit.append(html)
 	
