@@ -176,7 +176,7 @@ class ElogviewerGtk(core.Elogviewer):
             self.texttagtable.add(tag)
         filter.button.show()
 
-    def read_elog(self):
+    def read_elog(self, *arg):
         if self.selected_elog is None:
             header1 = gtk.TextTag('header1')
             header1.set_property("weight", pango.WEIGHT_BOLD)
@@ -186,19 +186,21 @@ class ElogviewerGtk(core.Elogviewer):
             header2.set_property("scale", pango.SCALE_LARGE)
             small = gtk.TextTag('small')
             small.set_property("scale", pango.SCALE_SMALL)
+            center = gtk.TextTag('center')
+            center.set_property("justification", gtk.JUSTIFY_CENTER)
             link = gtk.TextTag('link')
             tag_table = gtk.TextTagTable()
             [ tag_table.add(tag) for tag in 
-                    [header1, header2, small, link] ]
+                    [header1, header2, small, center, link] ]
             buf = gtk.TextBuffer(tag_table)
             buf.insert_with_tags(buf.get_end_iter(), 
                     '(k)elogviewer 1.0.0\n', header1)
             buf.insert_with_tags(buf.get_end_iter(), 
 '\n(k)elogviewer, copyright (c) 2007, 2011 Mathias Laurin\n\
 kelogviewer, copyright (c) 2007 Jeremy Wickersheimer\n\
-GNU General Public License (GPL) version 2\n', small)
+GNU General Public License (GPL) version 2\n', small, center)
             buf.insert_with_tags(buf.get_end_iter(), 
-'<http://sourceforge.net/projects/elogviewer>\n')
+'<http://sourceforge.net/projects/elogviewer>\n', center)
             buf.insert_with_tags(buf.get_end_iter(), 
                     '\nWritten by\n\n', header2)
             buf.insert_with_tags(buf.get_end_iter(), 
