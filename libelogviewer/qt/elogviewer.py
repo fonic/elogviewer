@@ -188,7 +188,24 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     
     def read_elog(self):
 		if self.selected_elog is None:
-			html = "<H1>(k)elogviewer 1.0.0</H1>"
+			html = '''
+<h1>(k)elogviewer 1.0.0</h1>
+<center><small>(k)elogviewer, copyright (c) 2007, 2011 Mathias Laurin<br>
+kelogviewer, copyright (c) 2007 Jeremy Wickersheimer<br>
+GNU General Public License (GPL) version 2</small><br>
+<a href=http://sourceforge.net/projects/elogviewer>http://sourceforge.net/projects/elogviewer</a></center>
+<h2>Written by</h2>
+Mathias Laurin <a href="mailto:mathias_laurin@users.sourceforge.net?Subject=elogviewer">
+&lt;mathias_laurin@users.sourceforge.net&gt;</a><br>
+Timothy Kilbourn (initial author)<br>
+Jeremy Wickersheimer (qt3/KDE port)
+<h2>Contribution</h2>
+Radice David, gentoo bug #187595<br>
+Christian Faulhammer, gentoo bug #192701
+<h2>Documented by</h2>
+Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
+<h2>Artwork by</h2>
+'''
 		else:
 			html = ''.join( '<p style="color: %s">%s</p>' % 
 					(self.filter_list[elog_part.header].color, elog_part.content)

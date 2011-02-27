@@ -3,21 +3,7 @@
 # vi:ts=4 st=4 sw=4 et
 # (c) 2010 Mathias Laurin, GPL2
 
-class Identity:
-	author = ['Mathias Laurin <mathias_laurin@users.sourceforge.net>',
-			'Timothy Kilbourn', 'Jeremy Wickersheimer',
-			'',
-			'contribution by',
-			'Radice David, gentoo bug #187595',
-			'Christian Faulhammer, gentoo bug #192701',]
-	documenter = ['Christian Faulhammer <opfer@gentoo.org>']
-	artists = ['elogviewer needs a logo, artists are welcome to\ncontribute, please contact the author.']
-	appname = 'elogviewer'
-	version = '1.0.0'
-	website = 'http://sourceforge.net/projects/elogviewer'
-	copyright = 'Copyright (c) 2007, 2011 Mathias Laurin'
-	license = 'GNU General Public License (GPL) version 2'
-	LICENSE = '''
+'''
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -30,7 +16,10 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.'''
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+'''
+
+class Identity:
 	description = '''
 <b>Elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of the Gentoo linux distribution.  So all warnings or informational messages generated during an update can be reviewed at one glance.
 
@@ -39,10 +28,6 @@ Read
 and
 <tt>man 1 /etc/make.conf</tt>
 for more information.
-
-Timothy Kilbourn (nmbrthry) has written the first version of elogviewer.
-Jeremy Wickersheimer adapted elogviewer to KDE.
-Christian Faulhammer (V-Li) has written the man page.
 '''
 
 class Filter:
