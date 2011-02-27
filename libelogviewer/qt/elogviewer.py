@@ -190,11 +190,9 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		if self.selected_elog is None:
 			html = "<H1>(k)elogviewer 1.0.0</H1>"
 		else:
-			html = []
-			for elog_part in self.selected_elog.contents(self.filter_list):
-				html.append('<p style="color: %s">%s</p>' % 
-						(self.filter_list[elog_part.header].color, elog_part.content))
-			html = ''.join(html)
+			html = ''.join( '<p style="color: %s">%s</p>' % 
+					(self.filter_list[elog_part.header].color, elog_part.content)
+					for elog_part in self.selected_elog.contents(self.filter_list) )
 		self.gui.textEdit.clear()
 		self.gui.textEdit.append(html)
 	
