@@ -15,6 +15,8 @@ try:
 except:
     print "a recent version of pygtk is required"
 
+import pango
+
 import libelogviewer.core as core
  
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
@@ -144,6 +146,7 @@ class ElogviewerGtk(core.Elogviewer):
         main_window.show()
         self.populate()
         self.update_statusbar()
+        self.read_elog()
 
     def refresh(self):
         self.model.clear()
@@ -175,18 +178,52 @@ class ElogviewerGtk(core.Elogviewer):
 
     def read_elog(self):
         if self.selected_elog is None:
-            buf = gtk.TextBuffer()
-            buf.set_text("Hello!")
+            header1 = gtk.TextTag('header1')
+            header1.set_property("weight", pango.WEIGHT_BOLD)
+            header1.set_property("scale", pango.SCALE_XX_LARGE)
+            header2 = gtk.TextTag('header2')
+            header2.set_property("weight", pango.WEIGHT_BOLD)
+            header2.set_property("scale", pango.SCALE_LARGE)
+            small = gtk.TextTag('small')
+            small.set_property("scale", pango.SCALE_SMALL)
+            link = gtk.TextTag('link')
+            tag_table = gtk.TextTagTable()
+            [ tag_table.add(tag) for tag in 
+                    [header1, header2, small, link] ]
+            buf = gtk.TextBuffer(tag_table)
+            buf.insert_with_tags(buf.get_end_iter(), 
+                    '(k)elogviewer 1.0.0\n', header1)
+            buf.insert_with_tags(buf.get_end_iter(), 
+'\n(k)elogviewer, copyright (c) 2007, 2011 Mathias Laurin\n\
+kelogviewer, copyright (c) 2007 Jeremy Wickersheimer\n\
+GNU General Public License (GPL) version 2\n', small)
+            buf.insert_with_tags(buf.get_end_iter(), 
+'<http://sourceforge.net/projects/elogviewer>\n')
+            buf.insert_with_tags(buf.get_end_iter(), 
+                    '\nWritten by\n\n', header2)
+            buf.insert_with_tags(buf.get_end_iter(), 
+'Mathias Laurin <mathias_laurin@users.sourceforge.net>\n\
+Timothy Kilbourn (initial author)\n\
+Jeremy Wickersheimer (qt3/KDE port)\n')
+            buf.insert_with_tags(buf.get_end_iter(), 
+                    '\nWith contributions from\n\n', header2)
+            buf.insert_with_tags(buf.get_end_iter(), 
+'Radice David, gentoo bug #187595\n\
+Christian Faulhammer, gentoo bug #192701\n')
+            buf.insert_with_tags(buf.get_end_iter(), 
+                    '\nDocumented by\n\n', header2)
+            buf.insert_with_tags(buf.get_end_iter(), 
+'Christian Faulhammer <opfer@gentoo.org>\n')
+            buf.insert_with_tags(buf.get_end_iter(), 
+                    '\nArtwork by\n\n', header2)
         else:
             buf = gtk.TextBuffer(self.texttagtable)
             for elog_section in self.selected_elog.contents(self.filter_list):
-                (start_iter, end_iter) = buf.get_bounds()
                 buf.insert_with_tags(
-                        end_iter,
+                        buf.get_end_iter(),
                         elog_section.content,
                         buf.get_tag_table().lookup(elog_section.header))
         textview = self.gui.get_object("textview")
-        #textview.get_buffer().set_text("")
         textview.set_buffer(buf)
 
     def update_statusbar(self, idx=0):

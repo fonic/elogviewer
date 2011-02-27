@@ -199,7 +199,7 @@ Mathias Laurin <a href="mailto:mathias_laurin@users.sourceforge.net?Subject=elog
 &lt;mathias_laurin@users.sourceforge.net&gt;</a><br>
 Timothy Kilbourn (initial author)<br>
 Jeremy Wickersheimer (qt3/KDE port)
-<h2>Contribution</h2>
+<h2>With contributions from</h2>
 Radice David, gentoo bug #187595<br>
 Christian Faulhammer, gentoo bug #192701
 <h2>Documented by</h2>
