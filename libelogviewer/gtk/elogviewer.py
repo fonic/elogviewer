@@ -31,18 +31,6 @@ class Model(gtk.ListStore):
     def get_value(self, iter):
         return gtk.ListStore.get_value(self, iter, 0)
 
-class About(gtk.AboutDialog):
-    def __init__(self, identity):
-        gtk.AboutDialog.__init__(self)
-        self.set_version(identity.version)
-        self.set_website(identity.website)
-        self.set_authors(identity.author)
-        self.set_artists(identity.artists)
-        self.set_copyright(identity.copyright)
-        self.set_documenters(identity.documenter)
-        self.set_license(identity.LICENSE)
-        self.run()
-        self.destroy()
 
 class Filter(core.Filter):
     def __init__(self, label, match="", is_class=False, color='black'):
@@ -149,8 +137,8 @@ class ElogviewerGtk(core.Elogviewer):
         self.refresh()
 
     def on_actionAbout(self, action):
-        About(core.Identity())
-    
+        pass
+
     def show(self):
         main_window = self.gui.get_object("window")
         main_window.show()
@@ -186,18 +174,20 @@ class ElogviewerGtk(core.Elogviewer):
         filter.button.show()
 
     def read_elog(self):
-        textview = self.gui.get_object("textview")
         if self.selected_elog is None:
-            textview.get_buffer().set_text("")
-            return
-        buffer = gtk.TextBuffer(self.texttagtable)
-        for elog_section in self.selected_elog.contents(self.filter_list):
-            (start_iter, end_iter) = buffer.get_bounds()
-            buffer.insert_with_tags(
-                    end_iter,
-                    elog_section.content,
-                    buffer.get_tag_table().lookup(elog_section.header))
-        textview.set_buffer(buffer)
+            buf = gtk.TextBuffer()
+            buf.set_text("Hello!")
+        else:
+            buf = gtk.TextBuffer(self.texttagtable)
+            for elog_section in self.selected_elog.contents(self.filter_list):
+                (start_iter, end_iter) = buf.get_bounds()
+                buf.insert_with_tags(
+                        end_iter,
+                        elog_section.content,
+                        buf.get_tag_table().lookup(elog_section.header))
+        textview = self.gui.get_object("textview")
+        #textview.get_buffer().set_text("")
+        textview.set_buffer(buf)
 
     def update_statusbar(self, idx=0):
         if self.selected_elog is None:
