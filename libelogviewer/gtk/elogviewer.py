@@ -151,6 +151,7 @@ class ElogviewerGtk(core.Elogviewer):
     def refresh(self):
         self.model.clear()
         self.populate()
+		self.update_statusbar()
 
     def populate(self):
         for file in core.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):

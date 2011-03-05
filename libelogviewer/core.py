@@ -112,6 +112,7 @@ class Elog:
 class Elogviewer:
 
 	def __init__(self):
+		self.selected_elog = None
 		self.filter_list = {}
 
 	def add_filter(self, filter):
