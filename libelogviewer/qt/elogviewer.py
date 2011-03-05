@@ -20,6 +20,7 @@ class ElogInstanceItem(QtGui.QStandardItem):
 
 ( CATEGORY, PACKAGE, TIMESTAMP, ELOG ) = range(4)
 SORT = QtCore.Qt.UserRole
+FILENAME = QtCore.Qt.UserRole + 1
 class Model(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, parent)
@@ -44,6 +45,7 @@ class Model(QtGui.QStandardItemModel):
         
 		package_it = QtGui.QStandardItem(elog.package)
         package_it.setData(QtCore.QVariant(elog.package), SORT)
+        package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
 
         time_it = QtGui.QStandardItem(elog.locale_time)
         time_it.setData(QtCore.QVariant(elog.sorted_time), SORT)
