@@ -115,8 +115,18 @@ class Elogviewer:
 		self.selected_elog = None
 		self.filter_list = {}
 
+		self.filter_counter_class = self.filter_counter_stage = 0
+		self.filter_columns_class = self.filter_columns_stage = 2
+
 	def add_filter(self, filter):
 		self.filter_list[filter.match] = filter
+		if filter.is_class():
+			(t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
+			self.filter_counter_class += 1
+		else:
+			(t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
+			self.filter_counter_stage += 1
+		return (t, l)
 	
 	def populate(self):
 		for file in all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):

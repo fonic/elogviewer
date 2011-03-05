@@ -56,9 +56,6 @@ class ElogviewerGtk(core.Elogviewer):
         self.texttagtable = gtk.TextTagTable()
         self.selected_elog = None
 
-        self.filter_counter_class = self.filter_counter_stage = 0
-        self.filter_columns_class = self.filter_columns_stage = 2
-    
     def create_gui(self):
         gladefile = '/'.join([path.split(__file__)[0], "elogviewer.glade"])
         self.gui = gtk.Builder()
@@ -155,25 +152,20 @@ class ElogviewerGtk(core.Elogviewer):
         self.model.clear()
         self.populate()
 		self.update_statusbar()
+        self.read_elog()
 
     def add_filter(self, filter):
         filter.button.connect('toggled', self.read_elog)
-        core.Elogviewer.add_filter(self, filter)
+        (t, l) = core.Elogviewer.add_filter(self, filter)
 
-        filter_class_table = self.gui.get_object("filter_class_table")
-        filter_stage_table = self.gui.get_object("filter_stage_table")
         if filter.is_class():
-            (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
-            filter_class_table.attach(filter.button, l, l+1, t, t+1)
-            self.filter_counter_class += 1
-        else:
-            (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
-            filter_stage_table.attach(filter.button, l, l+1, t, t+1)
-            self.filter_counter_stage += 1
-        if filter.is_class():
+			filter_table = self.gui.get_object("filter_class_table")
             tag = gtk.TextTag(filter.match)
             tag.set_property('foreground', filter.color)
             self.texttagtable.add(tag)
+        else:
+			filter_table = self.gui.get_object("filter_stage_table")
+		filter_table.attach(filter.button, l, l+1, t, t+1)
         filter.button.show()
 
     def read_elog(self, *arg):
