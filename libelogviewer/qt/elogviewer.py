@@ -19,8 +19,7 @@ class ElogInstanceItem(QtGui.QStandardItem):
 
 
 ( CATEGORY, PACKAGE, TIMESTAMP, ELOG ) = range(4)
-FILENAME = QtCore.Qt.UserRole
-TIMESORT = QtCore.Qt.UserRole
+SORT = QtCore.Qt.UserRole
 class Model(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, parent)
@@ -29,6 +28,7 @@ class Model(QtGui.QStandardItemModel):
         self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
         self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
         self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
+		self.setSortRole(SORT)
 
         # maintain separate list of elog
         self.elog_dict = {}
@@ -38,12 +38,17 @@ class Model(QtGui.QStandardItemModel):
     
     def appendRow(self, elog):
         self.elog_dict[elog.filename] = elog
-        category_it = QtGui.QStandardItem(elog.category)
-        package_it = QtGui.QStandardItem(elog.package)
-        package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
+        
+		category_it = QtGui.QStandardItem(elog.category)
+		category_it.setData(QtCore.QVariant(elog.category), SORT)
+        
+		package_it = QtGui.QStandardItem(elog.package)
+        package_it.setData(QtCore.QVariant(elog.package), SORT)
+
         time_it = QtGui.QStandardItem(elog.locale_time)
-        time_it.setData(QtCore.QVariant(elog.sorted_time), TIMESORT)
-        elog_it = ElogInstanceItem(elog)
+        time_it.setData(QtCore.QVariant(elog.sorted_time), SORT)
+        
+		elog_it = ElogInstanceItem(elog)
         return QtGui.QStandardItemModel.appendRow(self, [
             category_it, package_it, time_it, elog_it ])
     
