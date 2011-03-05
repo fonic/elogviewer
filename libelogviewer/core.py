@@ -116,7 +116,7 @@ class Elogviewer:
 
 	def add_filter(self, filter):
 		self.filter_list[filter.match] = filter
-
+	
 
 def help():
     print '''

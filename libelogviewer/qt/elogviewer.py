@@ -6,7 +6,7 @@
 
 import sys
 from PyQt4 import QtCore, QtGui
-import libelogviewer.core as core
+import core
 
 
 class ElogInstanceItem(QtGui.QStandardItem):
@@ -63,7 +63,7 @@ class Filter(core.Filter):
         return self.button.checkState() != 0
 
 
-from libelogviewer.qt.elogviewer_ui import Ui_MainWindow
+from qt.elogviewer_ui import Ui_MainWindow
 class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     def __init__(self, cmdline_args):
         QtGui.QMainWindow.__init__(self)
