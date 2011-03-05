@@ -128,10 +128,10 @@ class ElogviewerGtk(core.Elogviewer):
         selection = self.treeview.get_selection()
         path = path[0]
         if len(model) is not 0:
-            if path is len(model):
-                selection.select_path(path-1)
-            else:
+            if path != len(model):
                 selection.select_path(path)
+			else:
+                selection.select_path(path-1)
     
     def on_actionRefresh(self, action):
         self.refresh()
