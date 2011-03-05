@@ -65,6 +65,10 @@ class Filter(core.Filter):
     def is_active(self):
         return self.button.checkState() != 0
 
+print 'hello'
+icon_names = ["view-refresh", "edit-delete", "application-exit" ]
+print QtGui.QIcon.themeName()
+print [ QtGui.QIcon.hasThemeIcon(i) for i in icon_names ]
 
 from libelogviewer.qt.elogviewer_ui import Ui_MainWindow
 class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
@@ -74,6 +78,10 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		self.cmdline_args = cmdline_args
 		self.model = Model()
 		self.selected_elog = None
+
+		print 'hello lo'
+		print QtGui.QIcon.themeName()
+		print [ QtGui.QIcon.hasThemeIcon(i) for i in icon_names ]
 
     def create_gui(self):
         self.gui = Ui_MainWindow()
@@ -90,9 +98,9 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		# see http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html#names
 		# http://www.qtcentre.org/wiki/index.php?title=Embedded_resources
 
-		# DEBUG test w Tango icon theme
-		#QtGui.QIcon.setThemeName("Tango")
-		icon_names = ["view-refresh", "edit-delete", "help-about", "application-exit" ]
+		QtGui.QIcon.setThemeName('Tango')
+		print QtGui.QIcon.themeName()
+		icon_names = ["view-refresh", "edit-delete", "application-exit" ]
 		# test if icons available in current theme
 		print [ QtGui.QIcon.hasThemeIcon(i) for i in icon_names ]
 
@@ -103,11 +111,6 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		deleteicon = QtGui.QIcon.fromTheme("edit-delete",
 				QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png"))
 		self.gui.actionDelete.setIcon(deleteicon)
-
-		abouticon = QtGui.QIcon.fromTheme("help-about")
-				#QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-help-32.png"))
-		self.gui.actionAbout.setIcon(abouticon)
-		self.gui.actionAbout.setMenuRole(QtGui.QAction.AboutRole)
 
 		quiticon = QtGui.QIcon.fromTheme("application-exit")
 				#QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-close-32.png"))
@@ -152,10 +155,6 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		if checked is None: return
 		self.refresh()
 
-	def on_actionAbout_triggered(self, checked=None):
-		if checked is None: return
-		print "actionAbout"
-	
     def show(self):
         QtGui.QMainWindow.show(self)
 		self.populate()

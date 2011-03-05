@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'elogviewer.ui'
 #
-# Created: Sun Feb 13 15:32:59 2011
+# Created: Sat Mar  5 22:45:11 2011
 #      by: PyQt4 UI code generator 4.8.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,7 +17,7 @@ except AttributeError:
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(481, 507)
+        MainWindow.resize(800, 600)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -65,14 +65,6 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addLayout(self.horizontalLayout)
         self.verticalLayout_3.addLayout(self.verticalLayout_2)
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 481, 20))
-        self.menubar.setObjectName(_fromUtf8("menubar"))
-        self.menuFile = QtGui.QMenu(self.menubar)
-        self.menuFile.setObjectName(_fromUtf8("menuFile"))
-        self.menuHelp = QtGui.QMenu(self.menubar)
-        self.menuHelp.setObjectName(_fromUtf8("menuHelp"))
-        MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
         MainWindow.setStatusBar(self.statusbar)
@@ -85,18 +77,8 @@ class Ui_MainWindow(object):
         self.actionDelete.setObjectName(_fromUtf8("actionDelete"))
         self.actionRefresh = QtGui.QAction(MainWindow)
         self.actionRefresh.setObjectName(_fromUtf8("actionRefresh"))
-        self.actionAbout = QtGui.QAction(MainWindow)
-        self.actionAbout.setObjectName(_fromUtf8("actionAbout"))
-        self.menuFile.addAction(self.actionDelete)
-        self.menuFile.addAction(self.actionRefresh)
-        self.menuFile.addSeparator()
-        self.menuFile.addAction(self.actionQuit)
-        self.menuHelp.addAction(self.actionAbout)
-        self.menubar.addAction(self.menuFile.menuAction())
-        self.menubar.addAction(self.menuHelp.menuAction())
         self.toolBar.addAction(self.actionRefresh)
         self.toolBar.addAction(self.actionDelete)
-        self.toolBar.addAction(self.actionAbout)
         self.toolBar.addAction(self.actionQuit)
 
         self.retranslateUi(MainWindow)
@@ -106,11 +88,11 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
         self.filter_class_box.setTitle(QtGui.QApplication.translate("MainWindow", "Class Filter", None, QtGui.QApplication.UnicodeUTF8))
         self.filter_stage_box.setTitle(QtGui.QApplication.translate("MainWindow", "Stage Filter", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuFile.setTitle(QtGui.QApplication.translate("MainWindow", "File", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuHelp.setTitle(QtGui.QApplication.translate("MainWindow", "Help", None, QtGui.QApplication.UnicodeUTF8))
         self.toolBar.setWindowTitle(QtGui.QApplication.translate("MainWindow", "toolBar", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionQuit.setText(QtGui.QApplication.translate("MainWindow", "Quit", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionQuit.setText(QtGui.QApplication.translate("MainWindow", "&Quit (k)elogviewer", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionQuit.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+Q", None, QtGui.QApplication.UnicodeUTF8))
         self.actionDelete.setText(QtGui.QApplication.translate("MainWindow", "Delete", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionRefresh.setText(QtGui.QApplication.translate("MainWindow", "Refresh", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionAbout.setText(QtGui.QApplication.translate("MainWindow", "About", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionDelete.setShortcut(QtGui.QApplication.translate("MainWindow", "Del", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRefresh.setText(QtGui.QApplication.translate("MainWindow", "&Refresh", None, QtGui.QApplication.UnicodeUTF8))
+        self.actionRefresh.setShortcut(QtGui.QApplication.translate("MainWindow", "Ctrl+R", None, QtGui.QApplication.UnicodeUTF8))
 

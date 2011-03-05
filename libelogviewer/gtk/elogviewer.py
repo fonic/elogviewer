@@ -56,6 +56,7 @@ class ElogviewerGtk(core.Elogviewer):
         self.texttagtable = gtk.TextTagTable()
         self.selected_elog = None
 
+    
     def create_gui(self):
         gladefile = '/'.join([path.split(__file__)[0], "elogviewer.glade"])
         self.gui = gtk.Builder()
@@ -98,7 +99,6 @@ class ElogviewerGtk(core.Elogviewer):
             "on_actionQuit_activate" : gtk.main_quit,
             "on_actionDelete_activate" : self.on_actionDelete,
             "on_actionRefresh_activate" : self.on_actionRefresh,
-            "on_actionAbout_activate" : self.on_actionAbout,
             "on_liststore_row_deleted": self.on_row_deleted
                     })
         self.gui.get_object("treeview").get_selection().connect(
@@ -138,9 +138,6 @@ class ElogviewerGtk(core.Elogviewer):
     def on_actionRefresh(self, action):
         self.refresh()
 
-    def on_actionAbout(self, action):
-        pass
-
     def show(self):
         main_window = self.gui.get_object("window")
         main_window.show()
@@ -152,7 +149,6 @@ class ElogviewerGtk(core.Elogviewer):
         self.model.clear()
         self.populate()
 		self.update_statusbar()
-        self.read_elog()
 
     def add_filter(self, filter):
         filter.button.connect('toggled', self.read_elog)
