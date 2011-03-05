@@ -175,8 +175,8 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 		filter_table.addWidget(filter.button, t, l)
     
     def read_elog(self):
-		if self.selected_elog is None:
-			html = '''
+		self.gui.textEdit.clear()
+		self.gui.textEdit.append( '''
 <h1>(k)elogviewer 1.0.0</h1>
 <center><small>(k)elogviewer, copyright (c) 2007, 2011 Mathias Laurin<br>
 kelogviewer, copyright (c) 2007 Jeremy Wickersheimer<br>
@@ -193,13 +193,9 @@ Christian Faulhammer, gentoo bug #192701
 <h2>Documented by</h2>
 Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
 <h2>Artwork by</h2>
-'''
-		else:
-			html = ''.join( '<p style="color: %s">%s</p>' % 
+'''			if self.selected_elog is None else ''.join( '<p style="color: %s">%s</p>' % 
 					(self.filter_list[elog_part.header].color, elog_part.content)
-					for elog_part in self.selected_elog.contents(self.filter_list) )
-		self.gui.textEdit.clear()
-		self.gui.textEdit.append(html)
+					for elog_part in self.selected_elog.contents(self.filter_list) ))
 	
 	def update_statusbar(self, idx=0):
 		self.gui.statusbar.showMessage(self.message_statusbar(idx, self.model.rowCount()))
