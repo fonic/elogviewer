@@ -97,9 +97,8 @@ class ElogviewerGtk(core.Elogviewer):
             "on_window_destroy" : gtk.main_quit,
             "on_actionQuit_activate" : gtk.main_quit,
             "on_actionDelete_activate" : self.on_actionDelete,
-            "on_actionRefresh_activate" : self.on_actionRefresh,
-            "on_liststore_row_deleted": self.on_row_deleted
-                    })
+            "on_actionRefresh_activate" : self.on_actionRefresh})
+		self.model.connect("row-deleted", self.on_row_deleted)
         self.gui.get_object("treeview").get_selection().connect(
                 'changed', self.on_selection_changed)
 
@@ -117,8 +116,8 @@ class ElogviewerGtk(core.Elogviewer):
     def on_actionDelete(self, action=None):
         if self.selected_elog is None:
             return
-        filename = self.selected_elog.filename
         if self.cmdline_args.debug:
+			filename = self.selected_elog.filename
             print "%s deleted" % str(filename)
         else:
             self.selected_elog.delete()
