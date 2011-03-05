@@ -25,6 +25,9 @@ class Model(gtk.ListStore):
     def __init__(self):
         gtk.ListStore.__init__(self,
             TYPE_PYOBJECT, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
+
+	def EVappend(self, elog):
+		self.append(elog)
     
     def append(self, elog):
         return gtk.ListStore.append(self, [elog, elog.category, elog.package,
@@ -152,10 +155,6 @@ class ElogviewerGtk(core.Elogviewer):
         self.model.clear()
         self.populate()
 		self.update_statusbar()
-
-    def populate(self):
-        for file in core.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
-            self.model.append(core.Elog(file, self.cmdline_args.elog_dir))
 
     def add_filter(self, filter):
         filter.button.connect('toggled', self.read_elog)

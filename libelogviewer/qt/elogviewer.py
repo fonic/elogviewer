@@ -33,6 +33,9 @@ class Model(QtGui.QStandardItemModel):
 		# maintain separate list of elog
 		self.elog_dict = {}
 	
+	def EVappend(self, elog):
+		self.appendRow(elog)
+	
 	def appendRow(self, elog):
 		self.elog_dict[elog.filename] = elog
 		category_it = QtGui.QStandardItem(elog.category)
@@ -165,10 +168,6 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     def refresh(self):
 		self.model.removeRows(0, self.model.rowCount()) 
 		self.populate()
-
-	def populate(self):
-		for file in core.all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
-			self.model.appendRow(core.Elog(file, self.cmdline_args.elog_dir))
 
 	def add_filter(self, filter):
 		filter.button.connect(filter.button, QtCore.SIGNAL("stateChanged(int)"),
