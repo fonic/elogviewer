@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 '''
 
 class Identity:
-	description = '''
+    description = '''
 <b>Elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of the Gentoo linux distribution.  So all warnings or informational messages generated during an update can be reviewed at one glance.
 
 Read
@@ -40,8 +40,8 @@ class Filter:
         self._is_class = is_class
         self.color = color
     
-	def is_active(self):
-		pass
+    def is_active(self):
+        pass
     
     def is_class(self):
         return self._is_class
@@ -64,77 +64,77 @@ def all_files(root, patterns='*', single_level=False, yield_folders=False):
             break
 
 class ElogContentPart:
-	def __init__(self, complete_header):
-		self.header = complete_header[0]
-		self.section = complete_header[1]
-		self.content = '%s (%s)\n' % (self.header, self.section)
+    def __init__(self, complete_header):
+        self.header = complete_header[0]
+        self.section = complete_header[1]
+        self.content = '%s (%s)\n' % (self.header, self.section)
 
-	def add_content(self, content):
-		self.content = ''.join([self.content, content, '\n'])
+    def add_content(self, content):
+        self.content = ''.join([self.content, content, '\n'])
 
 import time
 class Elog:
     def __init__(self, filename, elog_dir):
-		self.filename = filename
+        self.filename = filename
 
-		basename = os.path.basename(filename)
-		split_filename = basename.split(":")
-		if len(split_filename) is 3:
-			(self.category, self.package, date) = split_filename
-		if len(split_filename) is 2:
-			self.category = os.path.dirname(filename).split("/")[-1]
-			(self.package, date) = split_filename
-		date = time.strptime(date, "%Y%m%d-%H%M%S.log")
-		self.sorted_time = time.strftime("%Y-%m-%d %H:%M:%S", date)
-		self.locale_time = time.strftime("%x %X", date)
+        basename = os.path.basename(filename)
+        split_filename = basename.split(":")
+        if len(split_filename) is 3:
+            (self.category, self.package, date) = split_filename
+        if len(split_filename) is 2:
+            self.category = os.path.dirname(filename).split("/")[-1]
+            (self.package, date) = split_filename
+        date = time.strptime(date, "%Y%m%d-%H%M%S.log")
+        self.sorted_time = time.strftime("%Y-%m-%d %H:%M:%S", date)
+        self.locale_time = time.strftime("%x %X", date)
 
-	def contents(self, filter_list):
-		'''Parse file'''
-		file_object = open(self.filename, 'r')
-		try:
-			lines = file_object.read().splitlines()
-		finally:
-			file_object.close()
-		now = -1
-		elog_content = []
-		for line in lines:
-			L = line.split(': ')
-			if len(L) is 2 and (L[0] and L[1]) in filter_list.keys():
-				now += 1
-				elog_content.append(ElogContentPart(L))
-			elif filter_list[elog_content[now].header].is_active() and filter_list[elog_content[now].section].is_active():
-				elog_content[now].add_content(line)
-		return elog_content
+    def contents(self, filter_list):
+        '''Parse file'''
+        file_object = open(self.filename, 'r')
+        try:
+            lines = file_object.read().splitlines()
+        finally:
+            file_object.close()
+        now = -1
+        elog_content = []
+        for line in lines:
+            L = line.split(': ')
+            if len(L) is 2 and (L[0] and L[1]) in filter_list.keys():
+                now += 1
+                elog_content.append(ElogContentPart(L))
+            elif filter_list[elog_content[now].header].is_active() and filter_list[elog_content[now].section].is_active():
+                elog_content[now].add_content(line)
+        return elog_content
         
     def delete(self):
-		os.remove(self.filename)
+        os.remove(self.filename)
 
 class Elogviewer:
 
-	def __init__(self):
-		self.selected_elog = None
-		self.filter_list = {}
+    def __init__(self):
+        self.selected_elog = None
+        self.filter_list = {}
 
-		self.filter_counter_class = self.filter_counter_stage = 0
-		self.filter_columns_class = self.filter_columns_stage = 2
+        self.filter_counter_class = self.filter_counter_stage = 0
+        self.filter_columns_class = self.filter_columns_stage = 2
 
-	def add_filter(self, filter):
-		self.filter_list[filter.match] = filter
-		if filter.is_class():
-			(t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
-			self.filter_counter_class += 1
-		else:
-			(t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
-			self.filter_counter_stage += 1
-		return (t, l)
-	
-	def populate(self):
-		for file in all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
+    def add_filter(self, filter):
+        self.filter_list[filter.match] = filter
+        if filter.is_class():
+            (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
+            self.filter_counter_class += 1
+        else:
+            (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
+            self.filter_counter_stage += 1
+        return (t, l)
+    
+    def populate(self):
+        for file in all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
             self.model.EVappend(Elog(file, self.cmdline_args.elog_dir))
-	
-	def message_statusbar(self, idx, model_size):
-		return "%i of %i\t%s" % (idx, model_size, 
-				"no selection" if self.selected_elog is None else self.selected_elog.package)
+    
+    def message_statusbar(self, idx, model_size):
+        return "%i of %i\t%s" % (idx, model_size, 
+                "no selection" if self.selected_elog is None else self.selected_elog.package)
 
 
 def help():
@@ -165,37 +165,37 @@ Read /etc/make.conf.example for more information
 import getopt
 import portage
 class CommandLineArguments:
-	def __init__(self, argv):
-		# default arguments
-		self.debug = False
-		self.elog_dir = portage.settings["PORT_LOGDIR"]
-		if self.elog_dir is "":
-			self.elog_dir = "/var/log/portage"
-		self.gui_frontend = "GTK" # GTK or QT
+    def __init__(self, argv):
+        # default arguments
+        self.debug = False
+        self.elog_dir = portage.settings["PORT_LOGDIR"]
+        if self.elog_dir is "":
+            self.elog_dir = "/var/log/portage"
+        self.gui_frontend = "GTK" # GTK or QT
 
-		# parse commandline
-		try:
-			opts, args = getopt.getopt(argv, 
-					"dhgqp:", ["debug", "help", "gtk", "qt", "elogpath"])
-		except getopt.GetoptError:
-			help()
-			usage()
-			exit(1)
-		for opt, arg in opts:
-			if opt in ("-d", "--debug"):
-				self.debug = True
-				print "debug mode is set"
-			elif opt in ("-q", "--qt"):
-				self.gui_frontend = "QT"
-			elif opt in ("-h", "--help"):
-				help()
-				usage()
-				exit (0)
-			elif opt in ("-p", "--elogpath"):
-				self.elog_dir = arg
+        # parse commandline
+        try:
+            opts, args = getopt.getopt(argv, 
+                    "dhgqp:", ["debug", "help", "gtk", "qt", "elogpath"])
+        except getopt.GetoptError:
+            help()
+            usage()
+            exit(1)
+        for opt, arg in opts:
+            if opt in ("-d", "--debug"):
+                self.debug = True
+                print "debug mode is set"
+            elif opt in ("-q", "--qt"):
+                self.gui_frontend = "QT"
+            elif opt in ("-h", "--help"):
+                help()
+                usage()
+                exit (0)
+            elif opt in ("-p", "--elogpath"):
+                self.elog_dir = arg
 
-		# post process arguments
-		elog_dir = "/".join([self.elog_dir, "elog", ""])
-		if os.path.isdir(elog_dir): 
-			self.elog_dir = elog_dir
+        # post process arguments
+        elog_dir = "/".join([self.elog_dir, "elog", ""])
+        if os.path.isdir(elog_dir): 
+            self.elog_dir = elog_dir
 

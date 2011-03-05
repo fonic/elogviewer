@@ -26,8 +26,8 @@ class Model(gtk.ListStore):
         gtk.ListStore.__init__(self,
             TYPE_PYOBJECT, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 
-	def EVappend(self, elog):
-		self.append(elog)
+    def EVappend(self, elog):
+        self.append(elog)
     
     def append(self, elog):
         return gtk.ListStore.append(self, [elog, elog.category, elog.package,
@@ -147,20 +147,20 @@ class ElogviewerGtk(core.Elogviewer):
     def refresh(self):
         self.model.clear()
         self.populate()
-		self.update_statusbar()
+        self.update_statusbar()
 
     def add_filter(self, filter):
         filter.button.connect('toggled', self.read_elog)
         (t, l) = core.Elogviewer.add_filter(self, filter)
 
         if filter.is_class():
-			filter_table = self.gui.get_object("filter_class_table")
+            filter_table = self.gui.get_object("filter_class_table")
             tag = gtk.TextTag(filter.match)
             tag.set_property('foreground', filter.color)
             self.texttagtable.add(tag)
         else:
-			filter_table = self.gui.get_object("filter_stage_table")
-		filter_table.attach(filter.button, l, l+1, t, t+1)
+            filter_table = self.gui.get_object("filter_stage_table")
+        filter_table.attach(filter.button, l, l+1, t, t+1)
         filter.button.show()
 
     def read_elog(self, *arg):
@@ -216,7 +216,7 @@ Christian Faulhammer, gentoo bug #192701\n')
         textview.set_buffer(buf)
 
     def update_statusbar(self, idx=0):
-		self.statusbar.push(0, self.message_statusbar(idx, len(self.model)))
+        self.statusbar.push(0, self.message_statusbar(idx, len(self.model)))
 
     def main(self):
         gtk.main()
