@@ -89,7 +89,6 @@ class ElogviewerGtk(core.Elogviewer):
         self.treeview.append_column(sorted_time_col)
         self.treeview.append_column(filename_col)
         self.treeview.set_enable_search(False)
-        #self.treeview.set_search_column(FILENAME)
 
         self.statusbar = self.gui.get_object("statusbar")
 
