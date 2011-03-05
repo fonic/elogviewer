@@ -138,8 +138,9 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         idx = self.gui.treeView.selectedIndexes()
         if len(idx) is not 0:
             filename = self.model.index(idx[0].row(), PACKAGE).data(FILENAME).toString()
+			filename = str(filename)
             if self.cmdline_args.debug:
-                print "%s deleted" % str(filename)
+                print "%s deleted" % filename
             else:
                 self.model.elog_dict[filename].delete()
             self.model.removeRow(idx[0].row())
