@@ -117,6 +117,13 @@ class Elogviewer:
 	def add_filter(self, filter):
 		self.filter_list[filter.match] = filter
 	
+	def message_statusbar(self, idx, model_size):
+		if self.selected_elog is None:
+			filename = "no selection"
+		else:
+			filename = self.selected_elog.package
+		return "%i of %i\t%s" % (idx, model_size, filename)
+
 
 def help():
     print '''

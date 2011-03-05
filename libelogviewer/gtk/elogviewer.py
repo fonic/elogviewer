@@ -17,7 +17,7 @@ except:
 
 import pango
 
-import core
+import libelogviewer.core as core
  
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
@@ -229,13 +229,7 @@ Christian Faulhammer, gentoo bug #192701\n')
         textview.set_buffer(buf)
 
     def update_statusbar(self, idx=0):
-        if self.selected_elog is None:
-            filename = "no selection"
-        else:
-            filename = self.selected_elog.package
-        model_size = len(self.model)
-        message = "%i of %i\t%s" % (idx, model_size, filename)
-        self.statusbar.push(0, message)
+		self.statusbar.push(0, self.message_statusbar(idx, len(self.model)))
 
     def main(self):
         gtk.main()

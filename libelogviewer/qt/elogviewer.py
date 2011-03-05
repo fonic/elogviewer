@@ -6,7 +6,7 @@
 
 import sys
 from PyQt4 import QtCore, QtGui
-import core
+import libelogviewer.core as core
 
 
 class ElogInstanceItem(QtGui.QStandardItem):
@@ -63,7 +63,7 @@ class Filter(core.Filter):
         return self.button.checkState() != 0
 
 
-from qt.elogviewer_ui import Ui_MainWindow
+from libelogviewer.qt.elogviewer_ui import Ui_MainWindow
 class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     def __init__(self, cmdline_args):
         QtGui.QMainWindow.__init__(self)
@@ -214,11 +214,5 @@ Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;<
 		self.gui.textEdit.append(html)
 	
 	def update_statusbar(self, idx=0):
-		if self.selected_elog is None:
-			filename = "no selection"
-		else:
-			filename = self.selected_elog.package
-		model_size = self.model.rowCount()
-		message = "%i of %i\t%s" % (idx, model_size, filename)
-		self.gui.statusbar.showMessage(message)
+		self.gui.statusbar.showMessage(self.message_statusbar(idx, self.model.rowCount()))
 

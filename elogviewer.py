@@ -5,19 +5,19 @@
 # see elogviewerCommon.py for details
 
 import sys
-import core as ev
+import libelogviewer.core as ev
 def main(argv):
 	cmdline = ev.CommandLineArguments(argv)
 
 	if cmdline.gui_frontend == "QT":
-		from qt.elogviewer import ElogviewerQt as ElogviewerGui
-		from qt.elogviewer import Filter
+		from libelogviewer.qt.elogviewer import ElogviewerQt as ElogviewerGui
+		from libelogviewer.qt.elogviewer import Filter
 		from PyQt4 import QtGui
 		global app
 		app = QtGui.QApplication(sys.argv)
 	else:
-		from gtk.elogviewer import ElogviewerGtk as ElogviewerGui
-		from gtk.elogviewer import Filter
+		from libelogviewer.gtk.elogviewer import ElogviewerGtk as ElogviewerGui
+		from libelogviewer.gtk.elogviewer import Filter
 	
 	elogviewer = ElogviewerGui(cmdline)
 	elogviewer.create_gui()

@@ -1,5 +1,5 @@
 #!/bin/sh
 
-STARTER="./libelogviewer/elogviewer.py"
+STARTER="./elogviewer.py"
 
 $STARTER --qt "$@"
