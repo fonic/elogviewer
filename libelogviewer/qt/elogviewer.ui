@@ -19,6 +19,10 @@
   <property name="windowTitle">
    <string>(k)elogviewer</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../rsc/qt.qrc">
+    <normaloff>:/icons/scalable/utilities-log-viewer.svg</normaloff>:/icons/scalable/utilities-log-viewer.svg</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
@@ -115,6 +119,8 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../rsc/qt.qrc"/>
+ </resources>
  <connections/>
 </ui>
