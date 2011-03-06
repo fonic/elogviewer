@@ -1,18 +1,60 @@
-.TH elogviewer 1 "October 07, 2006" "elogviewer -- An interface to Portage's ELOG system"
+.TH (k)elogviewer 1 "March 06, 2011" "An elog viewer"
 
 .SH NAME
-elogviewer \-\- a program to easily manage elog files created by Portage during emerge
+(k)elogviewer \-\- a program to easily manage elog files created by Portage during emerge
+
+.SH SYNOPSIS
+.PP
+.SY elogviewer
+.OP \-p path
+.
+.SY kelogviewer 
+.OP \-p path
+.
+.SY elogviewer
+.B \-h
+|
+.B \-\-help
 
 .SH DESCRIPTION
-This manual page explains the
-.B elogviewer
-program. This program lists all elogs created during emerges of
-packages from Portage, the package manager of Gentoo Linux.  So all
-warnings or informational messages generated during an update can be
-reviewed at one glance.
+This document describes the
+.B (k)elogviewer
+program, a graphical frontend to list the elogs created during emerges of 
+packages from 
+.BR portage (5),
+the package manager of Gentoo Linux.
+.
+The 
+.B (k)elogviewer
+program displays all warning and information messages generated during an installation
+or an update of the programs using
+.B portage
+so that they can be reviewed at one glance. 
 
 .SH USAGE
+.TP
+\fBelogviewer\fR, \fBkelogviewer\fR
+invoking the program with 
+.B elogviewer 
+starts the program with the GTK frontend, whereas
+.B kelogviewer
+loads the QT4 frontend.
 
+.TP
+.BI \-p\  path
+.TQ
+.BI \-\-elogpath\  path 
+.
+.B (k)elogviewer
+reads the elogs in 
+.I path 
+instead of reading the current value for
+.I path
+in
+.BR make.conf (5)
+\.
+
+.PP
 To generate elogs, the user needs to tell Portage to activate the
 saving features for the ELOG facilities in his /etc/make.conf file via
 the line
@@ -40,22 +82,17 @@ informational messages.  elogs can be deleted individually or all in
 one step.
 
 .SH BUGS
-For bugs in this man page contact <gentoo@faulhammer.org> and for problems with the program the original author Mathias Laurin <synss@cashette.com>.
 
 .SH ENVIRONMENT
-
-Uses 
-.B PORT_LOGDIR
-from 
-.B /etc/make.conf (5)
-. Passing 
-.B PORT_LOGDIR
-on the command line overwrites the defaults.
 
 .SH SEE ALSO
 /etc/make.conf.example
 
 .SH AUTHOR
-Mathias Laurin <mathias_laurin@users.sourceforge.com> adapte from an original idea of Timothy Kilbourn
-for the program, Christian
-Faulhammer <gentoo@faulhammer.org> for this man page
+Mathias Laurin <mathias_laurin@users.sourceforge.com> is the current
+maintainer of the program and wrote the first gtk version from an idea 
+by Timothy Kilbourn.  Jeremy Wickersheimer wrote the first port to Qt3.
+ML ported to Qt4. 
+Christian Faulhammer <gentoo@faulhammer.org> and ML for this man page.
+ 
+
