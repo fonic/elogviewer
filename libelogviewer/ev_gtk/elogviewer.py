@@ -17,7 +17,7 @@ except:
 
 import pango
 
-import libelogviewer.core as core
+import core as core
  
 ( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
