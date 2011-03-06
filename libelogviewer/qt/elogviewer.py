@@ -128,7 +128,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
             row = 0
         self.update_statusbar(row)
         self.read_elog()
-    
+
     def on_actionDelete_triggered(self, checked=None):
         if checked is None: return
         idx = self.gui.treeView.selectedIndexes()
@@ -183,9 +183,12 @@ Christian Faulhammer, gentoo bug #192701
 <h2>Documented by</h2>
 Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
 <h2>Artwork by</h2>
+(k)elogviewer application icon (c) gnome, GPL2
 '''         if self.selected_elog is None else ''.join( '<p style="color: %s">%s</p>' % 
                     (self.filter_list[elog_part.header].color, elog_part.content)
                     for elog_part in self.selected_elog.contents(self.filter_list) ))
+
+        self.gui.textEdit.verticalScrollBar().setValue(0)
     
     def update_statusbar(self, idx=0):
         self.gui.statusbar.showMessage(self.message_statusbar(idx, self.model.rowCount()))
