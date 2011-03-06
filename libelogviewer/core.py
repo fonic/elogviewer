@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# vi:ts=4 st=4 sw=4 et
-# (c) 2010 Mathias Laurin, GPL2
+# vim: set ts=4 st=4 sw=4 et:
+# (c) 2011 Mathias Laurin, GPL2
 
 '''
 This program is free software; you can redistribute it and/or
