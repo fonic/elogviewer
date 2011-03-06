@@ -6,7 +6,6 @@
     <property name="title">elogviewer</property>
     <property name="default_width">800</property>
     <property name="default_height">600</property>
-    <property name="icon">utilities-log-viewer.png</property>
     <signal name="destroy" handler="on_actionQuit_activate"/>
     <child>
       <object class="GtkVBox" id="vbox1">

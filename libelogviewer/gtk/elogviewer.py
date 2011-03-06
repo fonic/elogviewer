@@ -62,6 +62,11 @@ class ElogviewerGtk(core.Elogviewer):
         self.gui = gtk.Builder()
         self.gui.add_from_file(gladefile)
 
+        iconfile = '/'.join([path.split(__file__)[0],
+            "../rsc/scalable", "utilities-log-viewer.svg"])
+        icon = gtk.gdk.pixbuf_new_from_file(iconfile)
+        self.gui.get_object("window").set_icon(icon)
+
         self.treeview = self.gui.get_object("treeview")
         self.treeview.set_model(self.model)
 
