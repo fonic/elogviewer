@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'elogviewer.ui'
+# Form implementation generated from reading ui file './libelogviewer/qt/elogviewer.ui'
 #
-# Created: Sat Mar  5 22:45:11 2011
+# Created: Sun Mar  6 10:04:03 2011
 #      by: PyQt4 UI code generator 4.8.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -85,7 +85,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "MainWindow", None, QtGui.QApplication.UnicodeUTF8))
+        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "(k)elogviewer", None, QtGui.QApplication.UnicodeUTF8))
         self.filter_class_box.setTitle(QtGui.QApplication.translate("MainWindow", "Class Filter", None, QtGui.QApplication.UnicodeUTF8))
         self.filter_stage_box.setTitle(QtGui.QApplication.translate("MainWindow", "Stage Filter", None, QtGui.QApplication.UnicodeUTF8))
         self.toolBar.setWindowTitle(QtGui.QApplication.translate("MainWindow", "toolBar", None, QtGui.QApplication.UnicodeUTF8))
