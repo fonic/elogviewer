@@ -29,7 +29,7 @@ class Model(QtGui.QStandardItemModel):
         self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
         self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
         self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
-		self.setSortRole(SORT)
+        self.setSortRole(SORT)
 
         # maintain separate list of elog
         self.elog_dict = {}
@@ -40,17 +40,17 @@ class Model(QtGui.QStandardItemModel):
     def appendRow(self, elog):
         self.elog_dict[elog.filename] = elog
         
-		category_it = QtGui.QStandardItem(elog.category)
-		category_it.setData(QtCore.QVariant(elog.category), SORT)
+        category_it = QtGui.QStandardItem(elog.category)
+        category_it.setData(QtCore.QVariant(elog.category), SORT)
         
-		package_it = QtGui.QStandardItem(elog.package)
+        package_it = QtGui.QStandardItem(elog.package)
         package_it.setData(QtCore.QVariant(elog.package), SORT)
         package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
 
         time_it = QtGui.QStandardItem(elog.locale_time)
         time_it.setData(QtCore.QVariant(elog.sorted_time), SORT)
         
-		elog_it = ElogInstanceItem(elog)
+        elog_it = ElogInstanceItem(elog)
         return QtGui.QStandardItemModel.appendRow(self, [
             category_it, package_it, time_it, elog_it ])
     
@@ -96,9 +96,12 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 
         # see http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html#names
         # http://www.qtcentre.org/wiki/index.php?title=Embedded_resources
+        # http://doc.trolltech.com/latest/qstyle.html#StandardPixmap-enum
+
+        style = QtGui.QApplication.style()
 
         refreshicon = QtGui.QIcon.fromTheme("view-refresh", 
-                QtGui.QIcon(":/trolltech/styles/commonstyle/images/refresh-32.png"))
+                style.standardIcon(QtGui.QStyle.SP_BrowserReload))
         self.gui.actionRefresh.setIcon(refreshicon)
 
         deleteicon = QtGui.QIcon.fromTheme("edit-delete",
@@ -106,7 +109,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         self.gui.actionDelete.setIcon(deleteicon)
 
         quiticon = QtGui.QIcon.fromTheme("application-exit",
-                QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-close-32.png"))
+                style.standardIcon(QtGui.QStyle.SP_DialogCloseButton))
         self.gui.actionQuit.setIcon(quiticon)
         self.gui.actionQuit.setIconVisibleInMenu(True)
         self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
@@ -138,7 +141,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         idx = self.gui.treeView.selectedIndexes()
         if len(idx) is not 0:
             filename = self.model.index(idx[0].row(), PACKAGE).data(FILENAME).toString()
-			filename = str(filename)
+            filename = str(filename)
             if self.cmdline_args.debug:
                 print "%s deleted" % filename
             else:
