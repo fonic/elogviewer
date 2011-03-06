@@ -108,13 +108,6 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
                 QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png"))
         self.gui.actionDelete.setIcon(deleteicon)
 
-        quiticon = QtGui.QIcon.fromTheme("application-exit",
-                style.standardIcon(QtGui.QStyle.SP_DialogCloseButton))
-        self.gui.actionQuit.setIcon(quiticon)
-        self.gui.actionQuit.setIconVisibleInMenu(True)
-        self.gui.actionQuit.setMenuRole(QtGui.QAction.QuitRole)
-        self.gui.actionQuit.triggered.connect(QtGui.qApp.quit)
-
     def connect(self):
         self.gui.treeView.connect(self.gui.treeView.selectionModel(),
                 QtCore.SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),

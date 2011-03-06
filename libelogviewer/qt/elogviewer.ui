@@ -89,7 +89,6 @@ p, li { white-space: pre-wrap; }
    </attribute>
    <addaction name="actionRefresh"/>
    <addaction name="actionDelete"/>
-   <addaction name="actionQuit"/>
   </widget>
   <action name="actionQuit">
    <property name="text">

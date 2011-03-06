@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './libelogviewer/qt/elogviewer.ui'
 #
-# Created: Sun Mar  6 10:04:03 2011
+# Created: Sun Mar  6 10:05:58 2011
 #      by: PyQt4 UI code generator 4.8.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -79,7 +79,6 @@ class Ui_MainWindow(object):
         self.actionRefresh.setObjectName(_fromUtf8("actionRefresh"))
         self.toolBar.addAction(self.actionRefresh)
         self.toolBar.addAction(self.actionDelete)
-        self.toolBar.addAction(self.actionQuit)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
