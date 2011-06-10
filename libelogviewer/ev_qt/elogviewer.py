@@ -56,7 +56,7 @@ class Model(QtGui.QStandardItemModel):
         
         elog_it = ElogInstanceItem(elog)
         return QtGui.QStandardItemModel.appendRow(self, [
-            category_it, package_it, eclass_it, time_it, elog_it ])
+            category_it, package_it, eclass_it, time_it ])
     
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
         for current_row in xrange(row, row+count):
