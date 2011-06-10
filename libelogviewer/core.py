@@ -123,8 +123,7 @@ class Elog:
             if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
                 now += 1
                 self.contents.append(ElogContentPart(L))
-            elif self.filter_list[self.contents[now].header].is_active()\
-                    and self.filter_list[self.contents[now].section].is_active():
+            else:
                 self.contents[now].add_content(line)
         
     def delete(self):

@@ -208,11 +208,13 @@ Christian Faulhammer, gentoo bug #192701\n')
                     '\nArtwork by\n\n', header2)
         else:
             buf = gtk.TextBuffer(self.texttagtable)
-            for elog_section in self.selected_elog.contents(self.filter_list):
-                buf.insert_with_tags(
-                        buf.get_end_iter(),
-                        elog_section.content,
-                        buf.get_tag_table().lookup(elog_section.header))
+            for elog_section in self.selected_elog.contents:
+				if self.filter_list[elog_section.header].is_active() and \
+						self.filter_list[elog_section.section].is_active():
+							buf.insert_with_tags(
+									buf.get_end_iter(),
+									elog_section.content,
+									buf.get_tag_table().lookup(elog_section.header))
         textview = self.gui.get_object("textview")
         textview.set_buffer(buf)
 
