@@ -83,7 +83,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         QtGui.QMainWindow.__init__(self)
         core.Elogviewer.__init__(self)
         self.cmdline_args = cmdline_args
-        self.model = Model()
+        self.model = Model(self)
         self.selected_elog = None
 
     def create_gui(self):
