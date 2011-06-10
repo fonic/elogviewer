@@ -27,7 +27,7 @@ class Model(gtk.ListStore):
             TYPE_PYOBJECT, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 
     def EVappend(self, elog):
-        self.append(elog)
+        return self.append(elog)
     
     def append(self, elog):
         return gtk.ListStore.append(self, [elog, elog.category, elog.package,
@@ -98,12 +98,12 @@ class ElogviewerGtk(core.Elogviewer):
         self.statusbar = self.gui.get_object("statusbar")
 
     def connect(self):
-        self.gui.connect_signals({
-            "on_window_destroy" : gtk.main_quit,
-            "on_actionQuit_activate" : gtk.main_quit,
-            "on_actionDelete_activate" : self.on_actionDelete,
+        self.gui.connect_signals({\
+            "on_window_destroy" : gtk.main_quit,\
+            "on_actionQuit_activate" : gtk.main_quit,\
+            "on_actionDelete_activate" : self.on_actionDelete,\
             "on_actionRefresh_activate" : self.on_actionRefresh})
-		self.model.connect("row-deleted", self.on_row_deleted)
+        self.model.connect("row-deleted", self.on_row_deleted)
         self.gui.get_object("treeview").get_selection().connect(
                 'changed', self.on_selection_changed)
 
@@ -122,7 +122,7 @@ class ElogviewerGtk(core.Elogviewer):
         if self.selected_elog is None:
             return
         if self.cmdline_args.debug:
-			filename = self.selected_elog.filename
+            filename = self.selected_elog.filename
             print "%s deleted" % str(filename)
         else:
             self.selected_elog.delete()
@@ -133,7 +133,7 @@ class ElogviewerGtk(core.Elogviewer):
         selection = self.treeview.get_selection()
         path = path[0]
         if len(model) is not 0:
-			selection.select_path(path if path != len(model) else path-1)
+            selection.select_path(path if path != len(model) else path-1)
     
     def on_actionRefresh(self, action):
         self.refresh()
