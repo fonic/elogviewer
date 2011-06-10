@@ -186,7 +186,9 @@ Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;<
 (k)elogviewer application icon (c) gnome, GPL2
 '''         if self.selected_elog is None else ''.join( '<p style="color: %s">%s</p>' % 
                     (self.filter_list[elog_part.header].color, elog_part.content)
-                    for elog_part in self.selected_elog.contents(self.filter_list) ))
+                    for elog_part in self.selected_elog.contents
+					if self.filter_list[elog_part.header].is_active() and \
+							self.filter_list[elog_part.section].is_active()))
 
         self.gui.textEdit.verticalScrollBar().setValue(0)
     
