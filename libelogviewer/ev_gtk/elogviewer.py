@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# vim: set ts=4 st=4 sw=4 et:
+# vim: set ts=4 st=4 sw=4 et
 # (c) 2011 Mathias Laurin, GPL2
 # see libelogviewer/core.py for details
 
@@ -55,7 +55,8 @@ class ElogviewerGtk(core.Elogviewer):
         self.cmdline_args = cmdline_args
         self.model = Model()
         self.texttagtable = gtk.TextTagTable()
-        self.selected_elog = None
+        self.display_elog = None
+        self.selected_row_ref = []
 
     
     def create_gui(self):
@@ -69,6 +70,7 @@ class ElogviewerGtk(core.Elogviewer):
         self.gui.get_object("window").set_icon(icon)
 
         self.treeview = self.gui.get_object("treeview")
+        self.treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
         self.treeview.set_model(self.model)
 
         category_col = gtk.TreeViewColumn(
@@ -113,26 +115,33 @@ class ElogviewerGtk(core.Elogviewer):
                 'changed', self.on_selection_changed)
 
     def on_selection_changed(self, selection):
-        if selection.count_selected_rows() is not 0:
-            (model, iter) = selection.get_selected()
-            row = model.get_path(iter)[0] + 1
-            self.selected_elog = model.get_value(iter)
+        (model, selected_rows) = selection.get_selected_rows()
+        self.selected_row_refs = [ gtk.TreeRowReference(model, selected_row) for
+                selected_row in selected_rows ]
+        if selection.count_selected_rows() is 0:
+            self.display_elog = None
+            self.update_statusbar()
+            self.read_elog()
+        elif selection.count_selected_rows() is 1:
+            self.display_elog = model.get_value(
+                    model.get_iter(self.selected_row_refs[0].get_path()))
+            self.update_statusbar()
+            self.read_elog()
         else:
-            self.selected_elog = None
-            row = 0
-        self.update_statusbar(row)
-        self.read_elog()
+            self.update_statusbar("Multiple selections")
     
     def on_actionDelete(self, action=None):
-        if self.selected_elog is None:
+        if self.selected_row_refs == []:
             return
-        if self.cmdline_args.debug:
-            filename = self.selected_elog.filename
-            print "%s deleted" % str(filename)
-        else:
-            self.selected_elog.delete()
-        iter = self.gui.get_object("treeview").get_selection().get_selected()[1]
-        self.model.remove(iter)
+        for row in self.selected_row_refs:
+            model = row.get_model()
+            it = model.get_iter(row.get_path())
+            elog = model.get_value(it)
+            if self.cmdline_args.debug:
+                print "%s deleted" % str(elog.filename)
+            else:
+                elog.delete()
+            model.remove(it)
 
     def on_row_deleted(self, model, path):
         selection = self.treeview.get_selection()
@@ -170,7 +179,7 @@ class ElogviewerGtk(core.Elogviewer):
         filter.button.show()
 
     def read_elog(self, *arg):
-        if self.selected_elog is None:
+        if self.display_elog is None:
             header1 = gtk.TextTag('header1')
             header1.set_property("weight", pango.WEIGHT_BOLD)
             header1.set_property("scale", pango.SCALE_XX_LARGE)
@@ -213,7 +222,7 @@ Christian Faulhammer, gentoo bug #192701\n')
                     '\nArtwork by\n\n', header2)
         else:
             buf = gtk.TextBuffer(self.texttagtable)
-            for elog_section in self.selected_elog.contents:
+            for elog_section in self.display_elog.contents:
                 if self.filter_list[elog_section.header].is_active() and \
                         self.filter_list[elog_section.section].is_active():
                             buf.insert_with_tags(
@@ -223,8 +232,15 @@ Christian Faulhammer, gentoo bug #192701\n')
         textview = self.gui.get_object("textview")
         textview.set_buffer(buf)
 
-    def update_statusbar(self, idx=0):
-        self.statusbar.push(0, self.message_statusbar(idx, len(self.model)))
+    def update_statusbar(self, msg=None):
+        if msg is None:
+            if self.display_elog is None:
+                msg = "0 of %i, no selection" % len(self.model)
+            else:
+                msg = "%i of %i, %s" % \
+                        (self.selected_row_refs[0].get_path()[0] + 1, 
+                        len(self.model), self.display_elog.filename)
+        self.statusbar.push(0, msg)
 
     def main(self):
         gtk.main()
