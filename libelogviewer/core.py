@@ -75,12 +75,10 @@ class ElogContentPart:
 import time
 import re
 class Elog:
-    (einfo, elog, ewarn, eerror) = range(4)
-
     def __init__(self, filename, elog_dir, filter_list):
         self.filename = filename
         self.filter_list = filter_list
-        self.eclass = self.einfo
+        self.eclass = "einfo"
         self.contents = []
 
         basename = os.path.basename(filename)
@@ -110,11 +108,11 @@ class Elog:
         classes = re.findall("LOG:|INFO:|WARN:|ERROR:", file_contents)
         
         if "ERROR:" in classes:
-            self.eclass = self.eerror
+            self.eclass = "eerror"
         elif "WARN:" in classes:
-            self.eclass = self.ewarn
+            self.eclass = "ewarn"
         elif "LOG:" in classes:
-            self.eclass = self.elog
+            self.eclass = "elog"
 
     def get_contents(self, file_contents):
         now = -1

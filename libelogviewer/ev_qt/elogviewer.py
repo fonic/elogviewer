@@ -18,7 +18,7 @@ class ElogInstanceItem(QtGui.QStandardItem):
         return 1000
 
 
-( CATEGORY, PACKAGE, TIMESTAMP, ELOG ) = range(4)
+( CATEGORY, PACKAGE, ECLASS, TIMESTAMP, ELOG ) = range(5)
 SORT = QtCore.Qt.UserRole
 FILENAME = QtCore.Qt.UserRole + 1
 class Model(QtGui.QStandardItemModel):
@@ -27,6 +27,7 @@ class Model(QtGui.QStandardItemModel):
         self.setColumnCount(4)
         self.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
         self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
+        self.setHeaderData( ECLASS, QtCore.Qt.Horizontal, "Highest eclass" )
         self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
         self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
         self.setSortRole(SORT)
@@ -47,12 +48,15 @@ class Model(QtGui.QStandardItemModel):
         package_it.setData(QtCore.QVariant(elog.package), SORT)
         package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
 
+        eclass_it = QtGui.QStandardItem(elog.eclass)
+        eclass_it.setData(QtCore.QVariant(elog.eclass), SORT)
+
         time_it = QtGui.QStandardItem(elog.locale_time)
         time_it.setData(QtCore.QVariant(elog.sorted_time), SORT)
         
         elog_it = ElogInstanceItem(elog)
         return QtGui.QStandardItemModel.appendRow(self, [
-            category_it, package_it, time_it, elog_it ])
+            category_it, package_it, eclass_it, time_it, elog_it ])
     
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
         for current_row in xrange(row, row+count):

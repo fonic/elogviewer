@@ -19,19 +19,20 @@ import pango
 
 import core as core
  
-( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME ) = range(6)
+( ELOG, CATEGORY, PACKAGE, TIMESTAMP, TIMESORT, FILENAME, ECLASS ) = range(7)
 from gobject import TYPE_STRING, TYPE_PYOBJECT
 class Model(gtk.ListStore):
     def __init__(self):
         gtk.ListStore.__init__(self,
-            TYPE_PYOBJECT, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
+            TYPE_PYOBJECT, 
+            TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING, TYPE_STRING )
 
     def EVappend(self, elog):
         return self.append(elog)
     
     def append(self, elog):
         return gtk.ListStore.append(self, [elog, elog.category, elog.package,
-            elog.locale_time, elog.sorted_time, elog.filename])
+            elog.locale_time, elog.sorted_time, elog.filename, elog.eclass])
     
     def get_value(self, iter):
         return gtk.ListStore.get_value(self, iter, 0)
@@ -80,16 +81,20 @@ class ElogviewerGtk(core.Elogviewer):
             'Sort time', gtk.CellRendererText(), text=TIMESORT)
         filename_col = gtk.TreeViewColumn(
             'Filename', gtk.CellRendererText(), text=FILENAME)
+        eclass_col = gtk.TreeViewColumn(
+            'Highest eclass', gtk.CellRendererText(), text=ECLASS)
 
         category_col.set_sort_column_id(CATEGORY)
         package_col.set_sort_column_id(PACKAGE)
         locale_time_col.set_sort_column_id(TIMESORT)
+        eclass_col.set_sort_column_id(ECLASS)
         if not self.cmdline_args.debug:
             sorted_time_col.set_visible(False)
             filename_col.set_visible(False)
 
         self.treeview.append_column(category_col)
         self.treeview.append_column(package_col)
+        self.treeview.append_column(eclass_col)
         self.treeview.append_column(locale_time_col)
         self.treeview.append_column(sorted_time_col)
         self.treeview.append_column(filename_col)
@@ -209,12 +214,12 @@ Christian Faulhammer, gentoo bug #192701\n')
         else:
             buf = gtk.TextBuffer(self.texttagtable)
             for elog_section in self.selected_elog.contents:
-				if self.filter_list[elog_section.header].is_active() and \
-						self.filter_list[elog_section.section].is_active():
-							buf.insert_with_tags(
-									buf.get_end_iter(),
-									elog_section.content,
-									buf.get_tag_table().lookup(elog_section.header))
+                if self.filter_list[elog_section.header].is_active() and \
+                        self.filter_list[elog_section.section].is_active():
+                            buf.insert_with_tags(
+                                    buf.get_end_iter(),
+                                    elog_section.content,
+                                    buf.get_tag_table().lookup(elog_section.header))
         textview = self.gui.get_object("textview")
         textview.set_buffer(buf)
 
