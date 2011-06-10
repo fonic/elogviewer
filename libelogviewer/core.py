@@ -73,9 +73,15 @@ class ElogContentPart:
         self.content = ''.join([self.content, content, '\n'])
 
 import time
+import re
 class Elog:
-    def __init__(self, filename, elog_dir):
+    (einfo, elog, ewarn, eerror) = range(4)
+
+    def __init__(self, filename, elog_dir, filter_list):
         self.filename = filename
+        self.filter_list = filter_list
+        self.eclass = self.einfo
+        self.contents = []
 
         basename = os.path.basename(filename)
         split_filename = basename.split(":")
@@ -88,23 +94,38 @@ class Elog:
         self.sorted_time = time.strftime("%Y-%m-%d %H:%M:%S", date)
         self.locale_time = time.strftime("%x %X", date)
 
-    def contents(self, filter_list):
-        '''Parse file'''
-        file_object = open(self.filename, 'r')
-        try:
-            lines = file_object.read().splitlines()
-        finally:
-            file_object.close()
+        self.read_file()
+    
+    def read_file(self):
+        with open(self.filename, 'r') as f:
+            file_contents = f.read()
+            self.get_class(file_contents)
+            self.get_contents(file_contents)
+
+    def get_class(self, file_contents):
+        '''
+        Get the highest elog class
+        adapted from Luca Marturana's elogv
+        '''
+        classes = re.findall("LOG:|INFO:|WARN:|ERROR:", file_contents)
+        
+        if "ERROR:" in classes:
+            self.eclass = self.eerror
+        elif "WARN:" in classes:
+            self.eclass = self.ewarn
+        elif "LOG:" in classes:
+            self.eclass = self.elog
+
+    def get_contents(self, file_contents):
         now = -1
-        elog_content = []
-        for line in lines:
+        for line in file_contents.splitlines():
             L = line.split(': ')
-            if len(L) is 2 and (L[0] and L[1]) in filter_list.keys():
+            if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
                 now += 1
-                elog_content.append(ElogContentPart(L))
-            elif filter_list[elog_content[now].header].is_active() and filter_list[elog_content[now].section].is_active():
-                elog_content[now].add_content(line)
-        return elog_content
+                self.contents.append(ElogContentPart(L))
+            elif self.filter_list[self.contents[now].header].is_active()\
+                    and self.filter_list[self.contents[now].section].is_active():
+                self.contents[now].add_content(line)
         
     def delete(self):
         os.remove(self.filename)
@@ -129,8 +150,8 @@ class Elogviewer:
         return (t, l)
     
     def populate(self):
-        for file in all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
-            self.model.EVappend(Elog(file, self.cmdline_args.elog_dir))
+        for filename in all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
+            self.model.EVappend(Elog(filename, self.cmdline_args.elog_dir, self.filter_list))
     
     def message_statusbar(self, idx, model_size):
         return "%i of %i\t%s" % (idx, model_size, 
