@@ -166,7 +166,8 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     
     def read_elog(self):
         self.gui.textEdit.clear()
-        self.gui.textEdit.append( '''
+        if self.selected_elog is None:
+            buf = '''
 <h1>(k)elogviewer 1.0.0</h1>
 <center><small>(k)elogviewer, copyright (c) 2007, 2011 Mathias Laurin<br>
 kelogviewer, copyright (c) 2007 Jeremy Wickersheimer<br>
@@ -184,12 +185,15 @@ Christian Faulhammer, gentoo bug #192701
 Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
 <h2>Artwork by</h2>
 (k)elogviewer application icon (c) gnome, GPL2
-'''         if self.selected_elog is None else ''.join( '<p style="color: %s">%s</p>' % 
-                    (self.filter_list[elog_part.header].color, elog_part.content)
-                    for elog_part in self.selected_elog.contents
-					if self.filter_list[elog_part.header].is_active() and \
-							self.filter_list[elog_part.section].is_active()))
-
+'''
+        else:
+            buf = ''.join( '<p style="color: %s">%s</p>' % 
+                (self.filter_list[elog_part.header].color, elog_part.content)
+                for elog_part in self.selected_elog.contents
+                if self.filter_list[elog_part.header].is_active()
+                and self.filter_list[elog_part.section].is_active())
+            buf.replace('\n', '<br>')
+        self.gui.textEdit.append(buf)
         self.gui.textEdit.verticalScrollBar().setValue(0)
     
     def update_statusbar(self, idx=0):
