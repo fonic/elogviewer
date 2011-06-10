@@ -196,7 +196,8 @@ Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;<
                 for elog_part in self.selected_elog.contents
                 if self.filter_list[elog_part.header].is_active()
                 and self.filter_list[elog_part.section].is_active())
-            buf.replace('\n', '<br>')
+            buf = buf.replace('\n', '<br>')
+            print buf
         self.gui.textEdit.append(buf)
         self.gui.textEdit.verticalScrollBar().setValue(0)
     
