@@ -150,11 +150,6 @@ class Elogviewer:
         for filename in all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
             self.model.EVappend(Elog(filename, self.cmdline_args.elog_dir, self.filter_list))
     
-    def message_statusbar(self, idx, model_size):
-        return "%i of %i\t%s" % (idx, model_size, 
-                "no selection" if self.selected_elog is None else self.selected_elog.package)
-
-
 def help():
     print '''
 Elogviewer should help you not to miss important information like: 
