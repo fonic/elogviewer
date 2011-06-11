@@ -84,7 +84,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         core.Elogviewer.__init__(self)
         self.cmdline_args = cmdline_args
         self.model = Model(self)
-        self.selected_elog = None
+        self.display_elog = None
 
     def create_gui(self):
         self.gui = Ui_MainWindow()
@@ -93,6 +93,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         self.gui.treeView.setRootIsDecorated(False)
         self.gui.treeView.setModel(self.model)
         self.gui.treeView.setColumnHidden(ELOG, True)
+        self.gui.treeView.setSelectionMode(QtGui.QTreeView.ExtendedSelection)
 
         header = self.gui.treeView.header()
         header.setSortIndicatorShown(True)
@@ -121,38 +122,45 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
                 self.model.sort)
     
     def on_selection_changed(self, new_selection, old_selection):
-        idx = new_selection.indexes()
-        if len(idx) is not 0:
-            idx = idx[PACKAGE]
-            row = idx.row() + 1
+        idx_list = new_selection.indexes()
+        if len(idx_list) is 0:
+            msg = "0 of %i, no selection" % self.model.rowCount()
+            self.display_elog = None
+            self.read_elog()
+        elif len(idx_list) is self.model.columnCount():
+            idx = idx_list[PACKAGE]
             filename = str(idx.data(FILENAME).toString())
-            self.selected_elog = self.model.elog_dict[filename]
+            msg = "%i of %i, %s" % (
+                    idx.row() + 1, 
+                    self.model.rowCount(),
+                    filename)
+            self.display_elog = self.model.elog_dict[filename]
+            self.read_elog()
         else:
-            self.selected_elog = None
-            row = 0
-        self.update_statusbar(row)
-        self.read_elog()
+            msg = "Multiple selections"
+        self.gui.statusbar.showMessage(msg)
 
     def on_actionDelete_triggered(self, checked=None):
         if checked is None: return
-        idx = self.gui.treeView.selectedIndexes()
-        if len(idx) is not 0:
-            filename = self.model.index(idx[0].row(), PACKAGE).data(FILENAME).toString()
-            filename = str(filename)
+        idx_list = self.gui.treeView.selectionModel().selectedRows(PACKAGE)
+        idx_list.reverse()
+        for idx in idx_list:
+            filename = str(idx.data(FILENAME).toString())
             if self.cmdline_args.debug:
-                print "%s deleted" % filename
+                print "%s (%i) deleted" % (filename, idx.row() + 1)
             else:
                 self.model.elog_dict[filename].delete()
-            self.model.removeRow(idx[0].row())
+            self.model.removeRow(idx.row())
 
     def on_actionRefresh_triggered(self, checked=None):
         if checked is None: return
         self.refresh()
+        msg = "0 of %i, no selection" % self.model.rowCount()
+        self.gui.statusbar.showMessage(msg)
 
     def show(self):
         QtGui.QMainWindow.show(self)
         self.populate()
-        self.update_statusbar()
         self.read_elog()
     
     def refresh(self):
@@ -170,7 +178,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     
     def read_elog(self):
         self.gui.textEdit.clear()
-        if self.selected_elog is None:
+        if self.display_elog is None:
             buf = '''
 <h1>(k)elogviewer 1.0.0</h1>
 <center><small>(k)elogviewer, copyright (c) 2007, 2011 Mathias Laurin<br>
@@ -193,14 +201,10 @@ Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;<
         else:
             buf = ''.join( '<p style="color: %s">%s</p>' % 
                 (self.filter_list[elog_part.header].color, elog_part.content)
-                for elog_part in self.selected_elog.contents
+                for elog_part in self.display_elog.contents
                 if self.filter_list[elog_part.header].is_active()
                 and self.filter_list[elog_part.section].is_active())
             buf = buf.replace('\n', '<br>')
-            print buf
         self.gui.textEdit.append(buf)
         self.gui.textEdit.verticalScrollBar().setValue(0)
     
-    def update_statusbar(self, idx=0):
-        self.gui.statusbar.showMessage(self.message_statusbar(idx, self.model.rowCount()))
-
