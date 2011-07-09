@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-# vim: set ts=4 st=4 sw=4 et:
 # (c) 2011 Mathias Laurin, GPL2
 
 '''
@@ -19,9 +18,21 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 '''
 
+
+import os
+import fnmatch
+import time
+import re
+import getopt
+import portage
+
+
 class Identity:
     description = '''
-<b>Elogviewer</b> lists all elogs created during emerges of packages from Portage, the package manager of the Gentoo linux distribution.  So all warnings or informational messages generated during an update can be reviewed at one glance.
+<b>Elogviewer</b> lists all elogs created during emerges of packages from
+Portage, the package manager of the Gentoo linux distribution.  So all warnings
+or informational messages generated during an update can be reviewed at one
+glance.
 
 Read
 <tt>man 1 elogviewer</tt>
@@ -30,24 +41,21 @@ and
 for more information.
 '''
 
+
 class Filter:
     def __init__(self, label, match="", is_class=False, color='black'):
         self.name = label
-        if match is "":
-            self.match = label
-        else:
-            self.match = match
+        self.match = match if match else label
         self._is_class = is_class
         self.color = color
-    
+
     def is_active(self):
         pass
-    
+
     def is_class(self):
         return self._is_class
-    
 
-import os, fnmatch
+
 def all_files(root, patterns='*', single_level=False, yield_folders=False):
     ''' Expand patterns for semicolon-separated strin of list '''
     patterns = patterns.split(';')
@@ -63,6 +71,7 @@ def all_files(root, patterns='*', single_level=False, yield_folders=False):
         if single_level:
             break
 
+
 class ElogContentPart:
     def __init__(self, complete_header):
         self.header = complete_header[0]
@@ -72,8 +81,7 @@ class ElogContentPart:
     def add_content(self, content):
         self.content = ''.join([self.content, content, '\n'])
 
-import time
-import re
+
 class Elog:
     def __init__(self, filename, elog_dir, filter_list):
         self.filename = filename
@@ -84,16 +92,16 @@ class Elog:
         basename = os.path.basename(filename)
         split_filename = basename.split(":")
         if len(split_filename) is 3:
-            (self.category, self.package, date) = split_filename
+            self.category, self.package, date = split_filename
         if len(split_filename) is 2:
             self.category = os.path.dirname(filename).split("/")[-1]
-            (self.package, date) = split_filename
+            self.package, date = split_filename
         date = time.strptime(date, "%Y%m%d-%H%M%S.log")
         self.sorted_time = time.strftime("%Y-%m-%d %H:%M:%S", date)
         self.locale_time = time.strftime("%x %X", date)
 
         self.read_file()
-    
+
     def read_file(self):
         with open(self.filename, 'r') as f:
             file_contents = f.read()
@@ -101,12 +109,11 @@ class Elog:
             self.get_contents(file_contents)
 
     def get_class(self, file_contents):
-        '''
-        Get the highest elog class
+        '''Get the highest elog class
         adapted from Luca Marturana's elogv
         '''
         classes = re.findall("LOG:|INFO:|WARN:|ERROR:", file_contents)
-        
+
         if "ERROR:" in classes:
             self.eclass = "eerror"
         elif "WARN:" in classes:
@@ -123,9 +130,10 @@ class Elog:
                 self.contents.append(ElogContentPart(L))
             else:
                 self.contents[now].add_content(line)
-        
+
     def delete(self):
         os.remove(self.filename)
+
 
 class Elogviewer:
 
@@ -139,20 +147,24 @@ class Elogviewer:
     def add_filter(self, filter):
         self.filter_list[filter.match] = filter
         if filter.is_class():
-            (t, l) = divmod(self.filter_counter_class, self.filter_columns_class)
+            t, l = divmod(self.filter_counter_class, self.filter_columns_class)
             self.filter_counter_class += 1
         else:
-            (t, l) = divmod(self.filter_counter_stage, self.filter_columns_stage)
+            t, l = divmod(self.filter_counter_stage, self.filter_columns_stage)
             self.filter_counter_stage += 1
         return (t, l)
-    
+
     def populate(self):
-        for filename in all_files(self.cmdline_args.elog_dir, '*:*.log', False, True):
-            self.model.EVappend(Elog(filename, self.cmdline_args.elog_dir, self.filter_list))
-    
+        for filename in all_files(self.cmdline_args.elog_dir, '*:*.log',
+                                  False, True):
+            self.model.EVappend(Elog(filename,
+                                     self.cmdline_args.elog_dir,
+                                     self.filter_list))
+
+
 def help():
     print '''
-Elogviewer should help you not to miss important information like: 
+Elogviewer should help you not to miss important information like:
 
 If you have just upgraded from an older version of python you
 will need to run:
@@ -161,34 +173,34 @@ will need to run:
 please do run it and restart elogviewer.
 '''
 
+
 def usage():
     print '''
-You need to enable the elog feature by setting at least one of 
+You need to enable the elog feature by setting at least one of
     PORTAGE_ELOG_CLASSES="info warn error log qa"
 and
     PORTAGE_ELOG_SYSTEM="save"
 in /etc/make.conf
 
-You need to add yourself to the portage group to use 
+You need to add yourself to the portage group to use
 elogviewer without privileges.
 
 Read /etc/make.conf.example for more information
 '''
 
-import getopt
-import portage
+
 class CommandLineArguments:
     def __init__(self, argv):
         # default arguments
         self.debug = False
         self.elog_dir = portage.settings["PORT_LOGDIR"]
-        if self.elog_dir is "":
+        if not self.elog_dir:
             self.elog_dir = "/var/log/portage"
-        self.gui_frontend = "GTK" # GTK or QT
+        self.gui_frontend = "GTK"  # GTK or QT
 
         # parse commandline
         try:
-            opts, args = getopt.getopt(argv, 
+            opts, args = getopt.getopt(argv,
                     "dhgqp:", ["debug", "help", "gtk", "qt", "elogpath"])
         except getopt.GetoptError:
             help()
@@ -203,12 +215,11 @@ class CommandLineArguments:
             elif opt in ("-h", "--help"):
                 help()
                 usage()
-                exit (0)
+                exit(0)
             elif opt in ("-p", "--elogpath"):
                 self.elog_dir = arg
 
         # post process arguments
         elog_dir = "/".join([self.elog_dir, "elog", ""])
-        if os.path.isdir(elog_dir): 
+        if os.path.isdir(elog_dir):
             self.elog_dir = elog_dir
-

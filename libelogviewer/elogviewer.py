@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-# vim: set ts=4 st=4 sw=4 et:
 # (c) 2011 Mathias Laurin, GPL2
 # see libelogviewer/core.py for details
 
 import sys
 import core as ev
+
+
 def main(argv):
     cmdline = ev.CommandLineArguments(argv)
 
@@ -18,7 +19,7 @@ def main(argv):
     else:
         from ev_gtk.elogviewer import ElogviewerGtk as ElogviewerGui
         from ev_gtk.elogviewer import Filter
-    
+
     elogviewer = ElogviewerGui(cmdline)
     elogviewer.create_gui()
 
@@ -51,4 +52,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-

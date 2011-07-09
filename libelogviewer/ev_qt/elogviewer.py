@@ -7,43 +7,46 @@
 import sys
 from PyQt4 import QtCore, QtGui
 import core as core
+from ev_qt.elogviewer_ui import Ui_MainWindow
 
 
 class ElogInstanceItem(QtGui.QStandardItem):
     def __init__(self, elog):
         QtGui.QStandardItem.__init__(self)
         self.elog = elog
-    
+
     def type(self):
         return 1000
 
 
-( CATEGORY, PACKAGE, ECLASS, TIMESTAMP, ELOG ) = range(5)
+CATEGORY, PACKAGE, ECLASS, TIMESTAMP, ELOG = range(5)
 SORT = QtCore.Qt.UserRole
 FILENAME = QtCore.Qt.UserRole + 1
+
+
 class Model(QtGui.QStandardItemModel):
     def __init__(self, parent=None):
         QtGui.QStandardItemModel.__init__(self, parent)
         self.setColumnCount(4)
-        self.setHeaderData( CATEGORY, QtCore.Qt.Horizontal, "Category" )
-        self.setHeaderData( PACKAGE, QtCore.Qt.Horizontal, "Package" )
-        self.setHeaderData( ECLASS, QtCore.Qt.Horizontal, "Highest eclass" )
-        self.setHeaderData( TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp" )
-        self.setHeaderData( ELOG, QtCore.Qt.Horizontal, "Elog" )
+        self.setHeaderData(CATEGORY, QtCore.Qt.Horizontal, "Category")
+        self.setHeaderData(PACKAGE, QtCore.Qt.Horizontal, "Package")
+        self.setHeaderData(ECLASS, QtCore.Qt.Horizontal, "Highest eclass")
+        self.setHeaderData(TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp")
+        self.setHeaderData(ELOG, QtCore.Qt.Horizontal, "Elog")
         self.setSortRole(SORT)
 
         # maintain separate list of elog
         self.elog_dict = {}
-    
+
     def EVappend(self, elog):
         self.appendRow(elog)
-    
+
     def appendRow(self, elog):
         self.elog_dict[elog.filename] = elog
-        
+
         category_it = QtGui.QStandardItem(elog.category)
         category_it.setData(QtCore.QVariant(elog.category), SORT)
-        
+
         package_it = QtGui.QStandardItem(elog.package)
         package_it.setData(QtCore.QVariant(elog.package), SORT)
         package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
@@ -53,19 +56,19 @@ class Model(QtGui.QStandardItemModel):
 
         time_it = QtGui.QStandardItem(elog.locale_time)
         time_it.setData(QtCore.QVariant(elog.sorted_time), SORT)
-        
+
         elog_it = ElogInstanceItem(elog)
-        return QtGui.QStandardItemModel.appendRow(self, [
-            category_it, package_it, eclass_it, time_it ])
-    
+        return QtGui.QStandardItemModel.appendRow(self,
+                [category_it, package_it, eclass_it, time_it])
+
     def removeRows(self, row, count, parent=QtCore.QModelIndex()):
-        for current_row in xrange(row, row+count):
+        for current_row in xrange(row, row + count):
             idx = self.index(current_row, PACKAGE, parent)
             filename = str(idx.data(FILENAME).toString())
             if filename in self.elog_dict:
                 del self.elog_dict[filename]
         return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
-    
+
 
 class Filter(core.Filter):
     def __init__(self, label, match="", is_class=False, color='black'):
@@ -77,7 +80,6 @@ class Filter(core.Filter):
         return self.button.checkState() != 0
 
 
-from ev_qt.elogviewer_ui import Ui_MainWindow
 class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     def __init__(self, cmdline_args):
         QtGui.QMainWindow.__init__(self)
@@ -99,13 +101,14 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         header.setSortIndicatorShown(True)
         header.setClickable(True)
 
-        # see http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html#names
+        # see http://standards.freedesktop.org/icon-naming-spec/
+        #   icon-naming-spec-latest.html#names
         # http://www.qtcentre.org/wiki/index.php?title=Embedded_resources
         # http://doc.trolltech.com/latest/qstyle.html#StandardPixmap-enum
 
         style = QtGui.QApplication.style()
 
-        refreshicon = QtGui.QIcon.fromTheme("view-refresh", 
+        refreshicon = QtGui.QIcon.fromTheme("view-refresh",
                 style.standardIcon(QtGui.QStyle.SP_BrowserReload))
         self.gui.actionRefresh.setIcon(refreshicon)
 
@@ -120,10 +123,10 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         self.gui.treeView.header().connect(self.gui.treeView.header(),
                 QtCore.SIGNAL("sortIndicatorChanged(int, Qt::SortOrder)"),
                 self.model.sort)
-    
+
     def on_selection_changed(self, new_selection, old_selection):
         idx_list = new_selection.indexes()
-        if len(idx_list) is 0:
+        if not idx_list:
             msg = "0 of %i, no selection" % self.model.rowCount()
             self.display_elog = None
             self.read_elog()
@@ -131,7 +134,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
             idx = idx_list[PACKAGE]
             filename = str(idx.data(FILENAME).toString())
             msg = "%i of %i, %s" % (
-                    idx.row() + 1, 
+                    idx.row() + 1,
                     self.model.rowCount(),
                     filename)
             self.display_elog = self.model.elog_dict[filename]
@@ -141,7 +144,8 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         self.gui.statusbar.showMessage(msg)
 
     def on_actionDelete_triggered(self, checked=None):
-        if checked is None: return
+        if checked is None:
+            return
         idx_list = self.gui.treeView.selectionModel().selectedRows(PACKAGE)
         idx_list.reverse()
         for idx in idx_list:
@@ -153,7 +157,8 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
             self.model.removeRow(idx.row())
 
     def on_actionRefresh_triggered(self, checked=None):
-        if checked is None: return
+        if checked is None:
+            return
         self.refresh()
         msg = "0 of %i, no selection" % self.model.rowCount()
         self.gui.statusbar.showMessage(msg)
@@ -162,20 +167,21 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         QtGui.QMainWindow.show(self)
         self.populate()
         self.read_elog()
-    
+
     def refresh(self):
-        self.model.removeRows(0, self.model.rowCount()) 
+        self.model.removeRows(0, self.model.rowCount())
         self.populate()
 
     def add_filter(self, filter):
-        filter.button.connect(filter.button, QtCore.SIGNAL("stateChanged(int)"),
-                self.read_elog)
-        (t, l) = core.Elogviewer.add_filter(self, filter)
+        filter.button.connect(filter.button,
+                              QtCore.SIGNAL("stateChanged(int)"),
+                              self.read_elog)
+        t, l = core.Elogviewer.add_filter(self, filter)
 
         filter_table = self.gui.filter_class_layout if filter.is_class() \
                 else self.gui.filter_stage_layout
         filter_table.addWidget(filter.button, t, l)
-    
+
     def read_elog(self):
         self.gui.textEdit.clear()
         if self.display_elog is None:
@@ -199,7 +205,7 @@ Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;<
 (k)elogviewer application icon (c) gnome, GPL2
 '''
         else:
-            buf = ''.join( '<p style="color: %s">%s</p>' % 
+            buf = ''.join('<p style="color: %s">%s</p>' %
                 (self.filter_list[elog_part.header].color, elog_part.content)
                 for elog_part in self.display_elog.contents
                 if self.filter_list[elog_part.header].is_active()
@@ -207,4 +213,3 @@ Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;<
             buf = buf.replace('\n', '<br>')
         self.gui.textEdit.append(buf)
         self.gui.textEdit.verticalScrollBar().setValue(0)
-    
