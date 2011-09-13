@@ -15,5 +15,6 @@ setup(name="elogviewer",
       package_dir={"": "libelogviewer"},
       py_modules=["ev_gtk", "ev_qt"],
       #packages=[""],
-      package_data={"": ["rsc/qt.rsc"]}
+      package_data={"": ["rsc/qt.rsc"]},
+      scripts=["../elogviewer", "../kelogviewer"],
      )
