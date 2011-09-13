@@ -13,6 +13,7 @@ setup(name="elogviewer",
       url="http://sourceforge.net/projects/elogviewer/",
       license="GPL2",
       packages_dir={"": "libelogviewer"},
-      packages=["ev_gtk", "ev_qt"],
+      py_modules=["ev_gtk", "ev_qt"],
+      #packages=[""],
       package_data={"": ["rsc/qt.rsc"]}
      )
