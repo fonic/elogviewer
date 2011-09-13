@@ -12,6 +12,6 @@ setup(name="elogviewer",
       url="http://sourceforge.net/projects/elogviewer/",
       license="GPL2",
       packages=["libelogviewer", "libelogviewer/ev_gtk", "libelogviewer/ev_qt"],
-      package_data={"libelogviewer": ["libelogviewer/rsc/qt.qrc"]},
+      #package_data={"libelogviewer": ["libelogviewer/rsc/qt.qrc"]},
       scripts=["elogviewer", "kelogviewer"],
      )

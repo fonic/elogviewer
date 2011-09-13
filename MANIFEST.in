@@ -1,1 +1,2 @@
 include libelogviewer/rsc/qt.qrc
+include libelogviewer/rsc/scalable/*
