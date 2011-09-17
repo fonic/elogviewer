@@ -224,8 +224,8 @@ Christian Faulhammer, gentoo bug #192701\n')
         else:
             buf = gtk.TextBuffer(self.texttagtable)
             for elog_section in self.display_elog.contents:
-                if self.filter_list[elog_section.header].is_active() and \
-                   self.filter_list[elog_section.section].is_active():
+                if (self.filter_list[elog_section.header].is_active() and
+                    self.filter_list[elog_section.section].is_active()):
                         buf.insert_with_tags(
                             buf.get_end_iter(),
                             elog_section.content,
@@ -234,13 +234,13 @@ Christian Faulhammer, gentoo bug #192701\n')
         textview.set_buffer(buf)
 
     def update_statusbar(self, msg=None):
-        if not msg:
+        if msg is None:
             if self.display_elog is None:
                 msg = "0 of %i, no selection" % len(self.model)
             else:
-                msg = "%i of %i, %s" % \
-                        (self.selected_row_refs[0].get_path()[0] + 1,
-                        len(self.model), self.display_elog.filename)
+                msg = "%i of %i, %s" % (
+                    self.selected_row_refs[0].get_path()[0] + 1,
+                    len(self.model), self.display_elog.filename)
         self.statusbar.push(0, msg)
 
     def main(self):
