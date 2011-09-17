@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # vim: set ts=4 st=4 sw=4 et
 # (c) 2011 Mathias Laurin, GPL2
 # see libelogviewer/core.py for details
@@ -16,7 +14,7 @@ except:
     print "a recent version of pygtk is required"
 
 import pango
-import core as core
+import libelogviewer.core as core
 from gobject import TYPE_STRING, TYPE_PYOBJECT
 
 

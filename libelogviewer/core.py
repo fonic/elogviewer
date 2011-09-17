@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # (c) 2011 Mathias Laurin, GPL2
 
 '''
@@ -23,8 +21,6 @@ import os
 import fnmatch
 import time
 import re
-import getopt
-import portage
 
 
 class Identity:

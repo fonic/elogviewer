@@ -1,13 +1,11 @@
-#!/usr/bin/env python
-
 # vim: set ts=4 st=4 sw=4 et:
 # (c) 2011 Mathias Laurin, GPL2
 # see libelogviewer/core.py for details
 
 import sys
 from PyQt4 import QtCore, QtGui
-import core as core
-from ev_qt.elogviewer_ui import Ui_MainWindow
+import libelogviewer.core as core
+from elogviewer_ui import Ui_MainWindow
 
 
 class ElogInstanceItem(QtGui.QStandardItem):
