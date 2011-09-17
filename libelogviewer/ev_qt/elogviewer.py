@@ -2,7 +2,6 @@
 # (c) 2011 Mathias Laurin, GPL2
 # see libelogviewer/core.py for details
 
-import sys
 from PyQt4 import QtCore, QtGui
 import libelogviewer.core as core
 from elogviewer_ui import Ui_MainWindow
