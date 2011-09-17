@@ -21,21 +21,6 @@ import time
 import re
 
 
-class Identity:
-    description = '''
-<b>Elogviewer</b> lists all elogs created during emerges of packages from
-Portage, the package manager of the Gentoo linux distribution.  So all warnings
-or informational messages generated during an update can be reviewed at one
-glance.
-
-Read
-<tt>man 1 elogviewer</tt>
-and
-<tt>man 1 /etc/make.conf</tt>
-for more information.
-'''
-
-
 class Filter:
     def __init__(self, label, match="", is_class=False, color='black'):
         self.name = label
