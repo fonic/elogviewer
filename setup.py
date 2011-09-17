@@ -13,5 +13,5 @@ setup(name="elogviewer",
       license="GPL2",
       packages=["libelogviewer", "libelogviewer/ev_gtk", "libelogviewer/ev_qt"],
       #package_data={"libelogviewer": ["libelogviewer/rsc/qt.qrc"]},
-      scripts=["libelogviewer/elogviewer.py"],
+      scripts=["elogviewer.py"],
      )
