@@ -1,4 +1,3 @@
-# vim: set ts=4 st=4 sw=4 et:
 # (c) 2011 Mathias Laurin, GPL2
 # see libelogviewer/core.py for details
 
