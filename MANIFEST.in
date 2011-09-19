@@ -1,2 +1,3 @@
 include libelogviewer/rsc/qt.qrc
 include libelogviewer/rsc/scalable/*
+include libelogviewer/ev_gtk/elogviewer.glade
