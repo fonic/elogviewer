@@ -6,7 +6,10 @@
 import sys
 import os
 import getopt
-import portage
+try:
+    import portage
+except ImportError:
+    portage = None
 
 
 help_msg = """Elogviewer should help you not to miss important information like:
@@ -36,8 +39,9 @@ class CommandLineArguments:
     def __init__(self, argv):
         # default arguments
         self.debug = False
-        self.elog_dir = portage.settings["PORT_LOGDIR"]
-        if not self.elog_dir:
+        if portage:
+            self.elog_dir = portage.get("PORT_LOGDIR", "/var/log/portage")
+        else:
             self.elog_dir = "/var/log/portage"
         self.gui_frontend = "GTK"  # GTK or QT
 
