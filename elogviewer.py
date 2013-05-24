@@ -5,77 +5,38 @@
 
 import sys
 import os
-import getopt
+import argparse
+
 try:
     import portage
 except ImportError:
     portage = None
 
 
-help_msg = """Elogviewer should help you not to miss important information like:
+def main():
+    parser = argparse.ArgumentParser(description=os.linesep.join(
+        """
+        Elogviewer should help you not to miss important information.
 
-If you have just upgraded from an older version of python you
-will need to run:
-    /usr/sbin/python-updater
+        You need to enable the elog feature by setting at least one of
+        PORTAGE_ELOG_CLASSES="info warn error log qa" and
+        PORTAGE_ELOG_SYSTEM="save" in /etc/make.conf.
 
-please do run it and restart elogviewer.
-"""
+        You need to add yourself to the portage group to use elogviewer without
+        privileges.
 
+        Read /etc/make.conf.example for more information.
 
-usage_msg = """You need to enable the elog feature by setting at least one of
-    PORTAGE_ELOG_CLASSES="info warn error log qa"
-and
-    PORTAGE_ELOG_SYSTEM="save"
-in /etc/make.conf
+        """.splitlines()))
+    parser.add_argument("-p", "--elogpath", help="path to the elog directory")
+    gui_arg = parser.add_mutually_exclusive_group()
+    gui_arg.add_argument("-q", "--qt", action="store_true",
+                         help="start with the Qt interface")
+    gui_arg.add_argument("-g", "--gtk", action="store_true",
+                         help="start with the Gtk interface")
+    args = parser.parse_args()
 
-You need to add yourself to the portage group to use
-elogviewer without privileges.
-
-Read /etc/make.conf.example for more information
-"""
-
-
-class CommandLineArguments:
-    def __init__(self, argv):
-        # default arguments
-        self.debug = False
-        if portage:
-            self.elog_dir = portage.get("PORT_LOGDIR", "/var/log/portage")
-        else:
-            self.elog_dir = "/var/log/portage"
-        self.gui_frontend = "GTK"  # GTK or QT
-
-        # parse commandline
-        try:
-            opts, args = getopt.getopt(argv,
-                    "dhgqp:", ["debug", "help", "gtk", "qt", "elogpath"])
-        except getopt.GetoptError:
-            print help_msg
-            print usage_msg
-            exit(1)
-        for opt, arg in opts:
-            if opt in ("-d", "--debug"):
-                self.debug = True
-                print "debug mode is set"
-            elif opt in ("-q", "--qt"):
-                self.gui_frontend = "QT"
-            elif opt in ("-h", "--help"):
-                print help_msg
-                print usage_msg
-                exit(0)
-            elif opt in ("-p", "--elogpath"):
-                self.elog_dir = arg
-
-        # post process arguments
-        elog_dir = "/".join([self.elog_dir, "elog", ""])
-        if os.path.isdir(elog_dir):
-            self.elog_dir = elog_dir
-
-
-def main(argv):
-    cmdline = CommandLineArguments(argv)
-
-    if cmdline.gui_frontend == "QT":
+    if args.qt:
         from libelogviewer.ev_qt.elogviewer import ElogviewerQt as ElogviewerGui
         from libelogviewer.ev_qt.elogviewer import Filter
         from PyQt4 import QtGui
@@ -85,7 +46,7 @@ def main(argv):
         from libelogviewer.ev_gtk.elogviewer import ElogviewerGtk as ElogviewerGui
         from libelogviewer.ev_gtk.elogviewer import Filter
 
-    elogviewer = ElogviewerGui(cmdline)
+    elogviewer = ElogviewerGui(args)
     elogviewer.create_gui()
 
     elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
@@ -110,10 +71,10 @@ def main(argv):
     elogviewer.connect()
     elogviewer.show()
 
-    if cmdline.gui_frontend == "QT":
+    if args.qt:
         sys.exit(app.exec_())
-    elif cmdline.gui_frontend == "GTK":
+    else:
         elogviewer.main()
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
