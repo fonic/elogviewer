@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# (c) 2011 Mathias Laurin, GPL2
+# (c) 2011, 2013 Mathias Laurin, GPLv2
 # see libelogviewer/core.py for details
 
 import sys
