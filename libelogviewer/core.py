@@ -116,7 +116,8 @@ class Elog:
 
 class Elogviewer:
 
-    def __init__(self):
+    def __init__(self, args):
+        self._args = args
         self.selected_elog = None
         self.filter_list = {}
 
@@ -134,8 +135,8 @@ class Elogviewer:
         return (t, l)
 
     def populate(self):
-        for filename in all_files(self.cmdline_args.elog_dir, '*:*.log',
+        for filename in all_files(self._args.elogpath, '*:*.log',
                                   False, True):
             self.model.EVappend(Elog(filename,
-                                     self.cmdline_args.elog_dir,
+                                     self._args.elogpath,
                                      self.filter_list))

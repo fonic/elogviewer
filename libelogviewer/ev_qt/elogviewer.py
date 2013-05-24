@@ -77,10 +77,9 @@ class Filter(core.Filter):
 
 
 class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
-    def __init__(self, cmdline_args):
+    def __init__(self, args):
         QtGui.QMainWindow.__init__(self)
-        core.Elogviewer.__init__(self)
-        self.cmdline_args = cmdline_args
+        core.Elogviewer.__init__(self, args)
         self.model = Model(self)
         self.display_elog = None
 
@@ -146,10 +145,7 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         idx_list.reverse()
         for idx in idx_list:
             filename = str(idx.data(FILENAME).toString())
-            if self.cmdline_args.debug:
-                print "%s (%i) deleted" % (filename, idx.row() + 1)
-            else:
-                self.model.elog_dict[filename].delete()
+            self.model.elog_dict[filename].delete()
             self.model.removeRow(idx.row())
 
     def on_actionRefresh_triggered(self, checked=None):

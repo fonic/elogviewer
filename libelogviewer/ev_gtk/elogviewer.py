@@ -51,9 +51,8 @@ class Filter(core.Filter):
 
 class ElogviewerGtk(core.Elogviewer):
 
-    def __init__(self, cmdline_args):
-        core.Elogviewer.__init__(self)
-        self.cmdline_args = cmdline_args
+    def __init__(self, args):
+        core.Elogviewer.__init__(self, args)
         self.model = Model()
         self.texttagtable = gtk.TextTagTable()
         self.display_elog = None
@@ -90,9 +89,8 @@ class ElogviewerGtk(core.Elogviewer):
         package_col.set_sort_column_id(PACKAGE)
         locale_time_col.set_sort_column_id(TIMESORT)
         eclass_col.set_sort_column_id(ECLASS)
-        if not self.cmdline_args.debug:
-            sorted_time_col.set_visible(False)
-            filename_col.set_visible(False)
+        sorted_time_col.set_visible(False)
+        filename_col.set_visible(False)
 
         self.treeview.append_column(category_col)
         self.treeview.append_column(package_col)
@@ -137,10 +135,7 @@ class ElogviewerGtk(core.Elogviewer):
             model = row.get_model()
             it = model.get_iter(row.get_path())
             elog = model.get_value(it)
-            if self.cmdline_args.debug:
-                print "%s deleted" % str(elog.filename)
-            else:
-                elog.delete()
+            elog.delete()
             model.remove(it)
 
     def on_row_deleted(self, model, path):
