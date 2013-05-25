@@ -131,34 +131,6 @@ class Elog:
         os.remove(self.filename)
 
 
-class Elogviewer:
-
-    def __init__(self, args):
-        self._args = args
-        self.selected_elog = None
-        self.filter_list = {}
-
-        self.filter_counter_class = self.filter_counter_stage = 0
-        self.filter_columns_class = self.filter_columns_stage = 2
-
-    def add_filter(self, filter):
-        self.filter_list[filter.match] = filter
-        if filter.is_class():
-            t, l = divmod(self.filter_counter_class, self.filter_columns_class)
-            self.filter_counter_class += 1
-        else:
-            t, l = divmod(self.filter_counter_stage, self.filter_columns_stage)
-            self.filter_counter_stage += 1
-        return (t, l)
-
-    def populate(self):
-        for filename in all_files(self._args.elogpath, '*:*.log',
-                                  False, True):
-            self.model.EVappend(Elog(filename,
-                                     self._args.elogpath,
-                                     self.filter_list))
-
-
 class Role(object):
 
     ElogPath = Qt.UserRole + 1
@@ -237,12 +209,18 @@ class Model(QtGui.QStandardItemModel):
         return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
 
 
-class ElogviewerQt(QtGui.QMainWindow, Elogviewer):
+class Elogviewer(QtGui.QMainWindow):
 
     def __init__(self, args):
-        QtGui.QMainWindow.__init__(self)
-        Elogviewer.__init__(self, args)
+        super(Elogviewer, self).__init__()
+        self._args = args
+
         self.display_elog = None
+        self.selected_elog = None
+
+        self.filter_list = {}
+        self.filter_counter_class = self.filter_counter_stage = 0
+        self.filter_columns_class = self.filter_columns_stage = 2
 
         self.__initUI()
         self.__initToolBar()
@@ -316,6 +294,30 @@ class ElogviewerQt(QtGui.QMainWindow, Elogviewer):
         self._quitAction = QtGui.QAction("Quit", self._toolBar)
         self._toolBar.addAction(self._quitAction)
 
+    def add_filter(self, filter):
+        return
+        filter.button.connect(filter.button,
+                              QtCore.SIGNAL("stateChanged(int)"),
+                              self.read_elog)
+        self.filter_list[filter.match] = filter
+        if filter.is_class():
+            t, l = divmod(self.filter_counter_class, self.filter_columns_class)
+            self.filter_counter_class += 1
+        else:
+            t, l = divmod(self.filter_counter_stage, self.filter_columns_stage)
+            self.filter_counter_stage += 1
+
+        filter_table = self.gui.filter_class_layout if filter.is_class() \
+                else self.gui.filter_stage_layout
+        filter_table.addWidget(filter.button, t, l)
+
+    def populate(self):
+        for filename in all_files(self._args.elogpath, '*:*.log',
+                                  False, True):
+            self.model.EVappend(Elog(filename,
+                                     self._args.elogpath,
+                                     self.filter_list))
+
     def create_gui(self):
         self.show()
 
@@ -356,17 +358,6 @@ class ElogviewerQt(QtGui.QMainWindow, Elogviewer):
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
         self.populate()
-
-    def add_filter(self, filter):
-        return  # XXX
-        filter.button.connect(filter.button,
-                              QtCore.SIGNAL("stateChanged(int)"),
-                              self.read_elog)
-        t, l = Elogviewer.add_filter(self, filter)
-
-        filter_table = self.gui.filter_class_layout if filter.is_class() \
-                else self.gui.filter_stage_layout
-        filter_table.addWidget(filter.button, t, l)
 
     def read_elog(self):
         self.gui.textEdit.clear()
@@ -423,7 +414,7 @@ def main():
 
     app = QtGui.QApplication(sys.argv)
 
-    elogviewer = ElogviewerQt(args)
+    elogviewer = Elogviewer(args)
     elogviewer.create_gui()
 
     elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
