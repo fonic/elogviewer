@@ -177,9 +177,6 @@ class Model(QtGui.QStandardItemModel):
             print(filename)
             #self.appendRow(Elog(filename, path, []))  # XXX
 
-    def EVappend(self, elog):
-        print("deprecated")  # XXX
-
     def appendRow(self, elog):
         self.elog_dict[elog.filename] = elog
 
@@ -311,16 +308,6 @@ class Elogviewer(QtGui.QMainWindow):
                 else self.gui.filter_stage_layout
         filter_table.addWidget(filter.button, t, l)
 
-    def populate(self):
-        for filename in all_files(self._args.elogpath, '*:*.log',
-                                  False, True):
-            self.model.EVappend(Elog(filename,
-                                     self._args.elogpath,
-                                     self.filter_list))
-
-    def create_gui(self):
-        self.show()
-
     def on_selection_changed(self, new_selection, old_selection):
         idx_list = new_selection.indexes()
         if not idx_list:
@@ -350,14 +337,9 @@ class Elogviewer(QtGui.QMainWindow):
             self._model.elog_dict[filename].delete()
             self._model.removeRow(idx.row())
 
-    def show(self):
-        QtGui.QMainWindow.show(self)
-        return  # XXX
-        self.read_elog()
-
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
-        self.populate()
+        self._model.populate(self._args.elogpath)
 
     def read_elog(self):
         self.gui.textEdit.clear()
@@ -415,7 +397,6 @@ def main():
     app = QtGui.QApplication(sys.argv)
 
     elogviewer = Elogviewer(args)
-    elogviewer.create_gui()
 
     elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
     elogviewer.add_filter(Filter("warning", "WARN", True, 'red'))
