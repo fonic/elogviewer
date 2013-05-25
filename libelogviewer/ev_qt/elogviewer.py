@@ -1,9 +1,8 @@
-# (c) 2011 Mathias Laurin, GPL2
+# (c) 2011, 2013 Mathias Laurin, GPL2
 # see libelogviewer/core.py for details
 
 from PyQt4 import QtCore, QtGui
 import libelogviewer.core as core
-from elogviewer_ui import Ui_MainWindow
 
 
 class ElogInstanceItem(QtGui.QStandardItem):
@@ -77,62 +76,99 @@ class Filter(core.Filter):
 
 
 class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
+
     def __init__(self, args):
         QtGui.QMainWindow.__init__(self)
         core.Elogviewer.__init__(self, args)
-        self.model = Model(self)
         self.display_elog = None
 
-    def create_gui(self):
-        self.gui = Ui_MainWindow()
-        self.gui.setupUi(self)
+        self.__initUI()
+        self.__initToolBar()
 
-        self.gui.treeView.setRootIsDecorated(False)
-        self.gui.treeView.setModel(self.model)
-        self.gui.treeView.setColumnHidden(ELOG, True)
-        self.gui.treeView.setSelectionMode(QtGui.QTreeView.ExtendedSelection)
+    def __initUI(self):
+        self._centralWidget = QtGui.QWidget(self)
+        centralLayout = QtGui.QVBoxLayout()
+        self._centralWidget.setLayout(centralLayout)
+        self.setCentralWidget(self._centralWidget)
 
-        header = self.gui.treeView.header()
-        header.setSortIndicatorShown(True)
-        header.setClickable(True)
+        self._treeView = QtGui.QTreeView(self._centralWidget)
+        self._treeView.setRootIsDecorated(False)
+        self._treeView.setColumnHidden(ELOG, True)
+        self._treeView.setSelectionMode(self._treeView.ExtendedSelection)
+        centralLayout.addWidget(self._treeView)
 
+        self._model = Model()
+        self._treeView.setModel(self._model)
+        self._treeView.selectionModel().selectionChanged.connect(
+            self.on_selection_changed)
+
+        treeViewHeader = self._treeView.header()
+        treeViewHeader.setSortIndicatorShown(True)
+        treeViewHeader.setClickable(True)
+        treeViewHeader.sortIndicatorChanged.connect(self._model.sort)
+
+        bottomLayout = QtGui.QHBoxLayout()
+        centralLayout.addLayout(bottomLayout)
+
+        self._textEdit = QtGui.QTextEdit(self._centralWidget)
+        self._textEdit.setReadOnly(True)
+        self._textEdit.setHtml("""<h1>hello world</h1>""")
+        bottomLayout.addWidget(self._textEdit)
+
+        filterLayout = QtGui.QVBoxLayout()
+        bottomLayout.addLayout(filterLayout)
+
+        self._filterClassBox = QtGui.QGroupBox("Elog class",
+                                               self._centralWidget)
+        filterLayout.addWidget(self._filterClassBox)
+
+        self._filterStageBox = QtGui.QGroupBox("Elog stage",
+                                               self._centralWidget)
+        filterLayout.addWidget(self._filterStageBox)
+
+    def __initToolBar(self):
         # see http://standards.freedesktop.org/icon-naming-spec/
         #   icon-naming-spec-latest.html#names
         # http://www.qtcentre.org/wiki/index.php?title=Embedded_resources
         # http://doc.trolltech.com/latest/qstyle.html#StandardPixmap-enum
 
+        self._toolBar = QtGui.QToolBar(self)
+        self.addToolBar(self._toolBar)
+
         style = QtGui.QApplication.style()
 
-        refreshicon = QtGui.QIcon.fromTheme("view-refresh",
-                style.standardIcon(QtGui.QStyle.SP_BrowserReload))
-        self.gui.actionRefresh.setIcon(refreshicon)
+        self._refreshAction = QtGui.QAction("Refresh", self._toolBar)
+        self._refreshAction.setIcon(QtGui.QIcon.fromTheme(
+            "view-refresh", style.standardIcon(QtGui.QStyle.SP_BrowserReload)))
+        self._refreshAction.triggered.connect(self.refresh)
+        self._toolBar.addAction(self._refreshAction)
 
-        deleteicon = QtGui.QIcon.fromTheme("edit-delete",
-                QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png"))
-        self.gui.actionDelete.setIcon(deleteicon)
+        self._deleteAction = QtGui.QAction("Delete", self._toolBar)
+        self._deleteAction.setIcon(QtGui.QIcon.fromTheme(
+            "edit-delete",
+            QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png")))
+        self._toolBar.addAction(self._deleteAction)
 
-    def connect(self):
-        self.gui.treeView.connect(self.gui.treeView.selectionModel(),
-                QtCore.SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
-                self.on_selection_changed)
-        self.gui.treeView.header().connect(self.gui.treeView.header(),
-                QtCore.SIGNAL("sortIndicatorChanged(int, Qt::SortOrder)"),
-                self.model.sort)
+        self._quitAction = QtGui.QAction("Quit", self._toolBar)
+        self._toolBar.addAction(self._quitAction)
+
+    def create_gui(self):
+        self.show()
 
     def on_selection_changed(self, new_selection, old_selection):
         idx_list = new_selection.indexes()
         if not idx_list:
-            msg = "0 of %i, no selection" % self.model.rowCount()
+            msg = "0 of %i, no selection" % self._model.rowCount()
             self.display_elog = None
             self.read_elog()
-        elif len(idx_list) is self.model.columnCount():
+        elif len(idx_list) is self._model.columnCount():
             idx = idx_list[PACKAGE]
             filename = str(idx.data(FILENAME).toString())
             msg = "%i of %i, %s" % (
                     idx.row() + 1,
-                    self.model.rowCount(),
+                    self._model.rowCount(),
                     filename)
-            self.display_elog = self.model.elog_dict[filename]
+            self.display_elog = self._model.elog_dict[filename]
             self.read_elog()
         else:
             msg = "Multiple selections"
@@ -145,26 +181,21 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
         idx_list.reverse()
         for idx in idx_list:
             filename = str(idx.data(FILENAME).toString())
-            self.model.elog_dict[filename].delete()
-            self.model.removeRow(idx.row())
-
-    def on_actionRefresh_triggered(self, checked=None):
-        if checked is None:
-            return
-        self.refresh()
-        msg = "0 of %i, no selection" % self.model.rowCount()
-        self.gui.statusbar.showMessage(msg)
+            self._model.elog_dict[filename].delete()
+            self._model.removeRow(idx.row())
 
     def show(self):
         QtGui.QMainWindow.show(self)
+        return  # XXX
         self.populate()
         self.read_elog()
 
     def refresh(self):
-        self.model.removeRows(0, self.model.rowCount())
+        self._model.removeRows(0, self._model.rowCount())
         self.populate()
 
     def add_filter(self, filter):
+        return  # XXX
         filter.button.connect(filter.button,
                               QtCore.SIGNAL("stateChanged(int)"),
                               self.read_elog)

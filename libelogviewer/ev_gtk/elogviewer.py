@@ -102,6 +102,8 @@ class ElogviewerGtk(core.Elogviewer):
 
         self.statusbar = self.gui.get_object("statusbar")
 
+        self.connect()
+
     def connect(self):
         self.gui.connect_signals({
             "on_window_destroy" : gtk.main_quit,

@@ -68,7 +68,6 @@ def main():
     elogviewer.add_filter(Filter("configure"))
     elogviewer.add_filter(Filter("other"))
 
-    elogviewer.connect()
     elogviewer.show()
 
     if args.qt:
