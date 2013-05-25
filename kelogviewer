@@ -1,6 +1,0 @@
-#!/bin/sh
-
-PATH="/bin:/usr/bin:PYTHONPATH:."
-STARTER="libelogviewer/elogviewer.py"
-
-$STARTER --qt "$@"
