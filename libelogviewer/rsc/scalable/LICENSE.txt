@@ -1,2 +1,0 @@
-icon (c) gnome, GPL2
-downloaded from http://openiconlibrary.sourceforge.net
