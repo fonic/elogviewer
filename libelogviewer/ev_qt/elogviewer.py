@@ -2,16 +2,32 @@
 # see libelogviewer/core.py for details
 
 from PyQt4 import QtCore, QtGui
+Qt = QtCore.Qt
 import libelogviewer.core as core
 
 
-class ElogInstanceItem(QtGui.QStandardItem):
-    def __init__(self, elog):
-        QtGui.QStandardItem.__init__(self)
-        self.elog = elog
+class Role(object):
+
+    ElogPath = Qt.UserRole + 1
+
+
+class ElogModelItem(QtGui.QStandardItem):
+
+    def __init__(self):
+        super(ElogModelItem, self).__init__()
+        self.__elogPath = None
 
     def type(self):
-        return 1000
+        return self.UserType
+
+    def clone(self):
+        return self.__class__()
+
+    def elogPath(self):
+        return self.data(role=Role.ElogPath)
+
+    def setElogPath(self, elogPath):
+        self.setData(elogPath, role=Role.ElogPath)
 
 
 CATEGORY, PACKAGE, ECLASS, TIMESTAMP, ELOG = range(5)
@@ -20,8 +36,11 @@ FILENAME = QtCore.Qt.UserRole + 1
 
 
 class Model(QtGui.QStandardItemModel):
+
     def __init__(self, parent=None):
-        QtGui.QStandardItemModel.__init__(self, parent)
+        super(Model, self).__init__(parent)
+        self.setItemPrototype(ElogModelItem())
+
         self.setColumnCount(4)
         self.setHeaderData(CATEGORY, QtCore.Qt.Horizontal, "Category")
         self.setHeaderData(PACKAGE, QtCore.Qt.Horizontal, "Package")
@@ -33,8 +52,13 @@ class Model(QtGui.QStandardItemModel):
         # maintain separate list of elog
         self.elog_dict = {}
 
+    def populate(self, path):
+        for filename in core.all_files(path, "*:*.log", False, True):
+            print(filename)
+            #self.appendRow(core.Elog(filename, path, []))  # XXX
+
     def EVappend(self, elog):
-        self.appendRow(elog)
+        print("deprecated")  # XXX
 
     def appendRow(self, elog):
         self.elog_dict[elog.filename] = elog
@@ -52,7 +76,7 @@ class Model(QtGui.QStandardItemModel):
         time_it = QtGui.QStandardItem(elog.locale_time)
         time_it.setData(QtCore.QVariant(elog.sorted_time), SORT)
 
-        elog_it = ElogInstanceItem(elog)
+        elog_it = ElogModelItem(elog)
         return QtGui.QStandardItemModel.appendRow(self,
                 [category_it, package_it, eclass_it, time_it])
 
@@ -84,6 +108,8 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
 
         self.__initUI()
         self.__initToolBar()
+
+        self._treeView.model().populate(self._args.elogpath)
 
     def __initUI(self):
         self._centralWidget = QtGui.QWidget(self)
@@ -187,7 +213,6 @@ class ElogviewerQt(QtGui.QMainWindow, core.Elogviewer):
     def show(self):
         QtGui.QMainWindow.show(self)
         return  # XXX
-        self.populate()
         self.read_elog()
 
     def refresh(self):
