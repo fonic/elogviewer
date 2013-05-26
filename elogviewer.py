@@ -21,6 +21,7 @@ import argparse
 import fnmatch
 import time
 import re
+from functools import partial
 
 import sip as _sip
 _sip.setapi("QVariant", 2)
@@ -55,32 +56,6 @@ def all_files(root, patterns='*', single_level=False, yield_folders=False):
                     break
         if single_level:
             break
-
-
-class Filter:
-    def __init__(self, label, match="", is_class=False, color='black'):
-        self.name = label
-        self.match = match if match else label
-        self._is_class = is_class
-        self.color = color
-        self.button = QtGui.QCheckBox(label)
-        self.button.setCheckState(QtCore.Qt.Checked)
-
-    def is_active(self):
-        return self.button.checkState() != 0
-
-    def is_class(self):
-        return self._is_class
-
-
-class ElogContentPart:
-    def __init__(self, complete_header):
-        self.header = complete_header[0]
-        self.section = complete_header[1]
-        self.content = '%s (%s)\n' % (self.header, self.section)
-
-    def add_content(self, content):
-        self.content = ''.join([self.content, content, '\n'])
 
 
 class Role(object):
@@ -159,7 +134,7 @@ class ElogModelItem(QtGui.QStandardItem):
 
     def data(self, role=Qt.UserRole + 1):
         if role in (Qt.EditRole, Qt.DisplayRole):
-            return self.filename()
+            return self.text()
         else:
             return super(ElogModelItem, self).data(role)
 
@@ -266,8 +241,6 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._model = Model()
         self._treeView.setModel(self._model)
-        self._treeView.selectionModel().selectionChanged.connect(
-            self.on_selection_changed)
 
         treeViewHeader = self._treeView.header()
         treeViewHeader.setSortIndicatorShown(True)
@@ -281,6 +254,15 @@ class Elogviewer(QtGui.QMainWindow):
         self._textEdit.setReadOnly(True)
         self._textEdit.setHtml("""<h1>hello world</h1>""")
         bottomLayout.addWidget(self._textEdit)
+
+        self._textWidgetMapper = QtGui.QDataWidgetMapper(self._treeView)
+        self._textWidgetMapper.setSubmitPolicy(
+            self._textWidgetMapper.AutoSubmit)
+        self._textWidgetMapper.setModel(self._model)
+        self._textWidgetMapper.addMapping(self._textEdit, 0)
+        self._textWidgetMapper.toFirst()
+        self._treeView.selectionModel().currentRowChanged.connect(
+            self._textWidgetMapper.setCurrentModelIndex)
 
         filterLayout = QtGui.QVBoxLayout()
         bottomLayout.addLayout(filterLayout)
@@ -316,90 +298,46 @@ class Elogviewer(QtGui.QMainWindow):
             QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png")))
         self._toolBar.addAction(self._deleteAction)
 
+        self._aboutAction = QtGui.QAction("About", self._toolBar)
+        self._aboutAction.triggered.connect(partial(
+            QtGui.QMessageBox.about,
+            self, "About (k)elogviewer", " ".join((
+                """
+                <h1>(k)elogviewer 1.0.0</h1>
+                <center><small>(k)elogviewer, copyright (c) 2007, 2011, 2013
+                Mathias Laurin<br>
+                kelogviewer, copyright (c) 2007 Jeremy Wickersheimer<br>
+                GNU General Public License (GPL) version 2</small><br>
+                <a href=http://sourceforge.net/projects/elogviewer>
+                http://sourceforge.net/projects/elogviewer</a>
+                </center>
+
+                <h2>Written by</h2>
+                Mathias Laurin <a href="mailto:mathias_laurin@users.sourceforge.net?Subject=elogviewer">
+                &lt;mathias_laurin@users.sourceforge.net&gt;</a><br>
+                Timothy Kilbourn (initial author)<br> 
+                Jeremy Wickersheimer (qt3/KDE port)
+                
+                <h2>With contributions from</h2>
+                Radice David, gentoo bug #187595<br>
+                Christian Faulhammer, gentoo bug #192701
+
+                <h2>Documented by</h2>
+                Christian Faulhammer
+                <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
+
+                <h2>Artwork by</h2>
+                (k)elogviewer application icon (c) gnome, GPL2
+
+                """).splitlines())))
+        self._toolBar.addAction(self._aboutAction)
+
         self._quitAction = QtGui.QAction("Quit", self._toolBar)
         self._toolBar.addAction(self._quitAction)
-
-    def add_filter(self, filter):
-        return
-        filter.button.connect(filter.button,
-                              QtCore.SIGNAL("stateChanged(int)"),
-                              self.read_elog)
-        self.filter_list[filter.match] = filter
-        if filter.is_class():
-            t, l = divmod(self.filter_counter_class, self.filter_columns_class)
-            self.filter_counter_class += 1
-        else:
-            t, l = divmod(self.filter_counter_stage, self.filter_columns_stage)
-            self.filter_counter_stage += 1
-
-        filter_table = self.gui.filter_class_layout if filter.is_class() \
-                else self.gui.filter_stage_layout
-        filter_table.addWidget(filter.button, t, l)
-
-    def on_selection_changed(self, new_selection, old_selection):
-        idx_list = new_selection.indexes()
-        if not idx_list:
-            msg = "0 of %i, no selection" % self._model.rowCount()
-            self.display_elog = None
-            self.read_elog()
-        elif len(idx_list) is self._model.columnCount():
-            idx = idx_list[PACKAGE]
-            filename = str(idx.data(FILENAME).toString())
-            msg = "%i of %i, %s" % (
-                    idx.row() + 1,
-                    self._model.rowCount(),
-                    filename)
-            self.display_elog = self._model.elog_dict[filename]
-            self.read_elog()
-        else:
-            msg = "Multiple selections"
-        self.gui.statusbar.showMessage(msg)
-
-    def on_actionDelete_triggered(self, checked=None):
-        if checked is None:
-            return
-        idx_list = self.gui.treeView.selectionModel().selectedRows(PACKAGE)
-        idx_list.reverse()
-        for idx in idx_list:
-            filename = str(idx.data(FILENAME).toString())
-            self._model.elog_dict[filename].delete()
-            self._model.removeRow(idx.row())
 
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
         self._model.populate(self._args.elogpath)
-
-    def read_elog(self):
-        self.gui.textEdit.clear()
-        if self.display_elog is None:
-            buf = '''
-<h1>(k)elogviewer 1.0.0</h1>
-<center><small>(k)elogviewer, copyright (c) 2007, 2011 Mathias Laurin<br>
-kelogviewer, copyright (c) 2007 Jeremy Wickersheimer<br>
-GNU General Public License (GPL) version 2</small><br>
-<a href=http://sourceforge.net/projects/elogviewer>http://sourceforge.net/projects/elogviewer</a></center>
-<h2>Written by</h2>
-Mathias Laurin <a href="mailto:mathias_laurin@users.sourceforge.net?Subject=elogviewer">
-&lt;mathias_laurin@users.sourceforge.net&gt;</a><br>
-Timothy Kilbourn (initial author)<br>
-Jeremy Wickersheimer (qt3/KDE port)
-<h2>With contributions from</h2>
-Radice David, gentoo bug #187595<br>
-Christian Faulhammer, gentoo bug #192701
-<h2>Documented by</h2>
-Christian Faulhammer <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
-<h2>Artwork by</h2>
-(k)elogviewer application icon (c) gnome, GPL2
-'''
-        else:
-            buf = ''.join('<p style="color: %s">%s</p>' %
-                (self.filter_list[elog_part.header].color, elog_part.content)
-                for elog_part in self.display_elog.contents
-                if self.filter_list[elog_part.header].is_active()
-                and self.filter_list[elog_part.section].is_active())
-            buf = buf.replace('\n', '<br>')
-        self.gui.textEdit.append(buf)
-        self.gui.textEdit.verticalScrollBar().setValue(0)
 
 
 def main():
@@ -425,26 +363,6 @@ def main():
     app = QtGui.QApplication(sys.argv)
 
     elogviewer = Elogviewer(args)
-
-    elogviewer.add_filter(Filter("info", "INFO", True, 'darkgreen'))
-    elogviewer.add_filter(Filter("warning", "WARN", True, 'red'))
-    elogviewer.add_filter(Filter("error", "ERROR", True, 'orange'))
-    elogviewer.add_filter(Filter("log", "LOG", True))
-    elogviewer.add_filter(Filter("QA", "QA", True))
-
-    elogviewer.add_filter(Filter("preinst"))
-    elogviewer.add_filter(Filter("postinst"))
-    elogviewer.add_filter(Filter("prerm"))
-    elogviewer.add_filter(Filter("postrm"))
-    elogviewer.add_filter(Filter("unpack"))
-    elogviewer.add_filter(Filter("compile"))
-    elogviewer.add_filter(Filter("setup"))
-    elogviewer.add_filter(Filter("test"))
-    elogviewer.add_filter(Filter("install"))
-    elogviewer.add_filter(Filter("prepare"))
-    elogviewer.add_filter(Filter("configure"))
-    elogviewer.add_filter(Filter("other"))
-
     elogviewer.show()
 
     sys.exit(app.exec_())
