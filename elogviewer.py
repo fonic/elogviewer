@@ -166,9 +166,6 @@ class Elogviewer(QtGui.QMainWindow):
         super(Elogviewer, self).__init__()
         self._args = args
 
-        self.display_elog = None
-        self.selected_elog = None
-
         self.filter_list = {}
         self.filter_counter_class = self.filter_counter_stage = 0
         self.filter_columns_class = self.filter_columns_stage = 2
