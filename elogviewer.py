@@ -22,6 +22,11 @@ import fnmatch
 import time
 import re
 
+import sip as _sip
+_sip.setapi("QVariant", 2)
+_sip.setapi("QString", 2)
+
+
 from PyQt4 import QtCore, QtGui
 Qt = QtCore.Qt
 
@@ -78,69 +83,23 @@ class ElogContentPart:
         self.content = ''.join([self.content, content, '\n'])
 
 
-class Elog:
-    def __init__(self, filename, elog_dir, filter_list):
-        self.filename = filename
-        self.filter_list = filter_list
-        self.eclass = "einfo"
-        self.contents = []
-
-        basename = os.path.basename(filename)
-        split_filename = basename.split(":")
-        if len(split_filename) is 3:
-            self.category, self.package, date = split_filename
-        if len(split_filename) is 2:
-            self.category = os.path.dirname(filename).split("/")[-1]
-            self.package, date = split_filename
-        date = time.strptime(date, "%Y%m%d-%H%M%S.log")
-        self.sorted_time = time.strftime("%Y-%m-%d %H:%M:%S", date)
-        self.locale_time = time.strftime("%x %X", date)
-
-        self.read_file()
-
-    def read_file(self):
-        with open(self.filename, 'r') as f:
-            file_contents = f.read()
-            self.get_class(file_contents)
-            self.get_contents(file_contents)
-
-    def get_class(self, file_contents):
-        '''Get the highest elog class
-        adapted from Luca Marturana's elogv
-        '''
-        classes = re.findall("LOG:|INFO:|WARN:|ERROR:", file_contents)
-
-        if "ERROR:" in classes:
-            self.eclass = "eerror"
-        elif "WARN:" in classes:
-            self.eclass = "ewarn"
-        elif "LOG:" in classes:
-            self.eclass = "elog"
-
-    def get_contents(self, file_contents):
-        now = -1
-        for line in file_contents.splitlines():
-            L = line.split(': ')
-            if len(L) is 2 and (L[0] and L[1]) in self.filter_list.keys():
-                now += 1
-                self.contents.append(ElogContentPart(L))
-            else:
-                self.contents[now].add_content(line)
-
-    def delete(self):
-        os.remove(self.filename)
-
-
 class Role(object):
 
-    ElogPath = Qt.UserRole + 1
+    Category = Qt.UserRole + 1
+    EClass = Qt.UserRole + 2
+    Filename = Qt.UserRole + 3
+    Package = Qt.UserRole + 4
+    Date = Qt.UserRole + 5
 
 
 class ElogModelItem(QtGui.QStandardItem):
 
-    def __init__(self):
+    def __init__(self, filename=None):
         super(ElogModelItem, self).__init__()
-        self.__elogPath = None
+        self.setFilename(filename)
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self.filename())
 
     def type(self):
         return self.UserType
@@ -148,11 +107,75 @@ class ElogModelItem(QtGui.QStandardItem):
     def clone(self):
         return self.__class__()
 
-    def elogPath(self):
-        return self.data(role=Role.ElogPath)
+    def delete(self):
+        os.remove(self.filename)  # XXX
 
-    def setElogPath(self, elogPath):
-        self.setData(elogPath, role=Role.ElogPath)
+    def category(self):
+        return self.data(role=Role.Category)
+
+    def setCategory(self, category):
+        self.setData(category, role=Role.Category)
+
+    def date(self):
+        return self.data(role=Role.Date)
+
+    def setDate(self, date):
+        self.setData(date, role=Role.Date)
+
+    def eClass(self):
+        return self.data(role=Role.EClass)
+
+    def setEClass(self, eclass):
+        self.setData(eclass, role=Role.EClass)
+
+    def filename(self):
+        return self.data(role=Role.Filename)
+
+    def setFilename(self, filename):
+        if not filename:
+            return
+        self.setData(filename, role=Role.Filename)
+        basename = os.path.basename(filename)
+        try:
+            category, package, rest = basename.split(":")
+        except ValueError:
+            category = os.path.dirname(filename).split(os.sep)[-1]
+            package, rest = basename.split(":")
+        date, ext = os.path.splitext(rest)
+        self.setCategory(category)
+        self.setPackage(package)
+        self.setDate(time.strptime(date, "%Y%m%d-%H%M%S"))
+
+        # Get the highest elog class. Adapted from Luca Marturana's elogv.
+        eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:", self.text())
+        if "ERROR:" in eClasses:
+            self.setEClass("eerror")
+        elif "WARN:" in eClasses:
+            self.setEClass("ewarn")
+        elif "LOG:" in eClasses:
+            self.setEClass("elog")
+        else:
+            self.setEClass("einfo")
+
+    def isoTime(self):
+        if self.date():
+            return time.strftime("%Y-%m-%d %H:%M:%S", self.date())
+
+    def localeTime(self):
+        if self.date():
+            return time.strftime("%x %X", self.date())
+
+    def package(self):
+        return self.data(role=Role.Package)
+
+    def setPackage(self, package):
+        self.setData(package, role=Role.Package)
+
+    def text(self):
+        if self.filename():
+            with open(self.filename(), "r") as elogfile:
+                return elogfile.read()
+
 
 
 class Model(QtGui.QStandardItemModel):
@@ -173,8 +196,9 @@ class Model(QtGui.QStandardItemModel):
         self.elog_dict = {}
 
     def populate(self, path):
-        for filename in all_files(path, "*:*.log", False, True):
-            print(filename)
+        for nRow, filename in enumerate(
+                all_files(path, "*:*.log", False, True)):
+            self.insertRow(nRow, ElogModelItem(filename))
             #self.appendRow(Elog(filename, path, []))  # XXX
 
     def appendRow(self, elog):
