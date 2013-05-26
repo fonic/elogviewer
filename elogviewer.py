@@ -176,7 +176,7 @@ class Elogviewer(QtGui.QMainWindow):
         self.__initUI()
         self.__initToolBar()
 
-        self._treeView.model().populate(self._args.elogpath)
+        self._tableView.model().populate(self._args.elogpath)
 
     def __initUI(self):
         self._centralWidget = QtGui.QWidget(self)
@@ -184,19 +184,18 @@ class Elogviewer(QtGui.QMainWindow):
         self._centralWidget.setLayout(centralLayout)
         self.setCentralWidget(self._centralWidget)
 
-        self._treeView = QtGui.QTreeView(self._centralWidget)
-        #self._treeView.setRootIsDecorated(False)
-        self._treeView.setSelectionMode(self._treeView.ExtendedSelection)
-        centralLayout.addWidget(self._treeView)
+        self._tableView = QtGui.QTableView(self._centralWidget)
+        self._tableView.setSelectionMode(self._tableView.ExtendedSelection)
+        centralLayout.addWidget(self._tableView)
 
         self._model = Model()
-        self._treeView.setModel(self._model)
-        self._treeView.setColumnHidden(ELOG, True)
+        self._tableView.setModel(self._model)
+        self._tableView.setColumnHidden(ELOG, True)
 
-        treeViewHeader = self._treeView.header()
-        treeViewHeader.setSortIndicatorShown(True)
-        treeViewHeader.setClickable(True)
-        treeViewHeader.sortIndicatorChanged.connect(self._model.sort)
+        horizontalHeader = self._tableView.horizontalHeader()
+        horizontalHeader.setSortIndicatorShown(True)
+        horizontalHeader.setClickable(True)
+        horizontalHeader.sortIndicatorChanged.connect(self._model.sort)
 
         bottomLayout = QtGui.QHBoxLayout()
         centralLayout.addLayout(bottomLayout)
@@ -206,13 +205,13 @@ class Elogviewer(QtGui.QMainWindow):
         self._textEdit.setHtml("""<h1>hello world</h1>""")
         bottomLayout.addWidget(self._textEdit)
 
-        self._textWidgetMapper = QtGui.QDataWidgetMapper(self._treeView)
+        self._textWidgetMapper = QtGui.QDataWidgetMapper(self._tableView)
         self._textWidgetMapper.setSubmitPolicy(
             self._textWidgetMapper.AutoSubmit)
         self._textWidgetMapper.setModel(self._model)
         self._textWidgetMapper.addMapping(self._textEdit, ELOG)
         self._textWidgetMapper.toFirst()
-        self._treeView.selectionModel().currentRowChanged.connect(
+        self._tableView.selectionModel().currentRowChanged.connect(
             self._textWidgetMapper.setCurrentModelIndex)
 
         filterLayout = QtGui.QVBoxLayout()
