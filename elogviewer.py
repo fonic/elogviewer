@@ -157,6 +157,12 @@ class ElogModelItem(QtGui.QStandardItem):
         else:
             self.setEClass("einfo")
 
+    def data(self, role=Qt.UserRole + 1):
+        if role in (Qt.EditRole, Qt.DisplayRole):
+            return self.filename()
+        else:
+            return super(ElogModelItem, self).data(role)
+
     def isoTime(self):
         if self.date():
             return time.strftime("%Y-%m-%d %H:%M:%S", self.date())
@@ -177,12 +183,37 @@ class ElogModelItem(QtGui.QStandardItem):
                 return elogfile.read()
 
 
+class ModelItem(QtGui.QStandardItem):
+
+    def __init__(self):
+        super(ModelItem, self).__init__()
+
+    def type(self):
+        return self.UserType + 1
+
+    def clone(self):
+        return self.__class__()
+
+    def data(self, role=Qt.UserRole + 1):
+        parentItem = self.parent()
+        if parentItem and role in (Qt.DisplayRole, Qt.EditRole):
+            try:
+                return {CATEGORY: parentItem.category,
+                        PACKAGE: parentItem.package,
+                        ECLASS: parentItem.eClass,
+                        TIMESTAMP: parentItem.localeTime,
+                        ELOG: parentItem.text}[self.column()]()
+            except KeyError:
+                return super(ModelItem, self).data(role)
+        else:
+            return super(ModelItem, self).data(role)
+
 
 class Model(QtGui.QStandardItemModel):
 
     def __init__(self, parent=None):
         super(Model, self).__init__(parent)
-        self.setItemPrototype(ElogModelItem())
+        self.setItemPrototype(ModelItem())
 
         self.setColumnCount(4)
         self.setHeaderData(CATEGORY, QtCore.Qt.Horizontal, "Category")
@@ -198,36 +229,10 @@ class Model(QtGui.QStandardItemModel):
     def populate(self, path):
         for nRow, filename in enumerate(
                 all_files(path, "*:*.log", False, True)):
-            self.insertRow(nRow, ElogModelItem(filename))
-            #self.appendRow(Elog(filename, path, []))  # XXX
-
-    def appendRow(self, elog):
-        self.elog_dict[elog.filename] = elog
-
-        category_it = QtGui.QStandardItem(elog.category)
-        category_it.setData(QtCore.QVariant(elog.category), SORT)
-
-        package_it = QtGui.QStandardItem(elog.package)
-        package_it.setData(QtCore.QVariant(elog.package), SORT)
-        package_it.setData(QtCore.QVariant(elog.filename), FILENAME)
-
-        eclass_it = QtGui.QStandardItem(elog.eclass)
-        eclass_it.setData(QtCore.QVariant(elog.eclass), SORT)
-
-        time_it = QtGui.QStandardItem(elog.locale_time)
-        time_it.setData(QtCore.QVariant(elog.sorted_time), SORT)
-
-        elog_it = ElogModelItem(elog)
-        return QtGui.QStandardItemModel.appendRow(self,
-                [category_it, package_it, eclass_it, time_it])
-
-    def removeRows(self, row, count, parent=QtCore.QModelIndex()):
-        for current_row in xrange(row, row + count):
-            idx = self.index(current_row, PACKAGE, parent)
-            filename = str(idx.data(FILENAME).toString())
-            if filename in self.elog_dict:
-                del self.elog_dict[filename]
-        return QtGui.QStandardItemModel.removeRows(self, row, count, parent)
+            root = ElogModelItem(filename)
+            root.appendRow([ModelItem() for column in
+                            range(self.columnCount())])
+            self.invisibleRootItem().appendRow(root)
 
 
 class Elogviewer(QtGui.QMainWindow):
@@ -255,8 +260,7 @@ class Elogviewer(QtGui.QMainWindow):
         self.setCentralWidget(self._centralWidget)
 
         self._treeView = QtGui.QTreeView(self._centralWidget)
-        self._treeView.setRootIsDecorated(False)
-        self._treeView.setColumnHidden(ELOG, True)
+        #self._treeView.setRootIsDecorated(False)
         self._treeView.setSelectionMode(self._treeView.ExtendedSelection)
         centralLayout.addWidget(self._treeView)
 
