@@ -67,101 +67,56 @@ class Role(object):
     Date = Qt.UserRole + 5
 
 
-class ElogModelItem(QtGui.QStandardItem):
+class Elog(object):
 
-    def __init__(self, filename=None):
-        super(ElogModelItem, self).__init__()
-        self.setFilename(filename)
+    def __init__(self, filename):
+        self.filename = filename
+        basename = os.path.basename(filename)
+        try:
+            self.category, self.package, rest = basename.split(":")
+        except ValueError:
+            self.category = os.path.dirname(filename).split(os.sep)[-1]
+            self.package, rest = basename.split(":")
+        date, ext = os.path.splitext(rest)
+        self.date = time.strptime(date, "%Y%m%d-%H%M%S")
+
+        # Get the highest elog class. Adapted from Luca Marturana's elogv.
+        eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:", self.text)
+        if "ERROR:" in eClasses:
+            self.eclass = "eerror"
+        elif "WARN:" in eClasses:
+            self.eclass = "ewarn"
+        elif "LOG:" in eClasses:
+            self.eclass = "elog"
+        else:
+            self.eclass = "einfo"
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.filename())
-
-    def type(self):
-        return self.UserType
-
-    def clone(self):
-        return self.__class__()
+        return "%s(%r)" % (self.__class__.__name__, self.filename)
 
     def delete(self):
         os.remove(self.filename)  # XXX
 
-    def category(self):
-        return self.data(role=Role.Category)
-
-    def setCategory(self, category):
-        self.setData(category, role=Role.Category)
-
-    def date(self):
-        return self.data(role=Role.Date)
-
-    def setDate(self, date):
-        self.setData(date, role=Role.Date)
-
-    def eClass(self):
-        return self.data(role=Role.EClass)
-
-    def setEClass(self, eclass):
-        self.setData(eclass, role=Role.EClass)
-
-    def filename(self):
-        return self.data(role=Role.Filename)
-
-    def setFilename(self, filename):
-        if not filename:
-            return
-        self.setData(filename, role=Role.Filename)
-        basename = os.path.basename(filename)
-        try:
-            category, package, rest = basename.split(":")
-        except ValueError:
-            category = os.path.dirname(filename).split(os.sep)[-1]
-            package, rest = basename.split(":")
-        date, ext = os.path.splitext(rest)
-        self.setCategory(category)
-        self.setPackage(package)
-        self.setDate(time.strptime(date, "%Y%m%d-%H%M%S"))
-
-        # Get the highest elog class. Adapted from Luca Marturana's elogv.
-        eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:", self.text())
-        if "ERROR:" in eClasses:
-            self.setEClass("eerror")
-        elif "WARN:" in eClasses:
-            self.setEClass("ewarn")
-        elif "LOG:" in eClasses:
-            self.setEClass("elog")
-        else:
-            self.setEClass("einfo")
-
-    def data(self, role=Qt.UserRole + 1):
-        if role in (Qt.EditRole, Qt.DisplayRole):
-            return self.text()
-        else:
-            return super(ElogModelItem, self).data(role)
-
-    def isoTime(self):
-        if self.date():
-            return time.strftime("%Y-%m-%d %H:%M:%S", self.date())
-
-    def localeTime(self):
-        if self.date():
-            return time.strftime("%x %X", self.date())
-
-    def package(self):
-        return self.data(role=Role.Package)
-
-    def setPackage(self, package):
-        self.setData(package, role=Role.Package)
-
+    @property
     def text(self):
-        if self.filename():
-            with open(self.filename(), "r") as elogfile:
+        if self.filename:
+            with open(self.filename, "r") as elogfile:
                 return elogfile.read()
+
+    @property
+    def isoTime(self):
+        return time.strftime("%Y-%m-%d %H:%M:%S", self.date)
+
+    @property
+    def localeTime(self):
+        return time.strftime("%x %X", self.date)
 
 
 class ModelItem(QtGui.QStandardItem):
 
-    def __init__(self):
+    def __init__(self, elog=None):
         super(ModelItem, self).__init__()
+        self.__elog = elog
 
     def type(self):
         return self.UserType + 1
@@ -170,14 +125,13 @@ class ModelItem(QtGui.QStandardItem):
         return self.__class__()
 
     def data(self, role=Qt.UserRole + 1):
-        parentItem = self.parent()
-        if parentItem and role in (Qt.DisplayRole, Qt.EditRole):
+        if self.__elog and role in (Qt.DisplayRole, Qt.EditRole):
             try:
-                return {CATEGORY: parentItem.category,
-                        PACKAGE: parentItem.package,
-                        ECLASS: parentItem.eClass,
-                        TIMESTAMP: parentItem.localeTime,
-                        ELOG: parentItem.text}[self.column()]()
+                return {CATEGORY: self.__elog.category,
+                        PACKAGE: self.__elog.package,
+                        ECLASS: self.__elog.eclass,
+                        TIMESTAMP: self.__elog.localeTime,
+                        ELOG: self.__elog.text}.get(self.column(), ELOG)
             except KeyError:
                 return super(ModelItem, self).data(role)
         else:
@@ -190,7 +144,7 @@ class Model(QtGui.QStandardItemModel):
         super(Model, self).__init__(parent)
         self.setItemPrototype(ModelItem())
 
-        self.setColumnCount(4)
+        self.setColumnCount(5)
         self.setHeaderData(CATEGORY, QtCore.Qt.Horizontal, "Category")
         self.setHeaderData(PACKAGE, QtCore.Qt.Horizontal, "Package")
         self.setHeaderData(ECLASS, QtCore.Qt.Horizontal, "Highest eclass")
@@ -198,16 +152,12 @@ class Model(QtGui.QStandardItemModel):
         self.setHeaderData(ELOG, QtCore.Qt.Horizontal, "Elog")
         self.setSortRole(SORT)
 
-        # maintain separate list of elog
-        self.elog_dict = {}
-
     def populate(self, path):
         for nRow, filename in enumerate(
                 all_files(path, "*:*.log", False, True)):
-            root = ElogModelItem(filename)
-            root.appendRow([ModelItem() for column in
-                            range(self.columnCount())])
-            self.invisibleRootItem().appendRow(root)
+            elog = Elog(filename)
+            self.invisibleRootItem().appendRow([
+                ModelItem(elog) for column in range(self.columnCount())])
 
 
 class Elogviewer(QtGui.QMainWindow):
@@ -241,6 +191,7 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._model = Model()
         self._treeView.setModel(self._model)
+        self._treeView.setColumnHidden(ELOG, True)
 
         treeViewHeader = self._treeView.header()
         treeViewHeader.setSortIndicatorShown(True)
@@ -259,7 +210,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.setSubmitPolicy(
             self._textWidgetMapper.AutoSubmit)
         self._textWidgetMapper.setModel(self._model)
-        self._textWidgetMapper.addMapping(self._textEdit, 0)
+        self._textWidgetMapper.addMapping(self._textEdit, ELOG)
         self._textWidgetMapper.toFirst()
         self._treeView.selectionModel().currentRowChanged.connect(
             self._textWidgetMapper.setCurrentModelIndex)
