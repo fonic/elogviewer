@@ -234,6 +234,7 @@ class Elogviewer(QtGui.QMainWindow):
         horizontalHeader.setSortIndicatorShown(True)
         horizontalHeader.setClickable(True)
         horizontalHeader.sortIndicatorChanged.connect(self._model.sort)
+        horizontalHeader.setResizeMode(horizontalHeader.Stretch)
 
         self._textEdit = QtGui.QTextEdit(self._centralWidget)
         self._textEdit.setReadOnly(True)
