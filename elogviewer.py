@@ -95,7 +95,7 @@ class Elog(object):
         return "%s(%r)" % (self.__class__.__name__, self.filename)
 
     def delete(self):
-        os.remove(self.filename)  # XXX
+        os.remove(self.filename)
 
     @property
     def text(self):
@@ -123,6 +123,9 @@ class ModelItem(QtGui.QStandardItem):
 
     def clone(self):
         return self.__class__()
+
+    def elog(self):
+        return self.__elog
 
     def data(self, role=Qt.UserRole + 1):
         if self.__elog and role in (Qt.DisplayRole, Qt.EditRole):
@@ -183,6 +186,7 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._tableView = QtGui.QTableView(self._centralWidget)
         self._tableView.setSelectionMode(self._tableView.ExtendedSelection)
+        self._tableView.setSelectionBehavior(self._tableView.SelectRows)
         centralLayout.addWidget(self._tableView)
 
         self._model = Model()
@@ -243,6 +247,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._deleteAction.setIcon(QtGui.QIcon.fromTheme(
             "edit-delete",
             QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png")))
+        self._deleteAction.triggered.connect(self.deleteSelected)
         self._toolBar.addAction(self._deleteAction)
 
         self._aboutAction = QtGui.QAction("About", self._toolBar)
@@ -281,6 +286,18 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._quitAction = QtGui.QAction("Quit", self._toolBar)
         self._toolBar.addAction(self._quitAction)
+
+    def deleteSelected(self):
+        selection = self._tableView.selectionModel().selection()
+        removeRows = sorted(set(idx.row() for idx in selection.indexes()))
+        elogList = []
+
+        for nRow in reversed(range(len(removeRows))):
+            elogList.append(self._model.item(nRow, 0).elog())
+            self._model.removeRow(removeRows[nRow])
+
+        for elog in elogList:
+            elog.delete()
 
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
