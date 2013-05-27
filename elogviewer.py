@@ -38,7 +38,6 @@ except ImportError:
 
 
 SORT = QtCore.Qt.UserRole
-FILENAME = QtCore.Qt.UserRole + 1
 
 
 def all_files(root, patterns='*', single_level=False, yield_folders=False):
