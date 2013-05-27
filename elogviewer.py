@@ -24,11 +24,6 @@ import time
 import re
 from functools import partial
 
-import sip as _sip
-for _type in "QDate QDateTime QString QVariant".split():
-    _sip.setapi(_type, 2)
-
-
 from PyQt4 import QtCore, QtGui
 Qt = QtCore.Qt
 
