@@ -37,9 +37,6 @@ except ImportError:
     portage = None
 
 
-SORT = QtCore.Qt.UserRole
-
-
 def all_files(root, patterns='*', single_level=False, yield_folders=False):
     ''' Expand patterns for semicolon-separated strin of list '''
     patterns = patterns.split(';')
@@ -194,7 +191,6 @@ class Model(QtGui.QStandardItemModel):
         self.setHeaderData(Column.Eclass, QtCore.Qt.Horizontal, "Highest eclass")
         self.setHeaderData(Column.Date, QtCore.Qt.Horizontal, "Timestamp")
         self.setHeaderData(Column.HtmlText, QtCore.Qt.Horizontal, "Elog")
-        self.setSortRole(SORT)
 
     def populate(self, path):
         for nRow, filename in enumerate(
