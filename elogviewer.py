@@ -25,8 +25,8 @@ import re
 from functools import partial
 
 import sip as _sip
-_sip.setapi("QVariant", 2)
-_sip.setapi("QString", 2)
+for _type in "QDate QDateTime QString QVariant".split():
+    _sip.setapi(_type, 2)
 
 
 from PyQt4 import QtCore, QtGui
@@ -59,11 +59,7 @@ def all_files(root, patterns='*', single_level=False, yield_folders=False):
 
 class Role(object):
 
-    Category = Qt.UserRole + 1
-    EClass = Qt.UserRole + 2
-    Filename = Qt.UserRole + 3
-    Package = Qt.UserRole + 4
-    Date = Qt.UserRole + 5
+    SortRole = Qt.UserRole + 1
 
 
 class Column(object):
@@ -169,7 +165,10 @@ class ModelItem(QtGui.QStandardItem):
         return self.__elog
 
     def data(self, role=Qt.UserRole + 1):
-        if self.__elog and role in (Qt.DisplayRole, Qt.EditRole):
+        if self.__elog and role in (Qt.DisplayRole, Qt.EditRole,
+                                    Role.SortRole):
+            if (role == Role.SortRole and self.column() == Column.Date):
+                return self.__elog.isoTime
             try:
                 return {Column.Category: self.__elog.category,
                         Column.Package: self.__elog.package,
@@ -195,6 +194,7 @@ class Model(QtGui.QStandardItemModel):
         self.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
         self.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
         self.setHeaderData(Column.HtmlText, Qt.Horizontal, "Elog")
+        self.setSortRole(Role.SortRole)
 
     def populate(self, path):
         for nRow, filename in enumerate(
@@ -238,7 +238,7 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._textEdit = QtGui.QTextEdit(self._centralWidget)
         self._textEdit.setReadOnly(True)
-        self._textEdit.setHtml("""<h1>hello world</h1>""")
+        self._textEdit.setText("""No elogs!""")
         centralLayout.addWidget(self._textEdit)
 
         self._textWidgetMapper = QtGui.QDataWidgetMapper(self._tableView)
