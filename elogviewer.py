@@ -307,6 +307,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._quitAction = QtGui.QAction("Quit", self._toolBar)
         self._quitAction.setIcon(QtGui.QIcon.fromTheme("application-exit"))
         self._quitAction.setShortcut(QtGui.QKeySequence.Quit)
+        self._quitAction.triggered.connect(self.close)
         self._toolBar.addAction(self._quitAction)
 
     def deleteSelected(self):
