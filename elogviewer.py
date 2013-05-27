@@ -317,13 +317,12 @@ class Elogviewer(QtGui.QMainWindow):
     def deleteSelected(self):
         selection = self._tableView.selectionModel().selection()
         removeRows = sorted(set(idx.row() for idx in selection.indexes()))
-        elogList = []
+        removeElogs = [self._model.item(nRow, 0).elog() for nRow in removeRows]
 
         for nRow in reversed(range(len(removeRows))):
-            elogList.append(self._model.item(nRow, 0).elog())
             self._model.removeRow(removeRows[nRow])
 
-        for elog in elogList:
+        for elog in removeElogs:
             elog.delete()
 
     def refresh(self):
