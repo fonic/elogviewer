@@ -37,7 +37,6 @@ except ImportError:
     portage = None
 
 
-CATEGORY, PACKAGE, ECLASS, TIMESTAMP, ELOG = range(5)
 SORT = QtCore.Qt.UserRole
 FILENAME = QtCore.Qt.UserRole + 1
 
@@ -65,6 +64,15 @@ class Role(object):
     Filename = Qt.UserRole + 3
     Package = Qt.UserRole + 4
     Date = Qt.UserRole + 5
+
+
+class Column(object):
+
+    Category = 0
+    Package = 1
+    Eclass = 2
+    Date = 3
+    HtmlText = 4
 
 
 class Elog(object):
@@ -163,11 +171,12 @@ class ModelItem(QtGui.QStandardItem):
     def data(self, role=Qt.UserRole + 1):
         if self.__elog and role in (Qt.DisplayRole, Qt.EditRole):
             try:
-                return {CATEGORY: self.__elog.category,
-                        PACKAGE: self.__elog.package,
-                        ECLASS: self.__elog.eclass,
-                        TIMESTAMP: self.__elog.localeTime,
-                        ELOG: self.__elog.text}.get(self.column(), ELOG)
+                return {Column.Category: self.__elog.category,
+                        Column.Package: self.__elog.package,
+                        Column.Eclass: self.__elog.eclass,
+                        Column.Date: self.__elog.localeTime,
+                        Column.HtmlText: self.__elog.text}.get(
+                            self.column(), Column.HtmlText)
             except KeyError:
                 return super(ModelItem, self).data(role)
         else:
@@ -181,11 +190,11 @@ class Model(QtGui.QStandardItemModel):
         self.setItemPrototype(ModelItem())
 
         self.setColumnCount(5)
-        self.setHeaderData(CATEGORY, QtCore.Qt.Horizontal, "Category")
-        self.setHeaderData(PACKAGE, QtCore.Qt.Horizontal, "Package")
-        self.setHeaderData(ECLASS, QtCore.Qt.Horizontal, "Highest eclass")
-        self.setHeaderData(TIMESTAMP, QtCore.Qt.Horizontal, "Timestamp")
-        self.setHeaderData(ELOG, QtCore.Qt.Horizontal, "Elog")
+        self.setHeaderData(Column.Category, QtCore.Qt.Horizontal, "Category")
+        self.setHeaderData(Column.Package, QtCore.Qt.Horizontal, "Package")
+        self.setHeaderData(Column.Eclass, QtCore.Qt.Horizontal, "Highest eclass")
+        self.setHeaderData(Column.Date, QtCore.Qt.Horizontal, "Timestamp")
+        self.setHeaderData(Column.HtmlText, QtCore.Qt.Horizontal, "Elog")
         self.setSortRole(SORT)
 
     def populate(self, path):
@@ -220,7 +229,7 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._model = Model()
         self._tableView.setModel(self._model)
-        self._tableView.setColumnHidden(ELOG, True)
+        self._tableView.setColumnHidden(Column.HtmlText, True)
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
@@ -238,7 +247,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.setItemDelegate(TextToHtmlDelegate(
             self._textWidgetMapper))
         self._textWidgetMapper.setModel(self._model)
-        self._textWidgetMapper.addMapping(self._textEdit, ELOG)
+        self._textWidgetMapper.addMapping(self._textEdit, Column.HtmlText)
         self._textWidgetMapper.toFirst()
         self._tableView.selectionModel().currentRowChanged.connect(
             self._textWidgetMapper.setCurrentModelIndex)
