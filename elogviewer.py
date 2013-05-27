@@ -186,11 +186,11 @@ class Model(QtGui.QStandardItemModel):
         self.setItemPrototype(ModelItem())
 
         self.setColumnCount(5)
-        self.setHeaderData(Column.Category, QtCore.Qt.Horizontal, "Category")
-        self.setHeaderData(Column.Package, QtCore.Qt.Horizontal, "Package")
-        self.setHeaderData(Column.Eclass, QtCore.Qt.Horizontal, "Highest eclass")
-        self.setHeaderData(Column.Date, QtCore.Qt.Horizontal, "Timestamp")
-        self.setHeaderData(Column.HtmlText, QtCore.Qt.Horizontal, "Elog")
+        self.setHeaderData(Column.Category, Qt.Horizontal, "Category")
+        self.setHeaderData(Column.Package, Qt.Horizontal, "Package")
+        self.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
+        self.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
+        self.setHeaderData(Column.HtmlText, Qt.Horizontal, "Elog")
 
     def populate(self, path):
         for nRow, filename in enumerate(
