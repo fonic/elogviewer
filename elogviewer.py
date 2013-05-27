@@ -101,7 +101,7 @@ class Elog(object):
     def text(self):
         if self.filename:
             with open(self.filename, "r") as elogfile:
-                return elogfile.read()
+                return elogfile.readline()
 
     @property
     def isoTime(self):
@@ -110,6 +110,39 @@ class Elog(object):
     @property
     def localeTime(self):
         return time.strftime("%x %X", self.date)
+
+
+class TextToHtmlDelegate(QtGui.QItemDelegate):
+
+    def __init__(self, parent=None):
+        super(TextToHtmlDelegate, self).__init__(parent)
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self.parent())
+
+    def setEditorData(self, editor, index):
+        if not index.isValid():
+            return
+        if isinstance(editor, QtGui.QTextEdit):
+            item = index.model().itemFromIndex(index)
+            htmlText = ""
+            with open(item.elog().filename, "r") as elogfile:
+                for line in elogfile:
+                    line = line.strip()
+                    if line.startswith("ERROR:"):
+                        prefix = '<p style="color: orange">'
+                    elif line.startswith("WARN:"):
+                        prefix = '<p style="color: red">'
+                    elif line.startswith("INFO:"):
+                        prefix = '<p style="color: darkgreen">'
+                    elif (line.startswith("LOG:") or
+                            line.startswith("QA:")):
+                        prefix = '<p style="color: black">'
+                    else:
+                        prefix = ""
+                    line = "".join((prefix, line, "<BR>", os.linesep))
+                    htmlText += line
+        editor.setHtml(htmlText)
 
 
 class ModelItem(QtGui.QStandardItem):
@@ -209,6 +242,8 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper = QtGui.QDataWidgetMapper(self._tableView)
         self._textWidgetMapper.setSubmitPolicy(
             self._textWidgetMapper.AutoSubmit)
+        self._textWidgetMapper.setItemDelegate(TextToHtmlDelegate(
+            self._textWidgetMapper))
         self._textWidgetMapper.setModel(self._model)
         self._textWidgetMapper.addMapping(self._textEdit, ELOG)
         self._textWidgetMapper.toFirst()
