@@ -202,10 +202,6 @@ class Elogviewer(QtGui.QMainWindow):
         super(Elogviewer, self).__init__()
         self._args = args
 
-        self.filter_list = {}
-        self.filter_counter_class = self.filter_counter_stage = 0
-        self.filter_columns_class = self.filter_columns_stage = 2
-
         self.__initUI()
         self.__initToolBar()
 
@@ -231,13 +227,10 @@ class Elogviewer(QtGui.QMainWindow):
         horizontalHeader.setClickable(True)
         horizontalHeader.sortIndicatorChanged.connect(self._model.sort)
 
-        bottomLayout = QtGui.QHBoxLayout()
-        centralLayout.addLayout(bottomLayout)
-
         self._textEdit = QtGui.QTextEdit(self._centralWidget)
         self._textEdit.setReadOnly(True)
         self._textEdit.setHtml("""<h1>hello world</h1>""")
-        bottomLayout.addWidget(self._textEdit)
+        centralLayout.addWidget(self._textEdit)
 
         self._textWidgetMapper = QtGui.QDataWidgetMapper(self._tableView)
         self._textWidgetMapper.setSubmitPolicy(
@@ -249,17 +242,6 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.toFirst()
         self._tableView.selectionModel().currentRowChanged.connect(
             self._textWidgetMapper.setCurrentModelIndex)
-
-        filterLayout = QtGui.QVBoxLayout()
-        bottomLayout.addLayout(filterLayout)
-
-        self._filterClassBox = QtGui.QGroupBox("Elog class",
-                                               self._centralWidget)
-        filterLayout.addWidget(self._filterClassBox)
-
-        self._filterStageBox = QtGui.QGroupBox("Elog stage",
-                                               self._centralWidget)
-        filterLayout.addWidget(self._filterStageBox)
 
     def __initToolBar(self):
         # see http://standards.freedesktop.org/icon-naming-spec/
