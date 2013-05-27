@@ -256,22 +256,21 @@ class Elogviewer(QtGui.QMainWindow):
         self._toolBar = QtGui.QToolBar(self)
         self.addToolBar(self._toolBar)
 
-        style = QtGui.QApplication.style()
-
         self._refreshAction = QtGui.QAction("Refresh", self._toolBar)
-        self._refreshAction.setIcon(QtGui.QIcon.fromTheme(
-            "view-refresh", style.standardIcon(QtGui.QStyle.SP_BrowserReload)))
+        self._refreshAction.setIcon(QtGui.QIcon.fromTheme("view-refresh"))
+        self._refreshAction.setShortcut(QtGui.QKeySequence.Refresh)
         self._refreshAction.triggered.connect(self.refresh)
         self._toolBar.addAction(self._refreshAction)
 
         self._deleteAction = QtGui.QAction("Delete", self._toolBar)
-        self._deleteAction.setIcon(QtGui.QIcon.fromTheme(
-            "edit-delete",
-            QtGui.QIcon(":/trolltech/styles/commonstyle/images/standardbutton-delete-32.png")))
+        self._deleteAction.setIcon(QtGui.QIcon.fromTheme("edit-delete"))
+        self._deleteAction.setShortcut(QtGui.QKeySequence.Delete)
         self._deleteAction.triggered.connect(self.deleteSelected)
         self._toolBar.addAction(self._deleteAction)
 
         self._aboutAction = QtGui.QAction("About", self._toolBar)
+        self._aboutAction.setIcon(QtGui.QIcon.fromTheme("help-about"))
+        self._aboutAction.setShortcut(QtGui.QKeySequence.HelpContents)
         self._aboutAction.triggered.connect(partial(
             QtGui.QMessageBox.about,
             self, "About (k)elogviewer", " ".join((
@@ -306,6 +305,8 @@ class Elogviewer(QtGui.QMainWindow):
         self._toolBar.addAction(self._aboutAction)
 
         self._quitAction = QtGui.QAction("Quit", self._toolBar)
+        self._quitAction.setIcon(QtGui.QIcon.fromTheme("application-exit"))
+        self._quitAction.setShortcut(QtGui.QKeySequence.Quit)
         self._toolBar.addAction(self._quitAction)
 
     def deleteSelected(self):
