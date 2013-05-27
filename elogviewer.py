@@ -63,7 +63,6 @@ class Column(object):
     Package = 1
     Eclass = 2
     Date = 3
-    HtmlText = 4
 
 
 class Elog(object):
@@ -80,27 +79,22 @@ class Elog(object):
         self.date = time.strptime(date, "%Y%m%d-%H%M%S")
 
         # Get the highest elog class. Adapted from Luca Marturana's elogv.
-        eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:", self.text)
-        if "ERROR:" in eClasses:
-            self.eclass = "eerror"
-        elif "WARN:" in eClasses:
-            self.eclass = "ewarn"
-        elif "LOG:" in eClasses:
-            self.eclass = "elog"
-        else:
-            self.eclass = "einfo"
+        with open(self.filename, "r") as elogfile:
+            eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:", elogfile.read())
+            if "ERROR:" in eClasses:
+                self.eclass = "eerror"
+            elif "WARN:" in eClasses:
+                self.eclass = "ewarn"
+            elif "LOG:" in eClasses:
+                self.eclass = "elog"
+            else:
+                self.eclass = "einfo"
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.filename)
 
     def delete(self):
         os.remove(self.filename)
-
-    @property
-    def text(self):
-        if self.filename:
-            with open(self.filename, "r") as elogfile:
-                return elogfile.readline()
 
     @property
     def isoTime(self):
@@ -168,9 +162,8 @@ class ModelItem(QtGui.QStandardItem):
                 return {Column.Category: self.__elog.category,
                         Column.Package: self.__elog.package,
                         Column.Eclass: self.__elog.eclass,
-                        Column.Date: self.__elog.localeTime,
-                        Column.HtmlText: self.__elog.text}.get(
-                            self.column(), Column.HtmlText)
+                        Column.Date: self.__elog.localeTime}.get(
+                            self.column(), 0)
             except KeyError:
                 return super(ModelItem, self).data(role)
         else:
@@ -183,12 +176,11 @@ class Model(QtGui.QStandardItemModel):
         super(Model, self).__init__(parent)
         self.setItemPrototype(ModelItem())
 
-        self.setColumnCount(5)
+        self.setColumnCount(4)
         self.setHeaderData(Column.Category, Qt.Horizontal, "Category")
         self.setHeaderData(Column.Package, Qt.Horizontal, "Package")
         self.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
         self.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
-        self.setHeaderData(Column.HtmlText, Qt.Horizontal, "Elog")
         self.setSortRole(Role.SortRole)
 
     def populate(self, path):
@@ -223,7 +215,6 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._model = Model()
         self._tableView.setModel(self._model)
-        self._tableView.setColumnHidden(Column.HtmlText, True)
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
@@ -242,7 +233,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.setItemDelegate(TextToHtmlDelegate(
             self._textWidgetMapper))
         self._textWidgetMapper.setModel(self._model)
-        self._textWidgetMapper.addMapping(self._textEdit, Column.HtmlText)
+        self._textWidgetMapper.addMapping(self._textEdit, 0)
         self._textWidgetMapper.toFirst()
         self._tableView.selectionModel().currentRowChanged.connect(
             self._textWidgetMapper.setCurrentModelIndex)
