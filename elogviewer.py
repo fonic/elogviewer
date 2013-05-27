@@ -37,6 +37,9 @@ except ImportError:
     portage = None
 
 
+__version__ = "2.0"
+
+
 def all_files(root, patterns='*', single_level=False, yield_folders=False):
     ''' Expand patterns for semicolon-separated strin of list '''
     patterns = patterns.split(';')
@@ -275,7 +278,7 @@ class Elogviewer(QtGui.QMainWindow):
             QtGui.QMessageBox.about,
             self, "About (k)elogviewer", " ".join((
                 """
-                <h1>(k)elogviewer 1.0.0</h1>
+                <h1>(k)elogviewer %s</h1>
                 <center><small>(k)elogviewer, copyright (c) 2007, 2011, 2013
                 Mathias Laurin<br>
                 kelogviewer, copyright (c) 2007 Jeremy Wickersheimer<br>
@@ -301,7 +304,7 @@ class Elogviewer(QtGui.QMainWindow):
                 <h2>Artwork by</h2>
                 (k)elogviewer application icon (c) gnome, GPL2
 
-                """).splitlines())))
+                """ % __version__).splitlines())))
         self._toolBar.addAction(self._aboutAction)
 
         self._quitAction = QtGui.QAction("Quit", self._toolBar)
