@@ -24,7 +24,11 @@ import time
 import re
 from functools import partial
 
-from PyQt4 import QtCore, QtGui
+try:
+    from PySide import QtCore, QtGui
+except ImportError:
+    from PyQt4 import QtCore, QtGui
+
 Qt = QtCore.Qt
 
 try:
