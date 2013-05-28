@@ -170,25 +170,12 @@ class ModelItem(QtGui.QStandardItem):
             return super(ModelItem, self).data(role)
 
 
-class Model(QtGui.QStandardItemModel):
-
-    def __init__(self, parent=None):
-        super(Model, self).__init__(parent)
-        self.setItemPrototype(ModelItem())
-
-        self.setColumnCount(4)
-        self.setHeaderData(Column.Category, Qt.Horizontal, "Category")
-        self.setHeaderData(Column.Package, Qt.Horizontal, "Package")
-        self.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
-        self.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
-        self.setSortRole(Role.SortRole)
-
-    def populate(self, path):
-        for nRow, filename in enumerate(
-                all_files(path, "*:*.log", False, True)):
-            elog = Elog(filename)
-            self.invisibleRootItem().appendRow([
-                ModelItem(elog) for column in range(self.columnCount())])
+def populate(model, path):
+    for nRow, filename in enumerate(
+            all_files(path, "*:*.log", False, True)):
+        elog = Elog(filename)
+        model.invisibleRootItem().appendRow([
+            ModelItem(elog) for column in range(model.columnCount())])
 
 
 class Elogviewer(QtGui.QMainWindow):
@@ -200,7 +187,7 @@ class Elogviewer(QtGui.QMainWindow):
         self.__initUI()
         self.__initToolBar()
 
-        self._tableView.model().populate(self._args.elogpath)
+        populate(self._model, self._args.elogpath)
 
     def __initUI(self):
         self._centralWidget = QtGui.QWidget(self)
@@ -213,7 +200,14 @@ class Elogviewer(QtGui.QMainWindow):
         self._tableView.setSelectionBehavior(self._tableView.SelectRows)
         centralLayout.addWidget(self._tableView)
 
-        self._model = Model()
+        self._model = QtGui.QStandardItemModel(self._tableView)
+        self._model.setItemPrototype(ModelItem())
+        self._model.setColumnCount(4)
+        self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
+        self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
+        self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
+        self._model.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
+        self._model.setSortRole(Role.SortRole)
         self._tableView.setModel(self._model)
 
         horizontalHeader = self._tableView.horizontalHeader()
@@ -314,7 +308,7 @@ class Elogviewer(QtGui.QMainWindow):
 
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
-        self._model.populate(self._args.elogpath)
+        populate(self._model, self._args.elogpath)
 
 
 def main():
