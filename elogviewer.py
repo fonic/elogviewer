@@ -40,7 +40,7 @@ except ImportError:
     portage = None
 
 
-__version__ = "2.0"
+__version__ = "2.1"
 
 
 def all_files(root, patterns='*', single_level=False, yield_folders=False):
