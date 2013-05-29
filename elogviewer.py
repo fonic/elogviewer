@@ -337,6 +337,12 @@ def main():
     parser.add_argument("-q", "--qt", action="store_true",
                         help="start with the Qt interface")
     args = parser.parse_args()
+    if args.elogpath is None:
+        logdir = portage.settings.get(
+            "PORT_LOGDIR",
+            os.path.join(os.sep, portage.settings["EPREFIX"],
+                         *"var/log/portage".split("/")))
+        args.elogpath = os.path.join(logdir, "elog")
 
     app = QtGui.QApplication(sys.argv)
 
