@@ -86,7 +86,7 @@ class Elog(object):
         self.date = time.strptime(date, "%Y%m%d-%H%M%S")
 
         # Get the highest elog class. Adapted from Luca Marturana's elogv.
-        with open(self.filename, "r") as elogfile:
+        with self.file as elogfile:
             eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:", elogfile.read())
             if "ERROR:" in eClasses:
                 self.eclass = "eerror"
@@ -102,6 +102,10 @@ class Elog(object):
 
     def delete(self):
         os.remove(self.filename)
+
+    @property
+    def file(self):
+        return open(self.filename, "r")
 
     @property
     def isoTime(self):
@@ -126,7 +130,7 @@ class TextToHtmlDelegate(QtGui.QItemDelegate):
         if isinstance(editor, QtGui.QTextEdit):
             item = index.model().itemFromIndex(index)
             htmlText = ""
-            with open(item.elog().filename, "r") as elogfile:
+            with item.elog().file as elogfile:
                 for line in elogfile:
                     line = line.strip()
                     if line.startswith("ERROR:"):
