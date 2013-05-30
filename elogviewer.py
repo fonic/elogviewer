@@ -79,13 +79,16 @@ class Role(object):
 
 class Column(object):
 
-    Category = 0
-    Package = 1
-    Eclass = 2
-    Date = 3
+    Flag = 0
+    Category = 1
+    Package = 2
+    Eclass = 3
+    Date = 4
 
 
 class Elog(object):
+
+    readflag = set()
 
     def __init__(self, filename):
         self.filename = filename
@@ -115,6 +118,7 @@ class Elog(object):
 
     def delete(self):
         os.remove(self.filename)
+        Elog.readflag.remove(self.filename)
 
     @property
     def file(self):
@@ -151,6 +155,7 @@ class Elog(object):
                     prefix = ""
                 line = "".join((prefix, line, "<BR>"))
                 htmltext.append(line)
+        Elog.readflag.add(self.filename)
         return os.linesep.join(htmltext)
 
     @property
@@ -199,7 +204,8 @@ class ModelItem(QtGui.QStandardItem):
             if (role == Role.SortRole and self.column() == Column.Date):
                 return self.__elog.isoTime
             try:
-                return {Column.Category: self.__elog.category,
+                return {Column.Flag: self.__elog.filename in Elog.readflag,
+                        Column.Category: self.__elog.category,
                         Column.Package: self.__elog.package,
                         Column.Eclass: self.__elog.eclass,
                         Column.Date: self.__elog.localeTime}.get(
@@ -242,7 +248,8 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._model = QtGui.QStandardItemModel(self._tableView)
         self._model.setItemPrototype(ModelItem())
-        self._model.setColumnCount(4)
+        self._model.setColumnCount(5)
+        self._model.setHeaderData(Column.Flag, Qt.Horizontal, "Flag")
         self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
         self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
         self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
