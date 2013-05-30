@@ -23,6 +23,19 @@ import fnmatch
 import time
 import re
 from functools import partial
+from contextlib import closing
+
+try:
+    from StringIO import StringIO  # py2.7
+except ImportError:
+    from io import StringIO # py3+
+
+import gzip
+import bz2
+try:
+    import liblzma as lzma
+except ImportError:
+    lzma = None
 
 try:
     from PySide import QtCore, QtGui
@@ -82,7 +95,7 @@ class Elog(object):
         except ValueError:
             self.category = os.path.dirname(filename).split(os.sep)[-1]
             self.package, rest = basename.split(":")
-        date, ext = os.path.splitext(rest)
+        date = rest.split(".")[0]
         self.date = time.strptime(date, "%Y%m%d-%H%M%S")
 
         # Get the highest elog class. Adapted from Luca Marturana's elogv.
@@ -105,7 +118,19 @@ class Elog(object):
 
     @property
     def file(self):
-        return open(self.filename, "r")
+        root, ext = os.path.splitext(self.filename)
+        try:
+            return {".gz": gzip.open,
+                    ".bz2": bz2.BZ2File,
+                    ".log": open}[ext](self.filename, "r")
+        except KeyError:
+            return closing(StringIO(
+                """
+                <!-- set eclass: ERROR: -->
+                <h2>Unsupported format</h2>
+                The selected elog is in an unsupported format.
+                """
+            ))
 
     @property
     def isoTime(self):
@@ -183,7 +208,7 @@ class ModelItem(QtGui.QStandardItem):
 
 def populate(model, path):
     for nRow, filename in enumerate(
-            all_files(path, "*:*.log", False, True)):
+            all_files(path, "*:*.log*", False, True)):
         elog = Elog(filename)
         model.invisibleRootItem().appendRow([
             ModelItem(elog) for column in range(model.columnCount())])
