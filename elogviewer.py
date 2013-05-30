@@ -232,6 +232,7 @@ class Elogviewer(QtGui.QMainWindow):
 
         self.__initUI()
         self.__initToolBar()
+        self.__initSettings()
 
         populate(self._model, self._args.elogpath)
 
@@ -341,6 +342,16 @@ class Elogviewer(QtGui.QMainWindow):
         self._quitAction.setShortcut(QtGui.QKeySequence.Quit)
         self._quitAction.triggered.connect(self.close)
         self._toolBar.addAction(self._quitAction)
+
+    def __initSettings(self):
+        self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
+        if not self._settings.contains("readflag"):
+            self._settings.setValue("readflag", set())
+        Elog.readflag = self._settings.value("readflag")
+
+    def closeEvent(self, closeEvent):
+        self._settings.setValue("readflag", Elog.readflag)
+        super(Elogviewer, self).closeEvent(closeEvent)
 
     def deleteSelected(self):
         selection = self._tableView.selectionModel().selectedRows()
