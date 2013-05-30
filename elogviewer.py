@@ -171,7 +171,7 @@ class TextToHtmlDelegate(QtGui.QItemDelegate):
                         prefix = ""
                     line = "".join((prefix, line, "<BR>", os.linesep))
                     htmlText += line
-        editor.setHtml(htmlText)
+            editor.setHtml(htmlText)
 
 
 class ModelItem(QtGui.QStandardItem):
