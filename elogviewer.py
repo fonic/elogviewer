@@ -196,6 +196,7 @@ class ModelItem(QtGui.QStandardItem):
 
     def __init__(self, elog=None):
         super(ModelItem, self).__init__()
+        self.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.__elog = elog
 
     def type(self):
