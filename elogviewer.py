@@ -331,7 +331,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._model.setSortRole(Role.SortRole)
         self._tableView.setModel(self._model)
         self._tableView.setItemDelegateForColumn(
-            Column.Flag, BulletDelegate())
+            Column.Flag, BulletDelegate(self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
