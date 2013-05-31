@@ -79,9 +79,9 @@ class Role(object):
 
 class Column(object):
 
-    Flag = 0
-    Category = 1
-    Package = 2
+    Category = 0
+    Package = 1
+    Flag = 2
     Eclass = 3
     Date = 4
 
@@ -155,7 +155,6 @@ class Elog(object):
                     prefix = ""
                 line = "".join((prefix, line, "<BR>"))
                 htmltext.append(line)
-        Elog.readflag.add(self.filename)
         return os.linesep.join(htmltext)
 
     @property
@@ -198,9 +197,23 @@ class ModelItem(QtGui.QStandardItem):
     def elog(self):
         return self.__elog
 
+    def markRead(self, readFlag=True):
+        if readFlag:
+            Elog.readflag.add(self.__elog.filename)
+        else:
+            try:
+                Elog.readflag.remove(self.__elog.filename)
+            except KeyError:
+                pass
+
+        font = self.font()
+        font.setBold(not readFlag)
+        self.setFont(font)
+
     def data(self, role=Qt.UserRole + 1):
-        if self.__elog and role in (Qt.DisplayRole, Qt.EditRole,
-                                    Role.SortRole):
+        if not self.__elog:
+            return super(ModelItem, self).data(role)
+        if role in (Qt.DisplayRole, Qt.EditRole, Role.SortRole):
             if (role == Role.SortRole and self.column() == Column.Date):
                 return self.__elog.isoTime
             try:
@@ -220,8 +233,12 @@ def populate(model, path):
     for nRow, filename in enumerate(
             all_files(path, "*:*.log*", False, True)):
         elog = Elog(filename)
-        model.invisibleRootItem().appendRow([
-            ModelItem(elog) for column in range(model.columnCount())])
+        row = []
+        for nCol in range(model.columnCount()):
+            item = ModelItem(elog)
+            item.markRead(filename in Elog.readflag)
+            row.append(item)
+        model.invisibleRootItem().appendRow(row)
 
 
 class Elogviewer(QtGui.QMainWindow):
@@ -279,6 +296,8 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.toFirst()
         self._tableView.selectionModel().currentRowChanged.connect(
             self._textWidgetMapper.setCurrentModelIndex)
+        self._tableView.selectionModel().currentRowChanged.connect(
+            self.markPreviousItemRead)
 
     def __initToolBar(self):
         # see http://standards.freedesktop.org/icon-naming-spec/
@@ -352,6 +371,12 @@ class Elogviewer(QtGui.QMainWindow):
     def closeEvent(self, closeEvent):
         self._settings.setValue("readflag", Elog.readflag)
         super(Elogviewer, self).closeEvent(closeEvent)
+
+    def markPreviousItemRead(self, current, previous):
+        if not previous.isValid():
+            return
+        for nCol in range(self._model.columnCount()):
+            self._model.item(previous.row(), nCol).markRead()
 
     def deleteSelected(self):
         selection = self._tableView.selectionModel().selectedRows()
