@@ -224,18 +224,11 @@ class ModelItem(QtGui.QStandardItem):
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
             return super(ModelItem, self).data(role)
-        if role in (Qt.DisplayRole, Qt.EditRole, Role.SortRole):
-            if (role == Role.SortRole and self.column() == Column.Date):
+        if role == Role.SortRole:
+            if self.column() == Column.Date:
                 return self.__elog.isoTime
-            try:
-                return {Column.Flag: self.__elog.filename in Elog.readflag,
-                        Column.Category: self.__elog.category,
-                        Column.Package: self.__elog.package,
-                        Column.Eclass: self.__elog.eclass,
-                        Column.Date: self.__elog.localeTime}.get(
-                            self.column(), 0)
-            except KeyError:
-                return super(ModelItem, self).data(role)
+            else:
+                return self.text()
         else:
             return super(ModelItem, self).data(role)
 
@@ -248,6 +241,12 @@ def populate(model, path):
         for nCol in range(model.columnCount()):
             item = ModelItem(elog)
             item.markRead(filename in Elog.readflag)
+            item.setData({Column.Flag: elog.filename in Elog.readflag,
+                          Column.Category: elog.category,
+                          Column.Package: elog.package,
+                          Column.Eclass: elog.eclass,
+                          Column.Date: elog.localeTime}[nCol],
+                         role=Qt.DisplayRole)
             row.append(item)
         model.invisibleRootItem().appendRow(row)
 
