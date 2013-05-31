@@ -151,7 +151,7 @@ class Elog(object):
         htmltext = []
         with self.file as elogfile:
             for line in elogfile:
-                line = line.strip()
+                line = _to_string(line.strip())
                 if line.startswith("ERROR:"):
                     prefix = '<p style="color: orange">'
                 elif line.startswith("WARN:"):
