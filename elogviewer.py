@@ -97,7 +97,7 @@ class Column(object):
 
 class Elog(object):
 
-    readflag = set()
+    readFlag = set()
 
     def __init__(self, filename):
         self.filename = filename
@@ -128,7 +128,7 @@ class Elog(object):
 
     def delete(self):
         os.remove(self.filename)
-        Elog.readflag.remove(self.filename)
+        Elog.readFlag.remove(self.filename)
 
     @property
     def file(self):
@@ -210,10 +210,10 @@ class ModelItem(QtGui.QStandardItem):
 
     def markRead(self, readFlag=True):
         if readFlag:
-            Elog.readflag.add(self.__elog.filename)
+            Elog.readFlag.add(self.__elog.filename)
         else:
             try:
-                Elog.readflag.remove(self.__elog.filename)
+                Elog.readFlag.remove(self.__elog.filename)
             except KeyError:
                 pass
 
@@ -240,8 +240,8 @@ def populate(model, path):
         row = []
         for nCol in range(model.columnCount()):
             item = ModelItem(elog)
-            item.markRead(filename in Elog.readflag)
-            item.setData({Column.Flag: elog.filename in Elog.readflag,
+            item.markRead(filename in Elog.readFlag)
+            item.setData({Column.Flag: elog.filename in Elog.readFlag,
                           Column.Category: elog.category,
                           Column.Package: elog.package,
                           Column.Eclass: elog.eclass,
@@ -390,12 +390,12 @@ class Elogviewer(QtGui.QMainWindow):
 
     def __initSettings(self):
         self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
-        if not self._settings.contains("readflag"):
-            self._settings.setValue("readflag", set())
-        Elog.readflag = self._settings.value("readflag")
+        if not self._settings.contains("readFlag"):
+            self._settings.setValue("readFlag", set())
+        Elog.readFlag = self._settings.value("readFlag")
 
     def closeEvent(self, closeEvent):
-        self._settings.setValue("readflag", Elog.readflag)
+        self._settings.setValue("readFlag", Elog.readFlag)
         super(Elogviewer, self).closeEvent(closeEvent)
 
     def markPreviousItemRead(self, current, previous):
