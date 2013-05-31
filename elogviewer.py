@@ -424,9 +424,6 @@ class Elogviewer(QtGui.QMainWindow):
                 Christian Faulhammer
                 <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
 
-                <h2>Artwork by</h2>
-                (k)elogviewer application icon (c) gnome, GPL2
-
                 """ % __version__).splitlines())))
         self._toolBar.addAction(self._aboutAction)
 
