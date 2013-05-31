@@ -20,6 +20,7 @@ import sys
 import os
 import argparse
 import fnmatch
+import locale
 import time
 import re
 from functools import partial
@@ -71,6 +72,14 @@ def all_files(root, patterns='*', single_level=False, yield_folders=False):
         if single_level:
             break
 
+def _to_string(text):
+    """This helper changes `bytes` to `str` on python3 and does nothing under
+    python2."""
+    try:
+        return text.decode(locale.getpreferredencoding())
+    except AttributeError:
+        return text
+
 
 class Role(object):
 
@@ -103,7 +112,8 @@ class Elog(object):
 
         # Get the highest elog class. Adapted from Luca Marturana's elogv.
         with self.file as elogfile:
-            eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:", elogfile.read())
+            eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:",
+                                  _to_string(elogfile.read()))
             if "ERROR:" in eClasses:
                 self.eclass = "eerror"
             elif "WARN:" in eClasses:
@@ -126,7 +136,7 @@ class Elog(object):
         try:
             return {".gz": gzip.open,
                     ".bz2": bz2.BZ2File,
-                    ".log": open}[ext](self.filename, "r")
+                    ".log": open}[ext](self.filename, "rb")
         except KeyError:
             return closing(StringIO(
                 """
