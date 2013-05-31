@@ -133,6 +133,27 @@ class Elog(object):
             ))
 
     @property
+    def htmltext(self):
+        htmltext = []
+        with self.file as elogfile:
+            for line in elogfile:
+                line = line.strip()
+                if line.startswith("ERROR:"):
+                    prefix = '<p style="color: orange">'
+                elif line.startswith("WARN:"):
+                    prefix = '<p style="color: red">'
+                elif line.startswith("INFO:"):
+                    prefix = '<p style="color: darkgreen">'
+                elif (line.startswith("LOG:") or
+                        line.startswith("QA:")):
+                    prefix = '<p style="color: black">'
+                else:
+                    prefix = ""
+                line = "".join((prefix, line, "<BR>"))
+                htmltext.append(line)
+        return os.linesep.join(htmltext)
+
+    @property
     def isoTime(self):
         return time.strftime("%Y-%m-%d %H:%M:%S", self.date)
 
@@ -154,24 +175,7 @@ class TextToHtmlDelegate(QtGui.QItemDelegate):
             return
         if isinstance(editor, QtGui.QTextEdit):
             item = index.model().itemFromIndex(index)
-            htmlText = ""
-            with item.elog().file as elogfile:
-                for line in elogfile:
-                    line = line.strip()
-                    if line.startswith("ERROR:"):
-                        prefix = '<p style="color: orange">'
-                    elif line.startswith("WARN:"):
-                        prefix = '<p style="color: red">'
-                    elif line.startswith("INFO:"):
-                        prefix = '<p style="color: darkgreen">'
-                    elif (line.startswith("LOG:") or
-                            line.startswith("QA:")):
-                        prefix = '<p style="color: black">'
-                    else:
-                        prefix = ""
-                    line = "".join((prefix, line, "<BR>", os.linesep))
-                    htmlText += line
-            editor.setHtml(htmlText)
+            editor.setHtml(item.elog().htmltext)
 
 
 class ModelItem(QtGui.QStandardItem):
