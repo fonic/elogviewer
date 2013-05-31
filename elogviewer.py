@@ -316,10 +316,14 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._markReadAction = QtGui.QAction("Mark read", self._toolBar)
         self._markReadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-read"))
+        self._markReadAction.triggered.connect(partial(
+            self._markSelectedRead, True))
         self._toolBar.addAction(self._markReadAction)
 
         self._markUnreadAction = QtGui.QAction("Mark unread", self._toolBar)
         self._markUnreadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-unread"))
+        self._markUnreadAction.triggered.connect(partial(
+            self._markSelectedRead, False))
         self._toolBar.addAction(self._markUnreadAction)
 
         self._markImportantAction = QtGui.QAction("Important", self._toolBar)
@@ -401,6 +405,11 @@ class Elogviewer(QtGui.QMainWindow):
 
         for elog in selectedElogs:
             elog.delete()
+
+    def _markSelectedRead(self, markRead=True):
+        for item in (self._model.itemFromIndex(idx) for idx
+                     in self._tableView.selectionModel().selectedIndexes()):
+            item.markRead(markRead)
 
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
