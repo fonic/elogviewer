@@ -374,6 +374,7 @@ def main():
         args.elogpath = os.path.join(logdir, "elog")
 
     app = QtGui.QApplication(sys.argv)
+    app.setWindowIcon(QtGui.QIcon.fromTheme("applications-system"))
 
     elogviewer = Elogviewer(args)
     elogviewer.show()
