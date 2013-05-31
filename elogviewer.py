@@ -192,6 +192,49 @@ class TextToHtmlDelegate(QtGui.QItemDelegate):
             editor.setHtml(item.elog().htmltext)
 
 
+class Bullet(object):
+
+    def __init__(self, fill=True):
+        self._fill = fill
+
+    def setFill(self, fill=True):
+        self._fill = fill
+
+    def fill(self):
+        return self._fill
+
+    def paint(self, painter, rect, palette):
+        painter.save()
+        green = QtGui.QBrush(Qt.darkGreen)
+        painter.setBrush(palette.dark() if self._fill else green)
+        yOffset = rect.height() / 4.0
+        painter.translate(rect.x(), rect.y() + yOffset)
+        painter.drawEllipse(QtCore.QRectF(8.0, 8.0, 8.0, 8.0))
+        painter.restore()
+
+    def sizeHint(self):
+        return QtCore.QSize(8.0, 8.0)
+
+
+class BulletDelegate(QtGui.QStyledItemDelegate):
+
+    def __init__(self, parent=None):
+        super(BulletDelegate, self).__init__(parent)
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self.parent())
+
+    def paint(self, painter, option, index):
+        if index.column() == Column.Flag:
+            bullet = index.data()
+            bullet.paint(painter, option.rect, option.palette)
+        else:
+            super(BulletDelegate, self).paint(painter, option, index)
+
+    def sizeHint(self):
+        return QtCore.QSize(8.0, 8.0)
+
+
 class ModelItem(QtGui.QStandardItem):
 
     def __init__(self, elog=None):
@@ -217,9 +260,12 @@ class ModelItem(QtGui.QStandardItem):
             except KeyError:
                 pass
 
-        font = self.font()
-        font.setBold(not readFlag)
-        self.setFont(font)
+        if isinstance(self.data(role=Qt.DisplayRole), Bullet):
+            self.data(role=Qt.DisplayRole).setFill(readFlag)
+        else:
+            font = self.font()
+            font.setBold(not readFlag)
+            self.setFont(font)
 
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
@@ -241,7 +287,7 @@ def populate(model, path):
         for nCol in range(model.columnCount()):
             item = ModelItem(elog)
             item.markRead(filename in Elog.readFlag)
-            item.setData({Column.Flag: elog.filename in Elog.readFlag,
+            item.setData({Column.Flag: Bullet(elog.filename in Elog.readFlag),
                           Column.Category: elog.category,
                           Column.Package: elog.package,
                           Column.Eclass: elog.eclass,
@@ -284,6 +330,8 @@ class Elogviewer(QtGui.QMainWindow):
         self._model.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
         self._model.setSortRole(Role.SortRole)
         self._tableView.setModel(self._model)
+        self._tableView.setItemDelegateForColumn(
+            Column.Flag, BulletDelegate())
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
