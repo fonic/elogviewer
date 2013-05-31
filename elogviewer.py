@@ -323,7 +323,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._model = QtGui.QStandardItemModel(self._tableView)
         self._model.setItemPrototype(ModelItem())
         self._model.setColumnCount(5)
-        self._model.setHeaderData(Column.Flag, Qt.Horizontal, "Flag")
+        self._model.setHeaderData(Column.Flag, Qt.Horizontal, "Read")
         self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
         self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
         self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
