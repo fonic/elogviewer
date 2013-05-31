@@ -314,6 +314,18 @@ class Elogviewer(QtGui.QMainWindow):
         self._refreshAction.triggered.connect(self.refresh)
         self._toolBar.addAction(self._refreshAction)
 
+        self._markReadAction = QtGui.QAction("Mark read", self._toolBar)
+        self._markReadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-read"))
+        self._toolBar.addAction(self._markReadAction)
+
+        self._markUnreadAction = QtGui.QAction("Mark unread", self._toolBar)
+        self._markUnreadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-unread"))
+        self._toolBar.addAction(self._markUnreadAction)
+
+        self._markImportantAction = QtGui.QAction("Important", self._toolBar)
+        self._markImportantAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-important"))
+        self._toolBar.addAction(self._markImportantAction)
+
         self._deleteAction = QtGui.QAction("Delete", self._toolBar)
         self._deleteAction.setIcon(QtGui.QIcon.fromTheme("edit-delete"))
         self._deleteAction.setShortcut(QtGui.QKeySequence.Delete)
