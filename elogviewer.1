@@ -82,6 +82,10 @@ one step.
 
 .SH BUGS
 
+The 'read' flag does not stick when switching from Python 2 to Python
+3.  This is an issue with pickle, the Python module used for
+serialization, using different protocols.
+
 .SH ENVIRONMENT
 
 .SH SEE ALSO
