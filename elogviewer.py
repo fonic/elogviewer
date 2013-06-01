@@ -262,6 +262,7 @@ class ModelItem(QtGui.QStandardItem):
 
         if isinstance(self.data(role=Qt.DisplayRole), Bullet):
             self.data(role=Qt.DisplayRole).setFill(readFlag)
+            self.emitDataChanged()
         else:
             font = self.font()
             font.setBold(not readFlag)
