@@ -97,7 +97,7 @@ class Column(object):
 
 class Elog(object):
 
-    readFlag = set()
+    _readFlag = set()
 
     def __init__(self, filename):
         self.filename = filename
@@ -128,7 +128,7 @@ class Elog(object):
 
     def delete(self):
         os.remove(self.filename)
-        Elog.readFlag.remove(self.filename)
+        Elog._readFlag.remove(self.filename)
 
     @property
     def file(self):
@@ -174,6 +174,20 @@ class Elog(object):
     @property
     def localeTime(self):
         return time.strftime("%x %X", self.date)
+
+    @property
+    def readFlag(self):
+        return self.filename in Elog._readFlag
+
+    @readFlag.setter
+    def readFlag(self, flag=True):
+        if flag:
+            Elog._readFlag.add(self.filename)
+        else:
+            try:
+                Elog._readFlag.remove(self.filename)
+            except KeyError:
+                pass
 
 
 class TextToHtmlDelegate(QtGui.QItemDelegate):
@@ -252,13 +266,7 @@ class ModelItem(QtGui.QStandardItem):
         return self.__elog
 
     def markRead(self, readFlag=True):
-        if readFlag:
-            Elog.readFlag.add(self.__elog.filename)
-        else:
-            try:
-                Elog.readFlag.remove(self.__elog.filename)
-            except KeyError:
-                pass
+        self.__elog.readFlag = readFlag
 
         if isinstance(self.data(role=Qt.DisplayRole), Bullet):
             self.data(role=Qt.DisplayRole).setFill(readFlag)
@@ -287,8 +295,8 @@ def populate(model, path):
         row = []
         for nCol in range(model.columnCount()):
             item = ModelItem(elog)
-            item.markRead(filename in Elog.readFlag)
-            item.setData({Column.Flag: Bullet(elog.filename in Elog.readFlag),
+            item.markRead(elog.readFlag)
+            item.setData({Column.Flag: Bullet(elog.readFlag),
                           Column.Category: elog.category,
                           Column.Package: elog.package,
                           Column.Eclass: elog.eclass,
@@ -438,13 +446,13 @@ class Elogviewer(QtGui.QMainWindow):
         self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
         if not self._settings.contains("readFlag"):
             self._settings.setValue("readFlag", set())
-        Elog.readFlag = self._settings.value("readFlag")
-        if Elog.readFlag is None:
+        Elog._readFlag = self._settings.value("readFlag")
+        if Elog._readFlag is None:
             # The list is lost when going from py2.7 to py3
-            Elog.readFlag = set()
+            Elog._readFlag = set()
 
     def closeEvent(self, closeEvent):
-        self._settings.setValue("readFlag", Elog.readFlag)
+        self._settings.setValue("readFlag", Elog._readFlag)
         super(Elogviewer, self).closeEvent(closeEvent)
 
     def markPreviousItemRead(self, current, previous):
