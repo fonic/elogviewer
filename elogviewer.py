@@ -444,9 +444,7 @@ class Elogviewer(QtGui.QMainWindow):
 
     def __initSettings(self):
         self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
-        if not self._settings.contains("readFlag"):
-            self._settings.setValue("readFlag", set())
-        Elog._readFlag = self._settings.value("readFlag")
+        Elog._readFlag = self._settings.value("readFlag", set())
         if Elog._readFlag is None:
             # The list is lost when going from py2.7 to py3
             Elog._readFlag = set()
