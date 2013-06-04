@@ -145,6 +145,14 @@ class Elog(object):
                 The selected elog is in an unsupported format.
                 """
             ))
+        except IOError:
+            return closing(StringIO(
+                """
+                <!-- set eclass: ERROR: -->
+                <h2>File does not open</h2>
+                The selected elog could not be opened.
+                """
+            ))
 
     @property
     def htmltext(self):
