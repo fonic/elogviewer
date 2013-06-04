@@ -19,10 +19,10 @@
 import sys
 import os
 import argparse
-import fnmatch
 import locale
 import time
 import re
+from glob import glob
 from functools import partial
 from contextlib import closing
 
@@ -56,21 +56,6 @@ except ImportError:
 
 __version__ = "2.1"
 
-
-def all_files(root, patterns='*', single_level=False, yield_folders=False):
-    ''' Expand patterns for semicolon-separated strin of list '''
-    patterns = patterns.split(';')
-    for path, subdirs, files in os.walk(root):
-        if yield_folders:
-            files.extend(subdirs)
-        files.sort()
-        for name in files:
-            for pattern in patterns:
-                if fnmatch.fnmatch(name, pattern):
-                    yield os.path.join(path, name)
-                    break
-        if single_level:
-            break
 
 def _to_string(text):
     """This helper changes `bytes` to `str` on python3 and does nothing under
@@ -297,8 +282,8 @@ class ModelItem(QtGui.QStandardItem):
 
 
 def populate(model, path):
-    for nRow, filename in enumerate(
-            all_files(path, "*:*.log*", False, True)):
+    for filename in (glob(os.path.join(path, "*:*:*.log*")) +
+                     glob(os.path.join(path, "*", "*:*.log*"))):
         elog = Elog(filename)
         row = []
         for nCol in range(model.columnCount()):
