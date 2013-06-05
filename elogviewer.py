@@ -496,8 +496,6 @@ def main():
 
         """.splitlines()))
     parser.add_argument("-p", "--elogpath", help="path to the elog directory")
-    parser.add_argument("-q", "--qt", action="store_true",
-                        help="start with the Qt interface")
     parser.add_argument("--log", choices="DEBUG INFO WARNING ERROR".split(),
                         default="WARNING", help="set logging level")
     args = parser.parse_args()
