@@ -40,12 +40,12 @@ except ImportError:
     lzma = None
 
 try:
-    from PySide import QtCore, QtGui
-except ImportError:
     import sip as _sip
     for _type in "QDate QDateTime QString QVariant".split():
         _sip.setapi(_type, 2)
     from PyQt4 import QtCore, QtGui
+except ImportError:
+    from PySide import QtCore, QtGui
 
 Qt = QtCore.Qt
 
