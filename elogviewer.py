@@ -86,7 +86,7 @@ class Elog(object):
     _readFlag = set()
 
     def __init__(self, filename):
-        self.filename = filename
+        self.filename = _to_string(filename)
         basename = os.path.basename(filename)
         try:
             self.category, self.package, rest = basename.split(":")
@@ -441,9 +441,11 @@ class Elogviewer(QtGui.QMainWindow):
 
     def __initSettings(self):
         self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
-        Elog._readFlag = self._settings.value("readFlag", set())
-        if Elog._readFlag is None:
-            # The list is lost when going from py2.7 to py3
+        try:
+            Elog._readFlag = self._settings.value("readFlag", set())
+        except TypeError:
+            # The list is lost when going from py3 to py2
+            logging.error("The list of read message could not be loaded.")
             Elog._readFlag = set()
 
     def closeEvent(self, closeEvent):
