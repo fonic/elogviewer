@@ -299,7 +299,7 @@ def populate(model, path):
                           Column.Date: elog.localeTime}[nCol],
                          role=Qt.DisplayRole)
             row.append(item)
-        model.invisibleRootItem().appendRow(row)
+        model.appendRow(row)
 
 
 class Elogviewer(QtGui.QMainWindow):
