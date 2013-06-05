@@ -312,7 +312,8 @@ class Elogviewer(QtGui.QMainWindow):
         self.__initToolBar()
         self.__initSettings()
 
-        populate(self._model, self._args.elogpath)
+        QtCore.QTimer.singleShot(0, partial(
+            populate, self._model, self._args.elogpath))
 
     def __initUI(self):
         self._centralWidget = QtGui.QWidget(self)
