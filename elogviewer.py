@@ -18,6 +18,7 @@
 
 import sys
 import os
+import logging
 import argparse
 import locale
 import time
@@ -123,6 +124,7 @@ class Elog(object):
                     ".bz2": bz2.BZ2File,
                     ".log": open}[ext](self.filename, "rb")
         except KeyError:
+            logging.error("%s: unsupported format" % self.filename)
             return closing(StringIO(
                 """
                 <!-- set eclass: ERROR: -->
@@ -131,6 +133,7 @@ class Elog(object):
                 """
             ))
         except IOError:
+            logging.error("%s: could not open file" % self.filename)
             return closing(StringIO(
                 """
                 <!-- set eclass: ERROR: -->
@@ -492,6 +495,8 @@ def main():
     parser.add_argument("-p", "--elogpath", help="path to the elog directory")
     parser.add_argument("-q", "--qt", action="store_true",
                         help="start with the Qt interface")
+    parser.add_argument("--log", choices="DEBUG INFO WARNING ERROR".split(),
+                        default="WARNING", help="set logging level")
     args = parser.parse_args()
     if args.elogpath is None:
         logdir = portage.settings.get(
@@ -499,6 +504,7 @@ def main():
             os.path.join(os.sep, portage.settings["EPREFIX"],
                          *"var/log/portage".split("/")))
         args.elogpath = os.path.join(logdir, "elog")
+    getattr(logging, args.log.upper())
 
     app = QtGui.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon.fromTheme("applications-system"))
