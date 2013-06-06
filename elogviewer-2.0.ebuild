@@ -14,11 +14,10 @@ SRC_URI="mirror://sourceforge/${PN}/${P}.tar.gz"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~amd64 ~ppc ~sparc ~x86 ~x86-fbsd"
-IUSE="pyside"
+IUSE=""
 
 RDEPEND="virtual/python-argparse[${PYTHON_USEDEP}]
-         pyside? ( dev-python/pyside[${PYTHON_USEDEP}] )
-         !pyside? ( dev-python/PyQt4[${PYTHON_USEDEP}] )
+         dev-python/PyQt4[${PYTHON_USEDEP}]
 		 >=sys-apps/portage-2.1
 		 "
 DEPEND="${RDEPEND}
