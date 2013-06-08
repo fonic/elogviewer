@@ -400,7 +400,7 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._markImportantAction = QtGui.QAction("Important", self._toolBar)
         self._markImportantAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-important"))
-        #self._toolBar.addAction(self._markImportantAction)
+        self._toolBar.addAction(self._markImportantAction)
 
         self._deleteAction = QtGui.QAction("Delete", self._toolBar)
         self._deleteAction.setIcon(QtGui.QIcon.fromTheme("edit-delete"))
