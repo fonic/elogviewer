@@ -23,6 +23,7 @@ import argparse
 import locale
 import time
 import re
+from math import cos, sin
 from glob import glob
 from functools import partial
 from contextlib import closing
@@ -74,16 +75,18 @@ class Role(object):
 
 class Column(object):
 
-    Category = 0
-    Package = 1
-    Flag = 2
-    Eclass = 3
-    Date = 4
+    Important = 0
+    Category = 1
+    Package = 2
+    Flag = 3
+    Eclass = 4
+    Date = 5
 
 
 class Elog(object):
 
     _readFlag = set()
+    _importantFlag = set()
 
     def __init__(self, filename):
         self.filename = _to_string(filename)
@@ -164,6 +167,20 @@ class Elog(object):
         return os.linesep.join(htmltext)
 
     @property
+    def importantFlag(self):
+        return self.filename in Elog._importantFlag
+
+    @importantFlag.setter
+    def importantFlag(self, flag=True):
+        if flag:
+            Elog._importantFlag.add(self.filename)
+        else:
+            try:
+                Elog._importantFlag.remove(self.filename)
+            except KeyError:
+                pass
+
+    @property
     def isoTime(self):
         return time.strftime("%Y-%m-%d %H:%M:%S", self.date)
 
@@ -202,10 +219,14 @@ class TextToHtmlDelegate(QtGui.QItemDelegate):
             editor.setHtml(item.elog().htmltext)
 
 
-class Bullet(object):
+class Flag(object):
 
     def __init__(self, fill=True):
         self._fill = fill
+        self._scaleFactor = 20
+
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__.__name__, self._fill)
 
     def setFill(self, fill=True):
         self._fill = fill
@@ -213,36 +234,101 @@ class Bullet(object):
     def fill(self):
         return self._fill
 
+    def sizeHint(self):
+        return self._scaleFactor * QtCore.QSize(1.0, 1.0)
+
+
+class Bullet(Flag):
+
+    def __init__(self, fill=True):
+        super(Bullet, self).__init__(fill)
+
     def paint(self, painter, rect, palette):
         painter.save()
+        painter.setPen(Qt.NoPen)
         green = QtGui.QBrush(Qt.darkGreen)
         painter.setBrush(palette.dark() if self._fill else green)
-        yOffset = rect.height() / 4.0
-        painter.translate(rect.x(), rect.y() + yOffset)
-        painter.drawEllipse(QtCore.QRectF(8.0, 8.0, 8.0, 8.0))
+        painter.translate(rect.x(), rect.y())
+        painter.scale(self._scaleFactor, self._scaleFactor)
+        painter.drawEllipse(QtCore.QRectF(0.5, 0.5, 0.5, 0.5))
         painter.restore()
 
-    def sizeHint(self):
-        return QtCore.QSize(8.0, 8.0)
+
+class Star(Flag):
+    # Largely inspired by Nokia's stardelegate example.
+
+    def __init__(self, fill=True):
+        super(Star, self).__init__(fill)
+        self._starPolygon = QtGui.QPolygonF([QtCore.QPointF(1.0, 0.5)])
+        for i in range(5):
+            self._starPolygon << QtCore.QPointF(
+                0.5 + 0.5 * cos(0.8 * i * 3.14),
+                0.5 + 0.5 * sin(0.8 * i * 3.14))
+
+    def paint(self, painter, rect, palette):
+        painter.save()
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+        painter.setPen(Qt.NoPen)
+        red = QtGui.QBrush(Qt.red)
+        painter.setBrush(palette.dark() if self._fill else red)
+        yOffset = (rect.height() - self._scaleFactor) / 2.0
+        painter.translate(rect.x(), rect.y() + yOffset)
+        painter.scale(self._scaleFactor, self._scaleFactor)
+        painter.drawPolygon(self._starPolygon, QtCore.Qt.WindingFill)
+        painter.restore()
 
 
-class BulletDelegate(QtGui.QStyledItemDelegate):
+class FlagDelegate(QtGui.QStyledItemDelegate):
 
     def __init__(self, parent=None):
-        super(BulletDelegate, self).__init__(parent)
+        super(FlagDelegate, self).__init__(parent)
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.parent())
 
-    def paint(self, painter, option, index):
-        if index.column() == Column.Flag:
-            bullet = index.data()
-            bullet.paint(painter, option.rect, option.palette)
+    def sizeHint(self, option, index):
+        flag = index.data()
+        if isinstance(flag, Flag):
+            return flag.sizeHint()
         else:
-            super(BulletDelegate, self).paint(painter, option, index)
+            return super(FlagDelegate, self).sizeHint(option, index)
 
-    def sizeHint(self):
-        return QtCore.QSize(8.0, 8.0)
+    def paint(self, painter, option, index):
+        flag = index.data()
+        if isinstance(flag, Flag):
+            if option.state & QtGui.QStyle.State_Selected:
+                painter.fillRect(option.rect, option.palette.highlight())
+            flag.paint(painter, option.rect, option.palette)
+        else:
+            super(FlagDelegate, self).paint(painter, option, index)
+
+    def createEditor(self, parent, option, index):
+        flag = index.data()
+        if isinstance(flag, Flag):
+            return None
+        else:
+            return super(FlagDelegate, self).createEditor(parent, option, index)
+
+    def editorEvent(self, event, model, option, index):
+        flag = index.data()
+        if event.type() in (QtCore.QEvent.MouseButtonRelease,
+                            QtCore.QEvent.MouseButtonDblClick):
+            if event.button() == Qt.LeftButton:
+                flag.setFill(not flag.fill())
+                self.setModelData(flag.fill(), model, index)
+                return True
+        elif event.type() == QtCore.QEvent.KeyPress:
+            if event.key() in (Qt.Key_Space, Qt.Key_Select):
+                flag.setFill(not flag.fill())
+                self.setModelData(flag.fill(), model, index)
+                return True
+        return False
+
+    def setModelData(self, editor, model, index):
+        if index.isValid():
+            if index.column() == Column.Important:
+                model.sourceModel().itemFromIndex(
+                    model.mapToSource(index)).markImportant(editor)
 
 
 class ModelItem(QtGui.QStandardItem):
@@ -260,16 +346,25 @@ class ModelItem(QtGui.QStandardItem):
     def elog(self):
         return self.__elog
 
+    def setFill(self, fill):
+        self.data(role=Qt.DisplayRole).setFill(fill)
+        self.emitDataChanged()
+
     def markRead(self, readFlag=True):
         self.__elog.readFlag = readFlag
 
         if isinstance(self.data(role=Qt.DisplayRole), Bullet):
-            self.data(role=Qt.DisplayRole).setFill(readFlag)
-            self.emitDataChanged()
+            self.setFill(readFlag)
         else:
             font = self.font()
             font.setBold(not readFlag)
             self.setFont(font)
+
+    def markImportant(self, importantFlag=True):
+        self.__elog.importantFlag = importantFlag
+
+        if isinstance(self.data(role=Qt.DisplayRole), Star):
+            self.setFill(importantFlag)
 
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
@@ -291,13 +386,17 @@ def populate(model, path):
         for nCol in range(model.columnCount()):
             item = ModelItem(elog)
             item.markRead(elog.readFlag)
-            item.setData({Column.Flag: Bullet(elog.readFlag),
+            item.setData({Column.Important: Star(elog.importantFlag),
+                          Column.Flag: Bullet(elog.readFlag),
                           Column.Category: elog.category,
                           Column.Package: elog.package,
                           Column.Eclass: elog.eclass,
                           Column.Date: elog.localeTime}[nCol],
                          role=Qt.DisplayRole)
-            item.setEditable(False)
+            if nCol is Column.Important:
+                item.setEditable(True)
+            else:
+                item.setEditable(False)
             row.append(item)
         model.appendRow(row)
 
@@ -328,7 +427,8 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._model = QtGui.QStandardItemModel(self._tableView)
         self._model.setItemPrototype(ModelItem())
-        self._model.setColumnCount(5)
+        self._model.setColumnCount(6)
+        self._model.setHeaderData(Column.Important, Qt.Horizontal, "Important")
         self._model.setHeaderData(Column.Flag, Qt.Horizontal, "Read")
         self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
         self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
@@ -341,8 +441,9 @@ class Elogviewer(QtGui.QMainWindow):
         self._proxyModel.setSourceModel(self._model)
 
         self._tableView.setModel(self._proxyModel)
-        self._tableView.setItemDelegateForColumn(
-            Column.Flag, BulletDelegate(self._tableView))
+        for column in (Column.Important, Column.Flag):
+            self._tableView.setItemDelegateForColumn(
+                column, FlagDelegate(self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
@@ -457,13 +558,18 @@ class Elogviewer(QtGui.QMainWindow):
         self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
         try:
             Elog._readFlag = self._settings.value("readFlag", set())
+            Elog._importantFlag = self._settings.value("importantFlag", set())
+            if Elog._readFlag is None or Elog._importantFlag is None:
+                raise TypeError
         except TypeError:
             # The list is lost when going from py3 to py2
-            logging.error("The list of read message could not be loaded.")
+            logging.error("The settings message could not be loaded.")
             Elog._readFlag = set()
+            Elog._importantFlag = set()
 
     def closeEvent(self, closeEvent):
         self._settings.setValue("readFlag", Elog._readFlag)
+        self._settings.setValue("importantFlag", Elog._importantFlag)
         super(Elogviewer, self).closeEvent(closeEvent)
 
     def markPreviousItemRead(self, current, previous):
