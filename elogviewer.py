@@ -486,8 +486,9 @@ class Elogviewer(QtGui.QMainWindow):
             elog.delete()
 
     def _markSelectedRead(self, markRead=True):
-        for item in (self._model.itemFromIndex(idx) for idx
-                     in self._tableView.selectionModel().selectedIndexes()):
+        selection = (self._proxyModel.mapToSource(idx) for idx in
+                     self._tableView.selectionModel().selectedIndexes())
+        for item in (self._model.itemFromIndex(idx) for idx in selection):
             item.markRead(markRead)
 
     def refresh(self):
