@@ -335,7 +335,12 @@ class Elogviewer(QtGui.QMainWindow):
         self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
         self._model.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
         self._model.setSortRole(Role.SortRole)
-        self._tableView.setModel(self._model)
+
+        self._proxyModel = QtGui.QSortFilterProxyModel(self._tableView)
+        self._proxyModel.setFilterKeyColumn(-1)
+        self._proxyModel.setSourceModel(self._model)
+
+        self._tableView.setModel(self._proxyModel)
         self._tableView.setItemDelegateForColumn(
             Column.Flag, BulletDelegate(self._tableView))
 
@@ -358,10 +363,13 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.setModel(self._model)
         self._textWidgetMapper.addMapping(self._textEdit, 0)
         self._textWidgetMapper.toFirst()
+
         self._tableView.selectionModel().currentRowChanged.connect(
-            self._textWidgetMapper.setCurrentModelIndex)
+            lambda cur: self._textWidgetMapper.setCurrentModelIndex(
+                self._proxyModel.mapToSource(cur)))
         self._tableView.selectionModel().currentRowChanged.connect(
-            self.markPreviousItemRead)
+            lambda cur, prev: self.markPreviousItemRead(
+                *map(self._proxyModel.mapToSource, (cur, prev))))
 
     def __initToolBar(self):
         # see http://standards.freedesktop.org/icon-naming-spec/
@@ -459,7 +467,8 @@ class Elogviewer(QtGui.QMainWindow):
             self._model.item(previous.row(), nCol).markRead()
 
     def deleteSelected(self):
-        selection = self._tableView.selectionModel().selectedRows()
+        selection = [self._proxyModel.mapToSource(idx) for idx in
+                     self._tableView.selectionModel().selectedRows()]
         selectedRows = sorted(idx.row() for idx in selection)
         selectedElogs = [self._model.itemFromIndex(idx).elog()
                          for idx in selection]
