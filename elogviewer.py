@@ -447,6 +447,12 @@ class Elogviewer(QtGui.QMainWindow):
         self._quitAction.triggered.connect(self.close)
         self._toolBar.addAction(self._quitAction)
 
+        self._searchLineEdit = QtGui.QLineEdit(self._toolBar)
+        self._searchLineEdit.setPlaceholderText("search")
+        self._searchLineEdit.textEdited.connect(
+            self._proxyModel.setFilterRegExp)
+        self._toolBar.addWidget(self._searchLineEdit)
+
     def __initSettings(self):
         self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
         try:
