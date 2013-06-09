@@ -249,7 +249,6 @@ class ModelItem(QtGui.QStandardItem):
 
     def __init__(self, elog=None):
         super(ModelItem, self).__init__()
-        self.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
         self.__elog = elog
 
     def type(self):
@@ -298,6 +297,7 @@ def populate(model, path):
                           Column.Eclass: elog.eclass,
                           Column.Date: elog.localeTime}[nCol],
                          role=Qt.DisplayRole)
+            item.setEditable(False)
             row.append(item)
         model.appendRow(row)
 
