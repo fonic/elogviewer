@@ -411,8 +411,13 @@ class Elogviewer(QtGui.QMainWindow):
         self.__initToolBar()
         self.__initSettings()
 
+        def populateAndInit(model, path):
+            populate(model, path)
+            self._tableView.selectionModel().currentRowChanged.emit(
+                QtCore.QModelIndex(), QtCore.QModelIndex())
+
         QtCore.QTimer.singleShot(0, partial(
-            populate, self._model, self._args.elogpath))
+            populateAndInit, self._model, self._args.elogpath))
 
     def __initUI(self):
         self._centralWidget = QtGui.QWidget(self)
@@ -451,6 +456,8 @@ class Elogviewer(QtGui.QMainWindow):
         horizontalHeader.sortIndicatorChanged.connect(self._model.sort)
         horizontalHeader.setResizeMode(horizontalHeader.Stretch)
 
+        self._tableView.verticalHeader().hide()
+
         self._textEdit = QtGui.QTextEdit(self._centralWidget)
         self._textEdit.setReadOnly(True)
         self._textEdit.setText("""No elogs!""")
@@ -465,12 +472,19 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.addMapping(self._textEdit, 0)
         self._textWidgetMapper.toFirst()
 
-        self._tableView.selectionModel().currentRowChanged.connect(
+        self._statusLabel = QtGui.QLabel(self.statusBar())
+        self.statusBar().addWidget(self._statusLabel)
+
+        currentRowChanged = self._tableView.selectionModel().currentRowChanged
+        currentRowChanged.connect(
             lambda cur: self._textWidgetMapper.setCurrentModelIndex(
                 self._proxyModel.mapToSource(cur)))
-        self._tableView.selectionModel().currentRowChanged.connect(
+        currentRowChanged.connect(
             lambda cur, prev: self.markPreviousItemRead(
                 *map(self._proxyModel.mapToSource, (cur, prev))))
+        currentRowChanged.connect(
+            lambda cur: self._statusLabel.setText(
+                "%i of %i elogs" % (cur.row() + 1, self._model.rowCount())))
 
     def __initToolBar(self):
         # see http://standards.freedesktop.org/icon-naming-spec/
