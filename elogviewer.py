@@ -474,6 +474,8 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._statusLabel = QtGui.QLabel(self.statusBar())
         self.statusBar().addWidget(self._statusLabel)
+        self._unreadLabel = QtGui.QLabel(self.statusBar())
+        self.statusBar().addWidget(self._unreadLabel)
 
         currentRowChanged = self._tableView.selectionModel().currentRowChanged
         currentRowChanged.connect(
@@ -485,6 +487,12 @@ class Elogviewer(QtGui.QMainWindow):
         currentRowChanged.connect(
             lambda cur: self._statusLabel.setText(
                 "%i of %i elogs" % (cur.row() + 1, self._model.rowCount())))
+        currentRowChanged.connect(
+            lambda __: self.setWindowTitle("Elogviewer (%i unread)" % (
+                self._model.rowCount() - len(Elog._readFlag))))
+        currentRowChanged.connect(
+            lambda __: self._unreadLabel.setText("%i unread" %(
+                self._model.rowCount() - len(Elog._readFlag))))
 
     def __initToolBar(self):
         # see http://standards.freedesktop.org/icon-naming-spec/
