@@ -328,7 +328,7 @@ class FlagDelegate(QtGui.QStyledItemDelegate):
         if index.isValid():
             if index.column() == Column.Important:
                 model.sourceModel().itemFromIndex(
-                    model.mapToSource(index)).markImportant(editor)
+                    model.mapToSource(index)).setImportantFlag(editor)
 
 
 class ModelItem(QtGui.QStandardItem):
@@ -350,7 +350,7 @@ class ModelItem(QtGui.QStandardItem):
         self.data(role=Qt.DisplayRole).setFill(fill)
         self.emitDataChanged()
 
-    def markRead(self, readFlag=True):
+    def setReadFlag(self, readFlag=True):
         self.__elog.readFlag = readFlag
 
         if isinstance(self.data(role=Qt.DisplayRole), Bullet):
@@ -360,11 +360,17 @@ class ModelItem(QtGui.QStandardItem):
             font.setBold(not readFlag)
             self.setFont(font)
 
-    def markImportant(self, importantFlag=True):
+    def readFlag(self):
+        return self.__elog.readFlag
+
+    def setImportantFlag(self, importantFlag=True):
         self.__elog.importantFlag = importantFlag
 
         if isinstance(self.data(role=Qt.DisplayRole), Star):
             self.setFill(importantFlag)
+
+    def importantFlag(self):
+        return self.__elog.importantFlag
 
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
@@ -385,7 +391,7 @@ def populate(model, path):
         row = []
         for nCol in range(model.columnCount()):
             item = ModelItem(elog)
-            item.markRead(elog.readFlag)
+            item.setReadFlag(elog.readFlag)
             item.setData({Column.Important: Star(elog.importantFlag),
                           Column.Flag: Bullet(elog.readFlag),
                           Column.Category: elog.category,
@@ -598,7 +604,7 @@ class Elogviewer(QtGui.QMainWindow):
         if not previous.isValid():
             return
         for nCol in range(self._model.columnCount()):
-            self._model.item(previous.row(), nCol).markRead()
+            self._model.item(previous.row(), nCol).setReadFlag()
 
     def deleteSelected(self):
         selection = [self._proxyModel.mapToSource(idx) for idx in
@@ -613,11 +619,11 @@ class Elogviewer(QtGui.QMainWindow):
         for elog in selectedElogs:
             elog.delete()
 
-    def _markSelectedRead(self, markRead=True):
+    def _markSelectedRead(self, readFlag=True):
         selection = (self._proxyModel.mapToSource(idx) for idx in
                      self._tableView.selectionModel().selectedIndexes())
         for item in (self._model.itemFromIndex(idx) for idx in selection):
-            item.markRead(markRead)
+            item.setReadFlag(readFlag)
 
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
