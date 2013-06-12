@@ -331,10 +331,10 @@ class FlagDelegate(QtGui.QStyledItemDelegate):
                     model.mapToSource(index)).setImportantFlag(editor)
 
 
-class ModelItem(QtGui.QStandardItem):
+class ElogItem(QtGui.QStandardItem):
 
     def __init__(self, elog=None):
-        super(ModelItem, self).__init__()
+        super(ElogItem, self).__init__()
         self.__elog = elog
 
     def type(self):
@@ -374,14 +374,14 @@ class ModelItem(QtGui.QStandardItem):
 
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
-            return super(ModelItem, self).data(role)
+            return super(ElogItem, self).data(role)
         if role == Role.SortRole:
             if self.column() == Column.Date:
                 return self.__elog.isoTime
             else:
                 return self.text()
         else:
-            return super(ModelItem, self).data(role)
+            return super(ElogItem, self).data(role)
 
 
 def populate(model, path):
@@ -390,7 +390,7 @@ def populate(model, path):
         elog = Elog(filename)
         row = []
         for nCol in range(model.columnCount()):
-            item = ModelItem(elog)
+            item = ElogItem(elog)
             item.setReadFlag(elog.readFlag)
             item.setData({Column.Important: Star(elog.importantFlag),
                           Column.Flag: Bullet(elog.readFlag),
@@ -437,7 +437,7 @@ class Elogviewer(QtGui.QMainWindow):
         centralLayout.addWidget(self._tableView)
 
         self._model = QtGui.QStandardItemModel(self._tableView)
-        self._model.setItemPrototype(ModelItem())
+        self._model.setItemPrototype(ElogItem())
         self._model.setColumnCount(6)
         self._model.setHeaderData(Column.Important, Qt.Horizontal, "Important")
         self._model.setHeaderData(Column.Flag, Qt.Horizontal, "Read")
