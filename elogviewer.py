@@ -392,8 +392,8 @@ def populate(model, path):
         for nCol in range(model.columnCount()):
             item = ElogItem(elog)
             item.setReadFlag(elog.readFlag)
-            item.setData({Column.Important: Star(elog.importantFlag),
-                          Column.Flag: Bullet(elog.readFlag),
+            item.setData({Column.Important: elog.importantFlag,
+                          Column.Flag: elog.readFlag,
                           Column.Category: elog.category,
                           Column.Package: elog.package,
                           Column.Eclass: elog.eclass,
@@ -452,9 +452,9 @@ class Elogviewer(QtGui.QMainWindow):
         self._proxyModel.setSourceModel(self._model)
 
         self._tableView.setModel(self._proxyModel)
-        for column in (Column.Important, Column.Flag):
-            self._tableView.setItemDelegateForColumn(
-                column, FlagDelegate(self._tableView))
+        #for column in (Column.Important, Column.Flag):
+        #    self._tableView.setItemDelegateForColumn(
+        #        column, FlagDelegate(self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
