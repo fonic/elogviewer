@@ -171,7 +171,7 @@ class Elog(object):
         return self.filename in Elog._importantFlag
 
     @importantFlag.setter
-    def importantFlag(self, flag=True):
+    def importantFlag(self, flag):
         if flag:
             Elog._importantFlag.add(self.filename)
         else:
@@ -193,7 +193,7 @@ class Elog(object):
         return self.filename in Elog._readFlag
 
     @readFlag.setter
-    def readFlag(self, flag=True):
+    def readFlag(self, flag):
         if flag:
             Elog._readFlag.add(self.filename)
         else:
@@ -346,28 +346,18 @@ class ElogItem(QtGui.QStandardItem):
     def elog(self):
         return self.__elog
 
-    def setFill(self, fill):
-        self.data(role=Qt.DisplayRole).setFill(fill)
-        self.emitDataChanged()
-
     def setReadFlag(self, readFlag=True):
         self.__elog.readFlag = readFlag
 
-        if isinstance(self.data(role=Qt.DisplayRole), Bullet):
-            self.setFill(readFlag)
-        else:
-            font = self.font()
-            font.setBold(not readFlag)
-            self.setFont(font)
+        font = self.font()
+        font.setBold(not readFlag)
+        self.setFont(font)
 
     def readFlag(self):
         return self.__elog.readFlag
 
     def setImportantFlag(self, importantFlag=True):
-        self.__elog.importantFlag = importantFlag
-
-        if isinstance(self.data(role=Qt.DisplayRole), Star):
-            self.setFill(importantFlag)
+        self.setData(importantFlag, role=Qt.EditRole)
 
     def importantFlag(self):
         return self.__elog.importantFlag
@@ -375,13 +365,30 @@ class ElogItem(QtGui.QStandardItem):
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
             return super(ElogItem, self).data(role)
-        if role == Role.SortRole:
+        if role is Role.SortRole:
             if self.column() == Column.Date:
                 return self.__elog.isoTime
             else:
-                return self.text()
+                return self.data(role=Qt.DisplayRole)
+        if role in (Qt.DisplayRole, Qt.EditRole):
+            return {Column.Important: self.__elog.importantFlag,
+                    Column.Flag: self.__elog.readFlag,
+                    Column.Category: self.__elog.category,
+                    Column.Package: self.__elog.package,
+                    Column.Eclass: self.__elog.eclass,
+                    Column.Date: self.__elog.localeTime}[self.column()]
         else:
             return super(ElogItem, self).data(role)
+
+    def setData(self, data, role=Qt.UserRole + 1):
+        if not self.__elog:
+            return super(ElogItem, self).setData(data, role)
+        if role in (Qt.DisplayRole, Qt.EditRole):
+            if self.column() is Column.Important:
+                self.__elog.importantFlag = data
+            elif self.column() is Column.Flag:
+                self.__elog.readFlag = data
+        super(ElogItem, self).setData(data, role)
 
 
 def populate(model, path):
@@ -392,13 +399,6 @@ def populate(model, path):
         for nCol in range(model.columnCount()):
             item = ElogItem(elog)
             item.setReadFlag(elog.readFlag)
-            item.setData({Column.Important: elog.importantFlag,
-                          Column.Flag: elog.readFlag,
-                          Column.Category: elog.category,
-                          Column.Package: elog.package,
-                          Column.Eclass: elog.eclass,
-                          Column.Date: elog.localeTime}[nCol],
-                         role=Qt.DisplayRole)
             if nCol is Column.Important:
                 item.setEditable(True)
             else:
