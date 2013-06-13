@@ -280,55 +280,59 @@ class Star(Flag):
 
 class FlagDelegate(QtGui.QStyledItemDelegate):
 
+    _columns = (Column.Important,)
+
     def __init__(self, parent=None):
         super(FlagDelegate, self).__init__(parent)
+        self._btn = QtGui.QPushButton(parent)
+        self._btn.setCheckable(True)
+        self._btn.hide()
+        #parent.setMouseTracking(True)
+        #parent.entered.connect(self._cellEntered)
+        self._persistentEditorIndex = QtCore.QPersistentModelIndex()
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.parent())
 
     def sizeHint(self, option, index):
-        flag = index.data()
-        if isinstance(flag, Flag):
-            return flag.sizeHint()
-        else:
-            return super(FlagDelegate, self).sizeHint(option, index)
-
-    def paint(self, painter, option, index):
-        flag = index.data()
-        if isinstance(flag, Flag):
-            if option.state & QtGui.QStyle.State_Selected:
-                painter.fillRect(option.rect, option.palette.highlight())
-            flag.paint(painter, option.rect, option.palette)
-        else:
-            super(FlagDelegate, self).paint(painter, option, index)
+        return super(FlagDelegate, self).sizeHint(option, index)
 
     def createEditor(self, parent, option, index):
-        flag = index.data()
-        if isinstance(flag, Flag):
-            return None
-        else:
-            return super(FlagDelegate, self).createEditor(parent, option, index)
+        if not index.column() in self._columns:
+            super(FlagDelegate, self).paint(parent, option, index)
+        btn = self._btn.__class__(parent)
+        btn.setCheckable(self._btn.isCheckable())
+        btn.toggled.connect(partial(self.commitData.emit, btn))
+        return btn
 
-    def editorEvent(self, event, model, option, index):
-        flag = index.data()
-        if event.type() in (QtCore.QEvent.MouseButtonRelease,
-                            QtCore.QEvent.MouseButtonDblClick):
-            if event.button() == Qt.LeftButton:
-                flag.setFill(not flag.fill())
-                self.setModelData(flag.fill(), model, index)
-                return True
-        elif event.type() == QtCore.QEvent.KeyPress:
-            if event.key() in (Qt.Key_Space, Qt.Key_Select):
-                flag.setFill(not flag.fill())
-                self.setModelData(flag.fill(), model, index)
-                return True
-        return False
+    def setEditorData(self, editor, index):
+        editor.setChecked(index.data())
 
     def setModelData(self, editor, model, index):
-        if index.isValid():
-            if index.column() == Column.Important:
-                model.sourceModel().itemFromIndex(
-                    model.mapToSource(index)).setImportantFlag(editor)
+        model.setData(index, editor.isChecked())
+
+    def paint(self, painter, option, index):
+        if not index.column() in self._columns:
+            super(FlagDelegate, self).paint(painter, option, index)
+        self._btn.setChecked(index.data())
+        self._btn.setGeometry(option.rect)
+        if option.state == QtGui.QStyle.State_Selected:
+            painter.fillRect(option.rect, option.palette.highlight())
+        pixmap = QtGui.QPixmap.grabWidget(self._btn)
+        painter.drawPixmap(option.rect.x(), option.rect.y(), pixmap)
+
+    def updateEditorGeometry(self, editor, option, index):
+        editor.setGeometry(option.rect)
+
+    def _cellEntered(self, index):
+        if self._persistentEditorIndex.isValid():
+            self.parent().closePersistentEditor(self._persistentEditorIndex)
+        if index.column() in self._columns:
+            self.parent().openPersistentEditor(index)
+            self._persistentEditorIndex = index
+        else:
+            self._persistentEditorIndex = QtCore.QPersistentModelIndex()
+
 
 
 class ElogItem(QtGui.QStandardItem):
@@ -452,9 +456,9 @@ class Elogviewer(QtGui.QMainWindow):
         self._proxyModel.setSourceModel(self._model)
 
         self._tableView.setModel(self._proxyModel)
-        #for column in (Column.Important, Column.Flag):
-        #    self._tableView.setItemDelegateForColumn(
-        #        column, FlagDelegate(self._tableView))
+        for column in (Column.Important, Column.Flag):
+            self._tableView.setItemDelegateForColumn(
+                column, FlagDelegate(self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
