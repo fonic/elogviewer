@@ -280,16 +280,11 @@ class Star(Flag):
 
 class FlagDelegate(QtGui.QStyledItemDelegate):
 
-    _columns = (Column.Important,)
-
     def __init__(self, parent=None):
         super(FlagDelegate, self).__init__(parent)
         self._btn = QtGui.QPushButton(parent)
         self._btn.setCheckable(True)
         self._btn.hide()
-        #parent.setMouseTracking(True)
-        #parent.entered.connect(self._cellEntered)
-        self._persistentEditorIndex = QtCore.QPersistentModelIndex()
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.parent())
@@ -298,22 +293,12 @@ class FlagDelegate(QtGui.QStyledItemDelegate):
         return super(FlagDelegate, self).sizeHint(option, index)
 
     def createEditor(self, parent, option, index):
-        if not index.column() in self._columns:
-            super(FlagDelegate, self).paint(parent, option, index)
-        btn = self._btn.__class__(parent)
-        btn.setCheckable(self._btn.isCheckable())
-        btn.toggled.connect(partial(self.commitData.emit, btn))
-        return btn
-
-    def setEditorData(self, editor, index):
-        editor.setChecked(index.data())
+        return None
 
     def setModelData(self, editor, model, index):
         model.setData(index, editor.isChecked())
 
     def paint(self, painter, option, index):
-        if not index.column() in self._columns:
-            super(FlagDelegate, self).paint(painter, option, index)
         self._btn.setChecked(index.data())
         self._btn.setGeometry(option.rect)
         if option.state == QtGui.QStyle.State_Selected:
@@ -321,18 +306,17 @@ class FlagDelegate(QtGui.QStyledItemDelegate):
         pixmap = QtGui.QPixmap.grabWidget(self._btn)
         painter.drawPixmap(option.rect.x(), option.rect.y(), pixmap)
 
-    def updateEditorGeometry(self, editor, option, index):
-        editor.setGeometry(option.rect)
-
-    def _cellEntered(self, index):
-        if self._persistentEditorIndex.isValid():
-            self.parent().closePersistentEditor(self._persistentEditorIndex)
-        if index.column() in self._columns:
-            self.parent().openPersistentEditor(index)
-            self._persistentEditorIndex = index
-        else:
-            self._persistentEditorIndex = QtCore.QPersistentModelIndex()
-
+    def editorEvent(self, event, model, option, index):
+        if ((event.type() in (QtCore.QEvent.MouseButtonRelease,
+                              QtCore.QEvent.MouseButtonDblClick) and
+             event.button() == Qt.LeftButton) or
+            (event.type() == QtCore.QEvent.KeyPress and
+             event.key() in (Qt.Key_Space, Qt.Key_Select))):
+                self._btn.toggle()
+                self.setModelData(self._btn, model, index)
+                self.commitData.emit(self._btn)
+                return True
+        return False
 
 
 class ElogItem(QtGui.QStandardItem):
