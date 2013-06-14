@@ -266,12 +266,12 @@ class Star(QtGui.QAbstractButton):
         painter.drawPolygon(self._starPolygon, QtCore.Qt.WindingFill)
 
 
-class FlagDelegate(QtGui.QStyledItemDelegate):
+class ButtonDelegate(QtGui.QStyledItemDelegate):
 
-    def __init__(self, parent=None):
-        super(FlagDelegate, self).__init__(parent)
-        #self._btn = QtGui.QPushButton(parent)
-        self._btn = Bullet(parent)
+    def __init__(self, button=None, parent=None):
+        super(ButtonDelegate, self).__init__(parent)
+        self._btn = QtGui.QPushButton() if button is None else button
+        self._btn.setParent(parent)
         self._btn.setCheckable(True)
         self._btn.hide()
 
@@ -279,7 +279,7 @@ class FlagDelegate(QtGui.QStyledItemDelegate):
         return "%s(%r)" % (self.__class__.__name__, self.parent())
 
     def sizeHint(self, option, index):
-        return super(FlagDelegate, self).sizeHint(option, index)
+        return super(ButtonDelegate, self).sizeHint(option, index)
 
     def createEditor(self, parent, option, index):
         return None
@@ -430,9 +430,10 @@ class Elogviewer(QtGui.QMainWindow):
         self._proxyModel.setSourceModel(self._model)
 
         self._tableView.setModel(self._proxyModel)
-        for column in (Column.Important, Column.Flag):
-            self._tableView.setItemDelegateForColumn(
-                column, FlagDelegate(self._tableView))
+        self._tableView.setItemDelegateForColumn(
+            Column.Important, ButtonDelegate(Star(), self._tableView))
+        self._tableView.setItemDelegateForColumn(
+            Column.Flag, ButtonDelegate(Bullet(), self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
