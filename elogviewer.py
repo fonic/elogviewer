@@ -610,8 +610,10 @@ class Elogviewer(QtGui.QMainWindow):
             item.setImportantFlag(not item.importantFlag())
 
     def refresh(self):
+        self._model.beginResetModel()
         self._model.removeRows(0, self._model.rowCount())
         populate(self._model, self._args.elogpath)
+        self._model.endResetModel()
 
 
 def main():
