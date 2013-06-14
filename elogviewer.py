@@ -260,7 +260,7 @@ class Star(QtGui.QAbstractButton):
         painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         painter.setPen(Qt.NoPen)
         red = QtGui.QBrush(Qt.red)
-        painter.setBrush(self.palette().dark() if self.isChecked() else red)
+        painter.setBrush(red if self.isChecked() else self.palette().dark())
         rect = event.rect()
         yOffset = (rect.height() - self._scaleFactor) / 2.0
         painter.translate(rect.x(), rect.y() + yOffset)
