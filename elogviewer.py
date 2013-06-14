@@ -506,6 +506,7 @@ class Elogviewer(QtGui.QMainWindow):
 
         self._markImportantAction = QtGui.QAction("Important", self._toolBar)
         self._markImportantAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-important"))
+        self._markImportantAction.triggered.connect(self._toggleSelectedImportant)
         self._toolBar.addAction(self._markImportantAction)
 
         self._deleteAction = QtGui.QAction("Delete", self._toolBar)
@@ -601,6 +602,12 @@ class Elogviewer(QtGui.QMainWindow):
                      self._tableView.selectionModel().selectedIndexes())
         for item in (self._model.itemFromIndex(idx) for idx in selection):
             item.setReadFlag(readFlag)
+
+    def _toggleSelectedImportant(self):
+        selection = [self._proxyModel.mapToSource(idx) for idx in
+                     self._tableView.selectionModel().selectedRows()]
+        for item in (self._model.itemFromIndex(idx) for idx in selection):
+            item.setImportantFlag(not item.importantFlag())
 
     def refresh(self):
         self._model.removeRows(0, self._model.rowCount())
