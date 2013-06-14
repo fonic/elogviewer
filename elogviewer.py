@@ -78,7 +78,7 @@ class Column(object):
     Important = 0
     Category = 1
     Package = 2
-    Flag = 3
+    Read = 3
     Eclass = 4
     Date = 5
 
@@ -226,6 +226,7 @@ class Bullet(QtGui.QAbstractButton):
     def __init__(self, parent=None):
         super(Bullet, self).__init__(parent)
         self.setAttribute(Qt.WA_NoSystemBackground)
+        self.setCheckable(True)
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
@@ -247,6 +248,7 @@ class Star(QtGui.QAbstractButton):
     def __init__(self, parent=None):
         super(Star, self).__init__(parent)
         self.setAttribute(Qt.WA_NoSystemBackground)
+        self.setCheckable(True)
         self._starPolygon = QtGui.QPolygonF([QtCore.QPointF(1.0, 0.5)])
         for i in range(5):
             self._starPolygon << QtCore.QPointF(
@@ -272,7 +274,6 @@ class ButtonDelegate(QtGui.QStyledItemDelegate):
         super(ButtonDelegate, self).__init__(parent)
         self._btn = QtGui.QPushButton() if button is None else button
         self._btn.setParent(parent)
-        self._btn.setCheckable(True)
         self._btn.hide()
 
     def __repr__(self):
@@ -350,7 +351,7 @@ class ElogItem(QtGui.QStandardItem):
                 return self.data(role=Qt.DisplayRole)
         if role in (Qt.DisplayRole, Qt.EditRole):
             return {Column.Important: self.__elog.importantFlag,
-                    Column.Flag: self.__elog.readFlag,
+                    Column.Read: self.__elog.readFlag,
                     Column.Category: self.__elog.category,
                     Column.Package: self.__elog.package,
                     Column.Eclass: self.__elog.eclass,
@@ -364,7 +365,7 @@ class ElogItem(QtGui.QStandardItem):
         if role in (Qt.DisplayRole, Qt.EditRole):
             if self.column() is Column.Important:
                 self.__elog.importantFlag = data
-            elif self.column() is Column.Flag:
+            elif self.column() is Column.Read:
                 self.__elog.readFlag = data
         super(ElogItem, self).setData(data, role)
 
@@ -377,10 +378,7 @@ def populate(model, path):
         for nCol in range(model.columnCount()):
             item = ElogItem(elog)
             item.setReadFlag(elog.readFlag)
-            if nCol is Column.Important:
-                item.setEditable(True)
-            else:
-                item.setEditable(False)
+            item.setEditable(nCol is Column.Important)
             row.append(item)
         model.appendRow(row)
 
@@ -418,7 +416,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._model.setItemPrototype(ElogItem())
         self._model.setColumnCount(6)
         self._model.setHeaderData(Column.Important, Qt.Horizontal, "Important")
-        self._model.setHeaderData(Column.Flag, Qt.Horizontal, "Read")
+        self._model.setHeaderData(Column.Read, Qt.Horizontal, "Read")
         self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
         self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
         self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
@@ -433,7 +431,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._tableView.setItemDelegateForColumn(
             Column.Important, ButtonDelegate(Star(), self._tableView))
         self._tableView.setItemDelegateForColumn(
-            Column.Flag, ButtonDelegate(Bullet(), self._tableView))
+            Column.Read, ButtonDelegate(Bullet(), self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         horizontalHeader.setSortIndicatorShown(True)
