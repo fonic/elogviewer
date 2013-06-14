@@ -219,70 +219,59 @@ class TextToHtmlDelegate(QtGui.QItemDelegate):
             editor.setHtml(item.elog().htmltext)
 
 
-class Flag(object):
+class Bullet(QtGui.QAbstractButton):
 
-    def __init__(self, fill=True):
-        self._fill = fill
-        self._scaleFactor = 20
+    _scaleFactor = 20
 
-    def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self._fill)
+    def __init__(self, parent=None):
+        super(Bullet, self).__init__(parent)
+        self.setAttribute(Qt.WA_NoSystemBackground)
 
-    def setFill(self, fill=True):
-        self._fill = fill
-
-    def fill(self):
-        return self._fill
-
-    def sizeHint(self):
-        return self._scaleFactor * QtCore.QSize(1.0, 1.0)
-
-
-class Bullet(Flag):
-
-    def __init__(self, fill=True):
-        super(Bullet, self).__init__(fill)
-
-    def paint(self, painter, rect, palette):
-        painter.save()
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         painter.setPen(Qt.NoPen)
         green = QtGui.QBrush(Qt.darkGreen)
-        painter.setBrush(palette.dark() if self._fill else green)
+        painter.setBrush(self.palette().dark() if self.isChecked() else green)
+        rect = event.rect()
         painter.translate(rect.x(), rect.y())
         painter.scale(self._scaleFactor, self._scaleFactor)
         painter.drawEllipse(QtCore.QRectF(0.5, 0.5, 0.5, 0.5))
-        painter.restore()
 
 
-class Star(Flag):
+class Star(QtGui.QAbstractButton):
     # Largely inspired by Nokia's stardelegate example.
 
-    def __init__(self, fill=True):
-        super(Star, self).__init__(fill)
+    _scaleFactor = 20
+
+    def __init__(self, parent=None):
+        super(Star, self).__init__(parent)
+        self.setAttribute(Qt.WA_NoSystemBackground)
         self._starPolygon = QtGui.QPolygonF([QtCore.QPointF(1.0, 0.5)])
         for i in range(5):
             self._starPolygon << QtCore.QPointF(
                 0.5 + 0.5 * cos(0.8 * i * 3.14),
                 0.5 + 0.5 * sin(0.8 * i * 3.14))
 
-    def paint(self, painter, rect, palette):
-        painter.save()
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
         painter.setPen(Qt.NoPen)
         red = QtGui.QBrush(Qt.red)
-        painter.setBrush(palette.dark() if self._fill else red)
+        painter.setBrush(self.palette().dark() if self.isChecked() else red)
+        rect = event.rect()
         yOffset = (rect.height() - self._scaleFactor) / 2.0
         painter.translate(rect.x(), rect.y() + yOffset)
         painter.scale(self._scaleFactor, self._scaleFactor)
         painter.drawPolygon(self._starPolygon, QtCore.Qt.WindingFill)
-        painter.restore()
 
 
 class FlagDelegate(QtGui.QStyledItemDelegate):
 
     def __init__(self, parent=None):
         super(FlagDelegate, self).__init__(parent)
-        self._btn = QtGui.QPushButton(parent)
+        #self._btn = QtGui.QPushButton(parent)
+        self._btn = Bullet(parent)
         self._btn.setCheckable(True)
         self._btn.hide()
 
@@ -301,13 +290,14 @@ class FlagDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
         self._btn.setChecked(index.data())
         self._btn.setGeometry(option.rect)
-        if option.state == QtGui.QStyle.State_Selected:
+        if option.state & QtGui.QStyle.State_Selected:
             painter.fillRect(option.rect, option.palette.highlight())
         pixmap = QtGui.QPixmap.grabWidget(self._btn)
         painter.drawPixmap(option.rect.x(), option.rect.y(), pixmap)
 
     def editorEvent(self, event, model, option, index):
-        if ((event.type() in (QtCore.QEvent.MouseButtonRelease,
+        if (int(index.flags()) & Qt.ItemIsEditable and
+            (event.type() in (QtCore.QEvent.MouseButtonRelease,
                               QtCore.QEvent.MouseButtonDblClick) and
              event.button() == Qt.LeftButton) or
             (event.type() == QtCore.QEvent.KeyPress and
