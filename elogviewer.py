@@ -569,7 +569,7 @@ class Elogviewer(QtGui.QMainWindow):
                 raise TypeError
         except TypeError:
             # The list is lost when going from py3 to py2
-            logging.error("The settings message could not be loaded.")
+            logging.error("The previous settings could not be loaded.")
             Elog._readFlag = set()
             Elog._importantFlag = set()
 
