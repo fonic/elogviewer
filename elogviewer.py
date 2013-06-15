@@ -152,9 +152,9 @@ class Elog(object):
             for line in elogfile:
                 line = _to_string(line.strip())
                 if line.startswith("ERROR:"):
-                    prefix = '<p style="color: orange">'
-                elif line.startswith("WARN:"):
                     prefix = '<p style="color: red">'
+                elif line.startswith("WARN:"):
+                    prefix = '<p style="color: #E56717">'
                 elif line.startswith("INFO:"):
                     prefix = '<p style="color: darkgreen">'
                 elif (line.startswith("LOG:") or
