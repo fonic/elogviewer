@@ -239,6 +239,9 @@ class Bullet(QtGui.QAbstractButton):
         painter.scale(self._scaleFactor, self._scaleFactor)
         painter.drawEllipse(QtCore.QRectF(0.5, 0.5, 0.5, 0.5))
 
+    def sizeHint(self):
+        return self._scaleFactor * QtCore.QSize(1.0, 1.0)
+
 
 class Star(QtGui.QAbstractButton):
     # Largely inspired by Nokia's stardelegate example.
@@ -266,6 +269,9 @@ class Star(QtGui.QAbstractButton):
         painter.translate(rect.x(), rect.y() + yOffset)
         painter.scale(self._scaleFactor, self._scaleFactor)
         painter.drawPolygon(self._starPolygon, QtCore.Qt.WindingFill)
+
+    def sizeHint(self):
+        return self._scaleFactor * QtCore.QSize(1.0, 1.0)
 
 
 class ButtonDelegate(QtGui.QStyledItemDelegate):
@@ -415,11 +421,11 @@ class Elogviewer(QtGui.QMainWindow):
         self._model = QtGui.QStandardItemModel(self._tableView)
         self._model.setItemPrototype(ElogItem())
         self._model.setColumnCount(6)
-        self._model.setHeaderData(Column.Important, Qt.Horizontal, "Important")
+        self._model.setHeaderData(Column.Important, Qt.Horizontal, "!!")
         self._model.setHeaderData(Column.Read, Qt.Horizontal, "Read")
         self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
         self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
-        self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest eclass")
+        self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest\neclass")
         self._model.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
         self._model.setSortRole(Role.SortRole)
 
@@ -434,10 +440,10 @@ class Elogviewer(QtGui.QMainWindow):
             Column.Read, ButtonDelegate(Bullet(), self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
-        horizontalHeader.setSortIndicatorShown(True)
         horizontalHeader.setClickable(True)
         horizontalHeader.sortIndicatorChanged.connect(self._model.sort)
-        horizontalHeader.setResizeMode(horizontalHeader.Stretch)
+        horizontalHeader.setStretchLastSection(True)
+        horizontalHeader.setResizeMode(horizontalHeader.ResizeToContents)
 
         self._tableView.verticalHeader().hide()
 
