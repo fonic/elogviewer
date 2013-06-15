@@ -489,12 +489,18 @@ class Elogviewer(QtGui.QMainWindow):
         # http://www.qtcentre.org/wiki/index.php?title=Embedded_resources
         # http://doc.trolltech.com/latest/qstyle.html#StandardPixmap-enum
 
+        def setToolTip(action):
+            if action.shortcut().toString():
+                action.setToolTip("%s [%s]" % (
+                    action.toolTip(), action.shortcut().toString()))
+
         self._toolBar = QtGui.QToolBar(self)
         self.addToolBar(self._toolBar)
 
         self._refreshAction = QtGui.QAction("Refresh", self._toolBar)
         self._refreshAction.setIcon(QtGui.QIcon.fromTheme("view-refresh"))
         self._refreshAction.setShortcut(QtGui.QKeySequence.Refresh)
+        setToolTip(self._refreshAction)
         self._refreshAction.triggered.connect(self.refresh)
         self._toolBar.addAction(self._refreshAction)
 
@@ -502,28 +508,33 @@ class Elogviewer(QtGui.QMainWindow):
         self._markReadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-read"))
         self._markReadAction.triggered.connect(partial(
             self._markSelectedRead, True))
+        setToolTip(self._markReadAction)
         self._toolBar.addAction(self._markReadAction)
 
         self._markUnreadAction = QtGui.QAction("Mark unread", self._toolBar)
         self._markUnreadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-unread"))
         self._markUnreadAction.triggered.connect(partial(
             self._markSelectedRead, False))
+        setToolTip(self._markUnreadAction)
         self._toolBar.addAction(self._markUnreadAction)
 
         self._markImportantAction = QtGui.QAction("Important", self._toolBar)
         self._markImportantAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-important"))
         self._markImportantAction.triggered.connect(self._toggleSelectedImportant)
+        setToolTip(self._markImportantAction)
         self._toolBar.addAction(self._markImportantAction)
 
         self._deleteAction = QtGui.QAction("Delete", self._toolBar)
         self._deleteAction.setIcon(QtGui.QIcon.fromTheme("edit-delete"))
         self._deleteAction.setShortcut(QtGui.QKeySequence.Delete)
+        setToolTip(self._deleteAction)
         self._deleteAction.triggered.connect(self.deleteSelected)
         self._toolBar.addAction(self._deleteAction)
 
         self._aboutAction = QtGui.QAction("About", self._toolBar)
         self._aboutAction.setIcon(QtGui.QIcon.fromTheme("help-about"))
         self._aboutAction.setShortcut(QtGui.QKeySequence.HelpContents)
+        setToolTip(self._aboutAction)
         self._aboutAction.triggered.connect(partial(
             QtGui.QMessageBox.about,
             self, "About (k)elogviewer", " ".join((
@@ -557,6 +568,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._quitAction = QtGui.QAction("Quit", self._toolBar)
         self._quitAction.setIcon(QtGui.QIcon.fromTheme("application-exit"))
         self._quitAction.setShortcut(QtGui.QKeySequence.Quit)
+        setToolTip(self._quitAction)
         self._quitAction.triggered.connect(self.close)
         self._toolBar.addAction(self._quitAction)
 
