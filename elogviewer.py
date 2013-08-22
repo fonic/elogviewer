@@ -283,7 +283,8 @@ class ButtonDelegate(QtGui.QStyledItemDelegate):
         self._btn.hide()
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.parent())
+        return "%s(button=%r, parent=%r)" % (
+            self.__class__.__name__, self._btn, self.parent())
 
     def sizeHint(self, option, index):
         return super(ButtonDelegate, self).sizeHint(option, index)
