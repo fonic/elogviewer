@@ -56,7 +56,7 @@ except ImportError:
     portage = None
 
 
-__version__ = "2.1"
+__version__ = "2.2"
 
 
 def _to_string(text):
@@ -87,6 +87,11 @@ class Elog(object):
 
     _readFlag = set()
     _importantFlag = set()
+
+    colors = dict(eerror=QtGui.QColor(Qt.red),
+                  ewarn=QtGui.QColor(229, 103, 23),
+                  einfo=QtGui.QColor(Qt.darkGreen),
+                  elog=QtGui.QColor(Qt.black))
 
     def __init__(self, filename):
         self.filename = _to_string(filename)
@@ -145,25 +150,32 @@ class Elog(object):
                 """
             ))
 
+    @staticmethod
+    def htmlColor(eclass):
+        color = Elog.colors[eclass]
+        return "#%02X%02X%02X" % (color.red(), color.green(), color.blue())
+
     @property
     def htmltext(self):
         htmltext = []
         with self.file as elogfile:
             for line in elogfile:
                 line = _to_string(line.strip())
+                prefix = '<p style="color: {color}">'
                 if line.startswith("ERROR:"):
-                    prefix = '<p style="color: red">'
+                    prefix = prefix.format(color=Elog.htmlColor("eerror"))
                 elif line.startswith("WARN:"):
-                    prefix = '<p style="color: #E56717">'
+                    prefix = prefix.format(color=Elog.htmlColor("ewarn"))
                 elif line.startswith("INFO:"):
-                    prefix = '<p style="color: darkgreen">'
-                elif (line.startswith("LOG:") or
-                        line.startswith("QA:")):
-                    prefix = '<p style="color: black">'
+                    prefix = prefix.format(color=Elog.htmlColor("einfo"))
+                elif line.startswith("LOG:") or line.startswith("QA:"):
+                    prefix = prefix.format(color=Elog.htmlColor("elog"))
                 else:
                     prefix = ""
-                line = "".join((prefix, line, "<BR>"))
-                htmltext.append(line)
+                if htmltext and prefix:
+                    htmltext.append("</p>")
+                htmltext.append("".join((prefix, line, "<br />")))
+        htmltext.append("</p>")
         return os.linesep.join(htmltext)
 
     @property
@@ -357,6 +369,11 @@ class ElogItem(QtGui.QStandardItem):
             else:
                 return self.data(role=Qt.DisplayRole)
         if role in (Qt.DisplayRole, Qt.EditRole):
+            if self.column() == Column.Eclass:
+                brush = self.foreground()
+                brush.setColor(self.__elog.colors.get(self.__elog.eclass,
+                                                    Qt.black))
+                self.setForeground(brush)
             return {Column.Important: self.__elog.importantFlag,
                     Column.Read: self.__elog.readFlag,
                     Column.Category: self.__elog.category,
