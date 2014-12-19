@@ -1,20 +1,20 @@
 #!/usr/bin/env python
-
 # (c) 2011, 2013 Mathias Laurin, GPL2
 #
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 2 of the License, or (at your option) any later
-# version.
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.
 #
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more
 # details.
 #
-# You should have received a copy of the GNU General Public License along with
-# this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
-# Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import sys
 import os
@@ -31,7 +31,7 @@ from contextlib import closing
 try:
     from StringIO import StringIO  # py2.7
 except ImportError:
-    from io import StringIO # py3+
+    from io import StringIO  # py3+
 
 import gzip
 import bz2
@@ -60,8 +60,10 @@ __version__ = "2.2"
 
 
 def _to_string(text):
-    """This helper changes `bytes` to `str` on python3 and does nothing under
-    python2."""
+    """This helper changes `bytes` to `str` on python3 and does nothing
+    under python2.
+
+    """
     try:
         return text.decode(locale.getpreferredencoding())
     except AttributeError:
@@ -372,7 +374,7 @@ class ElogItem(QtGui.QStandardItem):
             if self.column() == Column.Eclass:
                 brush = self.foreground()
                 brush.setColor(self.__elog.colors.get(self.__elog.eclass,
-                                                    Qt.black))
+                                                      Qt.black))
                 self.setForeground(brush)
             return {Column.Important: self.__elog.importantFlag,
                     Column.Read: self.__elog.readFlag,
@@ -443,7 +445,8 @@ class Elogviewer(QtGui.QMainWindow):
         self._model.setHeaderData(Column.Read, Qt.Horizontal, "Read")
         self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
         self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
-        self._model.setHeaderData(Column.Eclass, Qt.Horizontal, "Highest\neclass")
+        self._model.setHeaderData(Column.Eclass, Qt.Horizontal,
+                                  "Highest\neclass")
         self._model.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
         self._model.setSortRole(Role.SortRole)
 
@@ -498,7 +501,7 @@ class Elogviewer(QtGui.QMainWindow):
             lambda __: self.setWindowTitle("Elogviewer (%i unread)" % (
                 self._model.rowCount() - len(Elog._readFlag))))
         currentRowChanged.connect(
-            lambda __: self._unreadLabel.setText("%i unread" %(
+            lambda __: self._unreadLabel.setText("%i unread" % (
                 self._model.rowCount() - len(Elog._readFlag))))
 
     def __initToolBar(self):
@@ -530,15 +533,18 @@ class Elogviewer(QtGui.QMainWindow):
         self._toolBar.addAction(self._markReadAction)
 
         self._markUnreadAction = QtGui.QAction("Mark unread", self._toolBar)
-        self._markUnreadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-unread"))
+        self._markUnreadAction.setIcon(
+            QtGui.QIcon.fromTheme("mail-mark-unread"))
         self._markUnreadAction.triggered.connect(partial(
             self._markSelectedRead, False))
         setToolTip(self._markUnreadAction)
         self._toolBar.addAction(self._markUnreadAction)
 
         self._markImportantAction = QtGui.QAction("Important", self._toolBar)
-        self._markImportantAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-important"))
-        self._markImportantAction.triggered.connect(self._toggleSelectedImportant)
+        self._markImportantAction.setIcon(
+            QtGui.QIcon.fromTheme("mail-mark-important"))
+        self._markImportantAction.triggered.connect(
+            self._toggleSelectedImportant)
         setToolTip(self._markImportantAction)
         self._toolBar.addAction(self._markImportantAction)
 
@@ -569,9 +575,9 @@ class Elogviewer(QtGui.QMainWindow):
                 <h2>Written by</h2>
                 Mathias Laurin <a href="mailto:mathias_laurin@users.sourceforge.net?Subject=elogviewer">
                 &lt;mathias_laurin@users.sourceforge.net&gt;</a><br>
-                Timothy Kilbourn (initial author)<br> 
+                Timothy Kilbourn (initial author)<br>
                 Jeremy Wickersheimer (qt3/KDE port)
-                
+
                 <h2>With contributions from</h2>
                 Radice David, gentoo bug #187595<br>
                 Christian Faulhammer, gentoo bug #192701
@@ -661,8 +667,8 @@ def main():
         PORTAGE_ELOG_CLASSES="info warn error log qa" and
         PORTAGE_ELOG_SYSTEM="save" in /etc/make.conf.
 
-        You need to add yourself to the portage group to use elogviewer without
-        privileges.
+        You need to add yourself to the portage group to use elogviewer
+        without privileges.
 
         Read /etc/make.conf.example for more information.
 
