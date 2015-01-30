@@ -60,15 +60,12 @@ except ImportError:
 __version__ = "2.3"
 
 
-def _to_string(text):
+def _(bytes):
     """This helper changes `bytes` to `str` on python3 and does nothing
     under python2.
 
     """
-    try:
-        return text.decode(locale.getpreferredencoding())
-    except AttributeError:
-        return text
+    return bytes.decode(locale.getpreferredencoding())
 
 
 class Role(object):
@@ -97,7 +94,7 @@ class Elog(object):
                   elog=QtGui.QColor(Qt.black))
 
     def __init__(self, filename):
-        self.filename = _to_string(filename)
+        self.filename = filename
         basename = os.path.basename(filename)
         try:
             self.category, self.package, rest = basename.split(":")
@@ -110,7 +107,7 @@ class Elog(object):
         # Get the highest elog class. Adapted from Luca Marturana's elogv.
         with self.file as elogfile:
             eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:",
-                                  _to_string(elogfile.read()))
+                                  _(elogfile.read()))
             if "ERROR:" in eClasses:
                 self.eclass = "eerror"
             elif "WARN:" in eClasses:
@@ -163,7 +160,7 @@ class Elog(object):
         htmltext = []
         with self.file as elogfile:
             for line in elogfile:
-                line = _to_string(line.strip())
+                line = _(line.strip())
                 prefix = '<p style="color: {color}">'
                 if line.startswith("ERROR:"):
                     prefix = prefix.format(color=Elog.htmlColor("eerror"))
