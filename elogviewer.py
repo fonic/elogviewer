@@ -19,6 +19,7 @@
 import sys
 import os
 import logging
+logger = logging.getLogger(__name__)
 import argparse
 import locale
 import time
@@ -134,7 +135,7 @@ class Elog(object):
                     ".bz2": bz2.BZ2File,
                     ".log": open}[ext](self.filename, "rb")
         except KeyError:
-            logging.error("%s: unsupported format" % self.filename)
+            logger.error("%s: unsupported format" % self.filename)
             return closing(StringIO(
                 """
                 <!-- set eclass: ERROR: -->
@@ -143,7 +144,7 @@ class Elog(object):
                 """
             ))
         except IOError:
-            logging.error("%s: could not open file" % self.filename)
+            logger.error("%s: could not open file" % self.filename)
             return closing(StringIO(
                 """
                 <!-- set eclass: ERROR: -->
@@ -611,7 +612,7 @@ class Elogviewer(QtGui.QMainWindow):
                 raise TypeError
         except TypeError:
             # The list is lost when going from py3 to py2
-            logging.error("The previous settings could not be loaded.")
+            logger.error("The previous settings could not be loaded.")
             Elog._readFlag = set()
             Elog._importantFlag = set()
 
@@ -683,7 +684,7 @@ def main():
             os.path.join(os.sep, portage.settings["EPREFIX"],
                          *"var/log/portage".split("/")))
         args.elogpath = os.path.join(logdir, "elog")
-    getattr(logging, args.log.upper())
+    logger.setLevel(getattr(logging, args.log))
 
     app = QtGui.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon.fromTheme("applications-system"))
