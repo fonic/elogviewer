@@ -43,11 +43,17 @@ except ImportError:
 
 try:
     import sip as _sip
-    for _type in "QDate QDateTime QString QVariant".split():
-        _sip.setapi(_type, 2)
-    from PyQt4 import QtCore, QtGui
 except ImportError:
-    from PySide import QtCore, QtGui
+    from PySide import QtGui, QtCore
+else:
+    try:
+        from PyQt5 import QtGui, QtWidgets, QtCore
+    except ImportError:
+        for _type in "QDate QDateTime QString QVariant".split():
+            _sip.setapi(_type, 2)
+        from PyQt4 import QtGui, QtCore
+        QtCore.QSortFilterProxyModel = QtGui.QSortFilterProxyModel
+        QtWidgets = QtGui
 
 Qt = QtCore.Qt
 
@@ -215,7 +221,7 @@ class Elog(object):
                 pass
 
 
-class TextToHtmlDelegate(QtGui.QItemDelegate):
+class TextToHtmlDelegate(QtWidgets.QItemDelegate):
 
     def __init__(self, parent=None):
         super(TextToHtmlDelegate, self).__init__(parent)
@@ -226,12 +232,12 @@ class TextToHtmlDelegate(QtGui.QItemDelegate):
     def setEditorData(self, editor, index):
         if not index.isValid():
             return
-        if isinstance(editor, QtGui.QTextEdit):
+        if isinstance(editor, QtWidgets.QTextEdit):
             item = index.model().itemFromIndex(index)
             editor.setHtml(item.elog().htmltext)
 
 
-class Bullet(QtGui.QAbstractButton):
+class Bullet(QtWidgets.QAbstractButton):
 
     _scaleFactor = 20
 
@@ -255,7 +261,7 @@ class Bullet(QtGui.QAbstractButton):
         return self._scaleFactor * QtCore.QSize(1.0, 1.0)
 
 
-class Star(QtGui.QAbstractButton):
+class Star(QtWidgets.QAbstractButton):
     # Largely inspired by Nokia's stardelegate example.
 
     _scaleFactor = 20
@@ -286,11 +292,11 @@ class Star(QtGui.QAbstractButton):
         return self._scaleFactor * QtCore.QSize(1.0, 1.0)
 
 
-class ButtonDelegate(QtGui.QStyledItemDelegate):
+class ButtonDelegate(QtWidgets.QStyledItemDelegate):
 
     def __init__(self, button=None, parent=None):
         super(ButtonDelegate, self).__init__(parent)
-        self._btn = QtGui.QPushButton() if button is None else button
+        self._btn = QtWidgets.QPushButton() if button is None else button
         self._btn.setParent(parent)
         self._btn.hide()
 
@@ -310,9 +316,14 @@ class ButtonDelegate(QtGui.QStyledItemDelegate):
     def paint(self, painter, option, index):
         self._btn.setChecked(index.data())
         self._btn.setGeometry(option.rect)
-        if option.state & QtGui.QStyle.State_Selected:
+        if option.state & QtWidgets.QStyle.State_Selected:
             painter.fillRect(option.rect, option.palette.highlight())
-        pixmap = QtGui.QPixmap.grabWidget(self._btn)
+        try:
+            # PyQt5
+            pixmap = self._btn.grab()
+        except AttributeError:
+            # PyQt4
+            pixmap = QtGui.QPixmap.grabWidget(self._btn)
         painter.drawPixmap(option.rect.x(), option.rect.y(), pixmap)
 
     def editorEvent(self, event, model, option, index):
@@ -407,7 +418,7 @@ def populate(model, path):
         model.appendRow(row)
 
 
-class Elogviewer(QtGui.QMainWindow):
+class Elogviewer(QtWidgets.QMainWindow):
 
     def __init__(self, args):
         super(Elogviewer, self).__init__()
@@ -426,12 +437,12 @@ class Elogviewer(QtGui.QMainWindow):
             populateAndInit, self._model, self._args.elogpath))
 
     def __initUI(self):
-        self._centralWidget = QtGui.QWidget(self)
-        centralLayout = QtGui.QVBoxLayout()
+        self._centralWidget = QtWidgets.QWidget(self)
+        centralLayout = QtWidgets.QVBoxLayout()
         self._centralWidget.setLayout(centralLayout)
         self.setCentralWidget(self._centralWidget)
 
-        self._tableView = QtGui.QTableView(self._centralWidget)
+        self._tableView = QtWidgets.QTableView(self._centralWidget)
         self._tableView.setSelectionMode(self._tableView.ExtendedSelection)
         self._tableView.setSelectionBehavior(self._tableView.SelectRows)
         centralLayout.addWidget(self._tableView)
@@ -448,7 +459,7 @@ class Elogviewer(QtGui.QMainWindow):
         self._model.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
         self._model.setSortRole(Role.SortRole)
 
-        self._proxyModel = QtGui.QSortFilterProxyModel(self._tableView)
+        self._proxyModel = QtCore.QSortFilterProxyModel(self._tableView)
         self._proxyModel.setFilterKeyColumn(-1)
         self._proxyModel.setSourceModel(self._model)
 
@@ -459,19 +470,26 @@ class Elogviewer(QtGui.QMainWindow):
             Column.Read, ButtonDelegate(Bullet(), self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
-        horizontalHeader.setClickable(True)
+        try:
+            # PyQt5
+            horizontalHeader.setSectionsClickable(True)
+            horizontalHeader.setSectionResizeMode(
+                horizontalHeader.ResizeToContents)
+        except AttributeError:
+            # PyQt4
+            horizontalHeader.setClickable(True)
+            horizontalHeader.setResizeMode(horizontalHeader.ResizeToContents)
         horizontalHeader.sortIndicatorChanged.connect(self._model.sort)
         horizontalHeader.setStretchLastSection(True)
-        horizontalHeader.setResizeMode(horizontalHeader.ResizeToContents)
 
         self._tableView.verticalHeader().hide()
 
-        self._textEdit = QtGui.QTextEdit(self._centralWidget)
+        self._textEdit = QtWidgets.QTextEdit(self._centralWidget)
         self._textEdit.setReadOnly(True)
         self._textEdit.setText("""No elogs!""")
         centralLayout.addWidget(self._textEdit)
 
-        self._textWidgetMapper = QtGui.QDataWidgetMapper(self._tableView)
+        self._textWidgetMapper = QtWidgets.QDataWidgetMapper(self._tableView)
         self._textWidgetMapper.setSubmitPolicy(
             self._textWidgetMapper.AutoSubmit)
         self._textWidgetMapper.setItemDelegate(TextToHtmlDelegate(
@@ -480,9 +498,9 @@ class Elogviewer(QtGui.QMainWindow):
         self._textWidgetMapper.addMapping(self._textEdit, 0)
         self._textWidgetMapper.toFirst()
 
-        self._statusLabel = QtGui.QLabel(self.statusBar())
+        self._statusLabel = QtWidgets.QLabel(self.statusBar())
         self.statusBar().addWidget(self._statusLabel)
-        self._unreadLabel = QtGui.QLabel(self.statusBar())
+        self._unreadLabel = QtWidgets.QLabel(self.statusBar())
         self.statusBar().addWidget(self._unreadLabel)
 
         currentRowChanged = self._tableView.selectionModel().currentRowChanged
@@ -513,24 +531,25 @@ class Elogviewer(QtGui.QMainWindow):
                 action.setToolTip("%s [%s]" % (
                     action.toolTip(), action.shortcut().toString()))
 
-        self._toolBar = QtGui.QToolBar(self)
+        self._toolBar = QtWidgets.QToolBar(self)
         self.addToolBar(self._toolBar)
 
-        self._refreshAction = QtGui.QAction("Refresh", self._toolBar)
+        self._refreshAction = QtWidgets.QAction("Refresh", self._toolBar)
         self._refreshAction.setIcon(QtGui.QIcon.fromTheme("view-refresh"))
         self._refreshAction.setShortcut(QtGui.QKeySequence.Refresh)
         setToolTip(self._refreshAction)
         self._refreshAction.triggered.connect(self.refresh)
         self._toolBar.addAction(self._refreshAction)
 
-        self._markReadAction = QtGui.QAction("Mark read", self._toolBar)
-        self._markReadAction.setIcon(QtGui.QIcon.fromTheme("mail-mark-read"))
+        self._markReadAction = QtWidgets.QAction("Mark read", self._toolBar)
+        self._markReadAction.setIcon(
+            QtGui.QIcon.fromTheme("mail-mark-read"))
         self._markReadAction.triggered.connect(partial(
             self._markSelectedRead, True))
         setToolTip(self._markReadAction)
         self._toolBar.addAction(self._markReadAction)
 
-        self._markUnreadAction = QtGui.QAction("Mark unread", self._toolBar)
+        self._markUnreadAction = QtWidgets.QAction("Mark unread", self._toolBar)
         self._markUnreadAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-unread"))
         self._markUnreadAction.triggered.connect(partial(
@@ -538,7 +557,7 @@ class Elogviewer(QtGui.QMainWindow):
         setToolTip(self._markUnreadAction)
         self._toolBar.addAction(self._markUnreadAction)
 
-        self._markImportantAction = QtGui.QAction("Important", self._toolBar)
+        self._markImportantAction = QtWidgets.QAction("Important", self._toolBar)
         self._markImportantAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-important"))
         self._markImportantAction.triggered.connect(
@@ -546,19 +565,19 @@ class Elogviewer(QtGui.QMainWindow):
         setToolTip(self._markImportantAction)
         self._toolBar.addAction(self._markImportantAction)
 
-        self._deleteAction = QtGui.QAction("Delete", self._toolBar)
+        self._deleteAction = QtWidgets.QAction("Delete", self._toolBar)
         self._deleteAction.setIcon(QtGui.QIcon.fromTheme("edit-delete"))
         self._deleteAction.setShortcut(QtGui.QKeySequence.Delete)
         setToolTip(self._deleteAction)
         self._deleteAction.triggered.connect(self.deleteSelected)
         self._toolBar.addAction(self._deleteAction)
 
-        self._aboutAction = QtGui.QAction("About", self._toolBar)
+        self._aboutAction = QtWidgets.QAction("About", self._toolBar)
         self._aboutAction.setIcon(QtGui.QIcon.fromTheme("help-about"))
         self._aboutAction.setShortcut(QtGui.QKeySequence.HelpContents)
         setToolTip(self._aboutAction)
         self._aboutAction.triggered.connect(partial(
-            QtGui.QMessageBox.about,
+            QtWidgets.QMessageBox.about,
             self, "About (k)elogviewer", " ".join((
                 """
                 <h1>(k)elogviewer %s</h1>
@@ -587,14 +606,14 @@ class Elogviewer(QtGui.QMainWindow):
                 """ % __version__).splitlines())))
         self._toolBar.addAction(self._aboutAction)
 
-        self._quitAction = QtGui.QAction("Quit", self._toolBar)
+        self._quitAction = QtWidgets.QAction("Quit", self._toolBar)
         self._quitAction.setIcon(QtGui.QIcon.fromTheme("application-exit"))
         self._quitAction.setShortcut(QtGui.QKeySequence.Quit)
         setToolTip(self._quitAction)
         self._quitAction.triggered.connect(self.close)
         self._toolBar.addAction(self._quitAction)
 
-        self._searchLineEdit = QtGui.QLineEdit(self._toolBar)
+        self._searchLineEdit = QtWidgets.QLineEdit(self._toolBar)
         self._searchLineEdit.setPlaceholderText("search")
         self._searchLineEdit.textEdited.connect(
             self._proxyModel.setFilterRegExp)
@@ -683,7 +702,7 @@ def main():
         args.elogpath = os.path.join(logdir, "elog")
     logger.setLevel(getattr(logging, args.log))
 
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon.fromTheme("applications-system"))
 
     elogviewer = Elogviewer(args)
