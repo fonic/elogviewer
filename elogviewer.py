@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# (c) 2011, 2013 Mathias Laurin, GPL2
+# (c) 2011, 2013, 2015 Mathias Laurin, GPL2
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@ except ImportError:
     portage = None
 
 
-__version__ = "2.2"
+__version__ = "2.3"
 
 
 def _to_string(text):
@@ -564,8 +564,8 @@ class Elogviewer(QtGui.QMainWindow):
             self, "About (k)elogviewer", " ".join((
                 """
                 <h1>(k)elogviewer %s</h1>
-                <center><small>(k)elogviewer, copyright (c) 2007, 2011, 2013
-                Mathias Laurin<br>
+                <center><small>(k)elogviewer, copyright (c) 2007, 2011, 2013,
+                2015 Mathias Laurin<br>
                 kelogviewer, copyright (c) 2007 Jeremy Wickersheimer<br>
                 GNU General Public License (GPL) version 2</small><br>
                 <a href=http://sourceforge.net/projects/elogviewer>
