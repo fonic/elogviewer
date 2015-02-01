@@ -162,10 +162,12 @@ class Elog(object):
 
     @property
     def htmltext(self):
-        htmltext = []
+        join = os.linesep.join
+        text = ""
         with self.file as elogfile:
             for line in elogfile:
                 line = _(line.strip())
+                # Color eclasses
                 prefix = '<p style="color: {color}">'
                 if line.startswith("ERROR:"):
                     prefix = prefix.format(color=Elog.htmlColor("eerror"))
@@ -177,11 +179,25 @@ class Elog(object):
                     prefix = prefix.format(color=Elog.htmlColor("elog"))
                 else:
                     prefix = ""
-                if htmltext and prefix:
-                    htmltext.append("</p>")
-                htmltext.append("".join((prefix, line, "<br />")))
-        htmltext.append("</p>")
-        return os.linesep.join(htmltext)
+                if text and prefix:
+                    text = join((text, "</p>"))
+                # EOL
+                text = join((text, "".join((prefix, line, " <br />"))))
+        text = join((text, "</p>"))
+        # Strip ANSI colors
+        text = re.sub("\x1b\[[0-9;]+m", "", text)
+        # Hyperlink
+        text = re.sub("((https?|ftp)://\S+)", r'<a href="\1">\1</a>', text)
+        # Hyperlink bugs
+        text = re.sub(
+            "bug\s+#([0-9]+)",
+            r'<a href="https://bugs.gentoo.org/\1">bug #\1</a>',
+            text)
+        # Hyperlink packages
+        text = re.sub(
+            "\s([a-z1]+[-][a-z0-9]+/[a-z0-9-]+)\s",
+            r'<a href="http://packages.gentoo.org/package/\1"> \1 </a>', text)
+        return text
 
     @property
     def importantFlag(self):
@@ -483,8 +499,8 @@ class Elogviewer(QtWidgets.QMainWindow):
 
         self._tableView.verticalHeader().hide()
 
-        self._textEdit = QtWidgets.QTextEdit(self._centralWidget)
-        self._textEdit.setReadOnly(True)
+        self._textEdit = QtWidgets.QTextBrowser(self._centralWidget)
+        self._textEdit.setOpenExternalLinks(True)
         self._textEdit.setText("""No elogs!""")
         centralLayout.addWidget(self._textEdit)
 
