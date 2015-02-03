@@ -45,6 +45,8 @@ try:
     import sip as _sip
 except ImportError:
     from PySide import QtGui, QtCore
+    QtCore.QSortFilterProxyModel = QtGui.QSortFilterProxyModel
+    QtWidgets = QtGui
 else:
     try:
         from PyQt5 import QtGui, QtWidgets, QtCore
