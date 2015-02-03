@@ -24,6 +24,12 @@ class TestElog(unittest.TestCase):
                     Elog(elog).htmltext,
                     "".join(html_file.readlines()))
 
+    def test_unsupported_format(self):
+        with Elog(self.htmls[0]).file as elogfile:
+            content = elogfile.readlines()
+        self.assertNotEqual(content, [])
+        self.assertIsInstance(b"".join(content), bytes)
+
 
 if __name__ == "__main__":
     unittest.main()

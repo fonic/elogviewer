@@ -29,10 +29,7 @@ from glob import glob
 from functools import partial
 from contextlib import closing
 
-try:
-    from StringIO import StringIO  # py2.7
-except ImportError:
-    from io import StringIO  # py3+
+from io import BytesIO
 
 import gzip
 import bz2
@@ -141,8 +138,8 @@ class Elog(object):
                     ".log": open}[ext](self.filename, "rb")
         except KeyError:
             logger.error("%s: unsupported format" % self.filename)
-            return closing(StringIO(
-                """
+            return closing(BytesIO(
+                b"""
                 <!-- set eclass: ERROR: -->
                 <h2>Unsupported format</h2>
                 The selected elog is in an unsupported format.
@@ -150,8 +147,8 @@ class Elog(object):
             ))
         except IOError:
             logger.error("%s: could not open file" % self.filename)
-            return closing(StringIO(
-                """
+            return closing(BytesIO(
+                b"""
                 <!-- set eclass: ERROR: -->
                 <h2>File does not open</h2>
                 The selected elog could not be opened.
