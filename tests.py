@@ -1,4 +1,4 @@
-from elogviewer import Elog
+from elogviewer import Elog, TextToHtmlDelegate
 import unittest
 from glob import glob
 from os import path
@@ -21,7 +21,7 @@ class TestElog(unittest.TestCase):
         for elog, html in zip(self.elogs, self.htmls):
             with open(html, "r") as html_file:
                 self.assertMultiLineEqual(
-                    Elog(elog).htmltext,
+                    TextToHtmlDelegate.toHtml(Elog(elog)),
                     "".join(html_file.readlines()))
 
     def test_unsupported_format(self):

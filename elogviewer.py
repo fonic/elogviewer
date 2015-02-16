@@ -96,6 +96,10 @@ class Color(Enum):
     einfo = QtGui.QColor(Qt.darkGreen)
     elog = QtGui.QColor(Qt.black)
 
+    def toHtml(self):
+        color = self.value
+        return "#%02X%02X%02X" % (color.red(), color.green(), color.blue())
+
 
 class Elog(object):
 
@@ -159,50 +163,6 @@ class Elog(object):
                 """
             ))
 
-    @staticmethod
-    def htmlColor(eclass):
-        color = Color[eclass].value
-        return "#%02X%02X%02X" % (color.red(), color.green(), color.blue())
-
-    @property
-    def htmltext(self):
-        join = os.linesep.join
-        text = ""
-        with self.file as elogfile:
-            for line in elogfile:
-                line = _(line.strip())
-                # Color eclasses
-                prefix = '<p style="color: {color}">'
-                if line.startswith("ERROR:"):
-                    prefix = prefix.format(color=Elog.htmlColor("eerror"))
-                elif line.startswith("WARN:"):
-                    prefix = prefix.format(color=Elog.htmlColor("ewarn"))
-                elif line.startswith("INFO:"):
-                    prefix = prefix.format(color=Elog.htmlColor("einfo"))
-                elif line.startswith("LOG:") or line.startswith("QA:"):
-                    prefix = prefix.format(color=Elog.htmlColor("elog"))
-                else:
-                    prefix = ""
-                if text and prefix:
-                    text = join((text, "</p>"))
-                # EOL
-                text = join((text, "".join((prefix, line, " <br />"))))
-        text = join((text, "</p>"))
-        # Strip ANSI colors
-        text = re.sub("\x1b\[[0-9;]+m", "", text)
-        # Hyperlink
-        text = re.sub("((https?|ftp)://\S+)", r'<a href="\1">\1</a>', text)
-        # Hyperlink bugs
-        text = re.sub(
-            "bug\s+#([0-9]+)",
-            r'<a href="https://bugs.gentoo.org/\1">bug #\1</a>',
-            text)
-        # Hyperlink packages
-        text = re.sub(
-            "\s([a-z1]+[-][a-z0-9]+/[a-z0-9-]+)\s",
-            r'<a href="http://packages.gentoo.org/package/\1"> \1 </a>', text)
-        return text
-
     @property
     def importantFlag(self):
         return self.filename in Elog._importantFlag
@@ -249,11 +209,50 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
         return "%s(%r)" % (self.__class__.__name__, self.parent())
 
     def setEditorData(self, editor, index):
-        if not index.isValid():
+        if not index.isValid() or not isinstance(editor, QtWidgets.QTextEdit):
             return
-        if isinstance(editor, QtWidgets.QTextEdit):
-            item = index.model().itemFromIndex(index)
-            editor.setHtml(item.elog().htmltext)
+        model = index.model()
+        elog = model.itemFromIndex(index).elog()
+        editor.setHtml(TextToHtmlDelegate.toHtml(elog))
+
+    @staticmethod
+    def toHtml(elog):
+        join = os.linesep.join
+        text = ""
+        with elog.file as elogfile:
+            for line in elogfile:
+                line = _(line.strip())
+                # Color eclasses
+                prefix = '<p style="color: {color}">'
+                if line.startswith("ERROR:"):
+                    prefix = prefix.format(color=Color["eerror"].toHtml())
+                elif line.startswith("WARN:"):
+                    prefix = prefix.format(color=Color["ewarn"].toHtml())
+                elif line.startswith("INFO:"):
+                    prefix = prefix.format(color=Color["einfo"].toHtml())
+                elif line.startswith("LOG:") or line.startswith("QA:"):
+                    prefix = prefix.format(color=Color["elog"].toHtml())
+                else:
+                    prefix = ""
+                if text and prefix:
+                    text = join((text, "</p>"))
+                # EOL
+                text = join((text, "".join((prefix, line, " <br />"))))
+        text = join((text, "</p>"))
+        # Strip ANSI colors
+        text = re.sub("\x1b\[[0-9;]+m", "", text)
+        # Hyperlink
+        text = re.sub("((https?|ftp)://\S+)", r'<a href="\1">\1</a>', text)
+        # Hyperlink bugs
+        text = re.sub(
+            "bug\s+#([0-9]+)",
+            r'<a href="https://bugs.gentoo.org/\1">bug #\1</a>',
+            text)
+        # Hyperlink packages
+        text = re.sub(
+            "\s([a-z1]+[-][a-z0-9]+/[a-z0-9-]+)\s",
+            r'<a href="http://packages.gentoo.org/package/\1"> \1 </a>', text)
+        return text
 
 
 class Bullet(QtWidgets.QAbstractButton):
