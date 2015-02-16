@@ -29,6 +29,7 @@ from glob import glob
 from functools import partial
 from contextlib import closing
 
+from enum import Enum
 from io import BytesIO
 
 import gzip
@@ -73,12 +74,12 @@ def _(bytes):
     return bytes.decode(locale.getpreferredencoding())
 
 
-class Role(object):
+class Role(Enum):
 
     SortRole = Qt.UserRole + 1
 
 
-class Column(object):
+class Column(Enum):
 
     Important = 0
     Category = 1
@@ -88,15 +89,18 @@ class Column(object):
     Date = 5
 
 
+class Color(Enum):
+
+    eerror = QtGui.QColor(Qt.red)
+    ewarn = QtGui.QColor(229, 103, 23)
+    einfo = QtGui.QColor(Qt.darkGreen)
+    elog = QtGui.QColor(Qt.black)
+
+
 class Elog(object):
 
     _readFlag = set()
     _importantFlag = set()
-
-    colors = dict(eerror=QtGui.QColor(Qt.red),
-                  ewarn=QtGui.QColor(229, 103, 23),
-                  einfo=QtGui.QColor(Qt.darkGreen),
-                  elog=QtGui.QColor(Qt.black))
 
     def __init__(self, filename):
         self.filename = filename
@@ -157,7 +161,7 @@ class Elog(object):
 
     @staticmethod
     def htmlColor(eclass):
-        color = Elog.colors[eclass]
+        color = Color[eclass].value
         return "#%02X%02X%02X" % (color.red(), color.green(), color.blue())
 
     @property
@@ -390,22 +394,25 @@ class ElogItem(QtGui.QStandardItem):
         if not self.__elog:
             return super(ElogItem, self).data(role)
         if role is Role.SortRole:
-            if self.column() == Column.Date:
+            if self.column() == Column.Date.value:
                 return self.__elog.isoTime
             else:
                 return self.data(role=Qt.DisplayRole)
         if role in (Qt.DisplayRole, Qt.EditRole):
-            if self.column() == Column.Eclass:
+            if self.column() == Column.Eclass.value:
                 brush = self.foreground()
-                brush.setColor(self.__elog.colors.get(self.__elog.eclass,
-                                                      Qt.black))
+                try:
+                    color = Color[self.__elog.eclass].value
+                except AttributeError:
+                    color = Qt.black
+                brush.setColor(color)
                 self.setForeground(brush)
-            return {Column.Important: self.__elog.importantFlag,
-                    Column.Read: self.__elog.readFlag,
-                    Column.Category: self.__elog.category,
-                    Column.Package: self.__elog.package,
-                    Column.Eclass: self.__elog.eclass,
-                    Column.Date: self.__elog.localeTime}[self.column()]
+            return {Column.Important.value: self.__elog.importantFlag,
+                    Column.Read.value: self.__elog.readFlag,
+                    Column.Category.value: self.__elog.category,
+                    Column.Package.value: self.__elog.package,
+                    Column.Eclass.value: self.__elog.eclass,
+                    Column.Date.value: self.__elog.localeTime}[self.column()]
         else:
             return super(ElogItem, self).data(role)
 
@@ -413,9 +420,9 @@ class ElogItem(QtGui.QStandardItem):
         if not self.__elog:
             return super(ElogItem, self).setData(data, role)
         if role in (Qt.DisplayRole, Qt.EditRole):
-            if self.column() is Column.Important:
+            if self.column() is Column.Important.value:
                 self.__elog.importantFlag = data
-            elif self.column() is Column.Read:
+            elif self.column() is Column.Read.value:
                 self.__elog.readFlag = data
         super(ElogItem, self).setData(data, role)
 
@@ -428,7 +435,7 @@ def populate(model, path):
         for nCol in range(model.columnCount()):
             item = ElogItem(elog)
             item.setReadFlag(elog.readFlag)
-            item.setEditable(nCol is Column.Important)
+            item.setEditable(nCol is Column.Important.value)
             row.append(item)
         model.appendRow(row)
 
@@ -465,14 +472,9 @@ class Elogviewer(QtWidgets.QMainWindow):
         self._model = QtGui.QStandardItemModel(self._tableView)
         self._model.setItemPrototype(ElogItem())
         self._model.setColumnCount(6)
-        self._model.setHeaderData(Column.Important, Qt.Horizontal, "!!")
-        self._model.setHeaderData(Column.Read, Qt.Horizontal, "Read")
-        self._model.setHeaderData(Column.Category, Qt.Horizontal, "Category")
-        self._model.setHeaderData(Column.Package, Qt.Horizontal, "Package")
-        self._model.setHeaderData(Column.Eclass, Qt.Horizontal,
-                                  "Highest\neclass")
-        self._model.setHeaderData(Column.Date, Qt.Horizontal, "Timestamp")
-        self._model.setSortRole(Role.SortRole)
+        self._model.setHorizontalHeaderLabels(
+            ["!!", "Read", "Category", "Package", "Highest\neclass", "Date"])
+        self._model.setSortRole(Role.SortRole.value)
 
         self._proxyModel = QtCore.QSortFilterProxyModel(self._tableView)
         self._proxyModel.setFilterKeyColumn(-1)
@@ -480,9 +482,9 @@ class Elogviewer(QtWidgets.QMainWindow):
 
         self._tableView.setModel(self._proxyModel)
         self._tableView.setItemDelegateForColumn(
-            Column.Important, ButtonDelegate(Star(), self._tableView))
+            Column.Important.value, ButtonDelegate(Star(), self._tableView))
         self._tableView.setItemDelegateForColumn(
-            Column.Read, ButtonDelegate(Bullet(), self._tableView))
+            Column.Read.value, ButtonDelegate(Bullet(), self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         try:
