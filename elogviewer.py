@@ -255,6 +255,24 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
         return text
 
 
+class SeverityColorDelegate(QtWidgets.QStyledItemDelegate):
+
+    def __init__(self, parent=None):
+        super(SeverityColorDelegate, self).__init__(parent)
+
+    def paint(self, painter, option, index):
+        if not index.isValid():
+            return
+        self.initStyleOption(option, index)
+        try:
+            color = Color[option.text].value
+        except KeyError:
+            pass
+        else:
+            option.palette.setColor(QtGui.QPalette.Text, color)
+        super(SeverityColorDelegate, self).paint(painter, option, index)
+
+
 class Bullet(QtWidgets.QAbstractButton):
 
     _scaleFactor = 20
@@ -398,14 +416,6 @@ class ElogItem(QtGui.QStandardItem):
             else:
                 return self.data(role=Qt.DisplayRole)
         if role in (Qt.DisplayRole, Qt.EditRole):
-            if self.column() == Column.Eclass.value:
-                brush = self.foreground()
-                try:
-                    color = Color[self.__elog.eclass].value
-                except AttributeError:
-                    color = Qt.black
-                brush.setColor(color)
-                self.setForeground(brush)
             return {Column.Important.value: self.__elog.importantFlag,
                     Column.Read.value: self.__elog.readFlag,
                     Column.Category.value: self.__elog.category,
@@ -484,6 +494,8 @@ class Elogviewer(QtWidgets.QMainWindow):
             Column.Important.value, ButtonDelegate(Star(), self._tableView))
         self._tableView.setItemDelegateForColumn(
             Column.Read.value, ButtonDelegate(Bullet(), self._tableView))
+        self._tableView.setItemDelegateForColumn(
+            Column.Eclass.value, SeverityColorDelegate(self._tableView))
 
         horizontalHeader = self._tableView.horizontalHeader()
         try:
