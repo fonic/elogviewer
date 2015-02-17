@@ -29,7 +29,7 @@ from glob import glob
 from functools import partial
 from contextlib import closing
 
-from enum import Enum
+from enum import IntEnum
 from io import BytesIO
 
 import gzip
@@ -74,12 +74,12 @@ def _(bytes):
     return bytes.decode(locale.getpreferredencoding())
 
 
-class Role(Enum):
+class Role(IntEnum):
 
     SortRole = Qt.UserRole + 1
 
 
-class Column(Enum):
+class Column(IntEnum):
 
     ImportantState = 0
     Category = 1
@@ -89,15 +89,23 @@ class Column(Enum):
     Date = 5
 
 
-class Color(Enum):
+class EClass(IntEnum):
 
-    eerror = QtGui.QColor(Qt.red)
-    ewarn = QtGui.QColor(229, 103, 23)
-    einfo = QtGui.QColor(Qt.darkGreen)
-    elog = QtGui.QColor(Qt.black)
+    eerror = 50
+    ewarn = 40
+    einfo = 30
+    elog = 10
+    eqa = 0
 
-    def toHtml(self):
-        color = self.value
+    def color(self):
+        return dict(eerror=QtGui.QColor(Qt.red),
+                    ewarn=QtGui.QColor(229, 103, 23),
+                    einfo=QtGui.QColor(Qt.darkGreen),
+                    elog=QtGui.QColor(Qt.black),
+                    ).get(self.name, Qt.black)
+
+    def htmlColor(self):
+        color = self.color()
         return "#%02X%02X%02X" % (color.red(), color.green(), color.blue())
 
 
@@ -136,13 +144,13 @@ class Elog(object):
             eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:",
                                   _(elogfile.read()))
             if "ERROR:" in eClasses:
-                self.eclass = "eerror"
+                self.eclass = EClass.eerror
             elif "WARN:" in eClasses:
-                self.eclass = "ewarn"
+                self.eclass = EClass.ewarn
             elif "LOG:" in eClasses:
-                self.eclass = "elog"
+                self.eclass = EClass.elog
             else:
-                self.eclass = "einfo"
+                self.eclass = EClass.einfo
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.filename)
@@ -237,16 +245,10 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
             for line in elogfile:
                 line = _(line.strip())
                 # Color eclasses
-                prefix = '<p style="color: {color}">'
-                if line.startswith("ERROR:"):
-                    prefix = prefix.format(color=Color["eerror"].toHtml())
-                elif line.startswith("WARN:"):
-                    prefix = prefix.format(color=Color["ewarn"].toHtml())
-                elif line.startswith("INFO:"):
-                    prefix = prefix.format(color=Color["einfo"].toHtml())
-                elif line.startswith("LOG:") or line.startswith("QA:"):
-                    prefix = prefix.format(color=Color["elog"].toHtml())
-                else:
+                try:
+                    prefix = '<p style="color: {}">'.format(
+                        EClass["e%s" % line.split(":")[0].lower()].htmlColor())
+                except KeyError:
                     prefix = ""
                 if text and prefix:
                     text = join((text, "</p>"))
@@ -279,7 +281,7 @@ class SeverityColorDelegate(QtWidgets.QStyledItemDelegate):
             return
         self.initStyleOption(option, index)
         try:
-            color = Color[option.text].value
+            color = EClass[option.text].color()
         except KeyError:
             pass
         else:
@@ -447,28 +449,23 @@ class ElogItem(QtGui.QStandardItem):
             return super(ElogItem, self).data(role)
         if role in (Qt.DisplayRole, Qt.EditRole):
             return {
-                Column.Category.value: self.__elog.category,
-                Column.Package.value: self.__elog.package,
-                Column.Eclass.value: self.__elog.eclass,
-                Column.Date.value: self.__elog.localeTime,
+                Column.Category: self.__elog.category,
+                Column.Package: self.__elog.package,
+                Column.Eclass: self.__elog.eclass.name,
+                Column.Date: self.__elog.localeTime,
             }.get(self.column(), "")
         elif role == Qt.CheckStateRole:
             return {
-                Column.ImportantState.value: self.importantState,
-                Column.ReadState.value: self.readState,
+                Column.ImportantState: self.importantState,
+                Column.ReadState: self.readState,
             }.get(self.column(), lambda: None)()
-        elif role == Role.SortRole.value:
-            if self.column() in (
-                    Column.ImportantState.value,
-                    Column.ReadState.value):
+        elif role == Role.SortRole:
+            if self.column() in (Column.ImportantState, Column.ReadState):
                 return self.data(Qt.CheckStateRole)
-            elif self.column() is Column.Date.value:
+            elif self.column() == Column.Date:
                 return self.__elog.isoTime
-            elif self.column() is Column.Eclass.value:
-                return {"eerror": 5,
-                        "ewarn": 4,
-                        "einfo": 3,
-                        "elog": 2}.get(self.__elog.eclass, 0)
+            elif self.column() == Column.Eclass:
+                return self.__elog.eclass.value
             else:
                 return self.data(Qt.DisplayRole)
         else:
@@ -482,7 +479,7 @@ def populate(model, path):
         row = []
         for nCol in range(model.columnCount()):
             item = ElogItem(elog)
-            item.setEditable(nCol is Column.ImportantState.value)
+            item.setEditable(nCol == Column.ImportantState)
             row.append(item)
         model.appendRow(row)
 
@@ -555,7 +552,7 @@ class Elogviewer(ElogviewerUi):
         self.proxyModel.setSourceModel(self.model)
         self.tableView.setModel(self.proxyModel)
 
-        self.proxyModel.setSortRole(Role.SortRole.value)
+        self.proxyModel.setSortRole(Role.SortRole)
         horizontalHeader = self.tableView.horizontalHeader()
         horizontalHeader.sortIndicatorChanged.connect(self.proxyModel.sort)
 
@@ -598,7 +595,7 @@ class Elogviewer(ElogviewerUi):
             (Column.ReadState, ButtonDelegate(Bullet(), self.tableView)),
             (Column.Eclass, SeverityColorDelegate(self.tableView)),
         ):
-            self.tableView.setItemDelegateForColumn(column.value, delegate)
+            self.tableView.setItemDelegateForColumn(column, delegate)
 
     def __initActions(self):
 
@@ -718,7 +715,7 @@ class Elogviewer(ElogviewerUi):
 
     def toggleSelectedImportantState(self):
         for index in self.tableView.selectionModel().selectedRows(
-                Column.ImportantState.value):
+                Column.ImportantState):
             self.toggleImportantState(index)
 
     def deleteSelected(self):
