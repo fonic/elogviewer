@@ -449,55 +449,19 @@ def populate(model, path):
         model.appendRow(row)
 
 
-class Elogviewer(QtWidgets.QMainWindow):
+class ElogviewerUi(QtWidgets.QMainWindow):
 
-    def __init__(self, args):
-        super(Elogviewer, self).__init__()
-        self._args = args
-
-        self.__initUI()
-        self.__initToolBar()
-        self.__initSettings()
-
-        def populateAndInit(model, path):
-            populate(model, path)
-            self._tableView.selectionModel().currentRowChanged.emit(
-                QtCore.QModelIndex(), QtCore.QModelIndex())
-
-        QtCore.QTimer.singleShot(0, partial(
-            populateAndInit, self._model, self._args.elogpath))
-
-    def __initUI(self):
-        self._centralWidget = QtWidgets.QWidget(self)
+    def __init__(self):
+        super(ElogviewerUi, self).__init__()
+        centralWidget = QtWidgets.QWidget(self)
         centralLayout = QtWidgets.QVBoxLayout()
-        self._centralWidget.setLayout(centralLayout)
-        self.setCentralWidget(self._centralWidget)
+        centralWidget.setLayout(centralLayout)
+        self.setCentralWidget(centralWidget)
 
-        self._tableView = QtWidgets.QTableView(self._centralWidget)
-        self._tableView.setSelectionMode(self._tableView.ExtendedSelection)
-        self._tableView.setSelectionBehavior(self._tableView.SelectRows)
-        centralLayout.addWidget(self._tableView)
-
-        self._model = QtGui.QStandardItemModel(self._tableView)
-        self._model.setItemPrototype(ElogItem())
-        self._model.setColumnCount(6)
-        self._model.setHorizontalHeaderLabels(
-            ["!!", "Read", "Category", "Package", "Highest\neclass", "Date"])
-        self._model.setSortRole(Role.SortRole.value)
-
-        self._proxyModel = QtCore.QSortFilterProxyModel(self._tableView)
-        self._proxyModel.setFilterKeyColumn(-1)
-        self._proxyModel.setSourceModel(self._model)
-
-        self._tableView.setModel(self._proxyModel)
-        self._tableView.setItemDelegateForColumn(
-            Column.Important.value, ButtonDelegate(Star(), self._tableView))
-        self._tableView.setItemDelegateForColumn(
-            Column.Read.value, ButtonDelegate(Bullet(), self._tableView))
-        self._tableView.setItemDelegateForColumn(
-            Column.Eclass.value, SeverityColorDelegate(self._tableView))
-
-        horizontalHeader = self._tableView.horizontalHeader()
+        self.tableView = QtWidgets.QTableView(centralWidget)
+        self.tableView.setSelectionMode(self.tableView.ExtendedSelection)
+        self.tableView.setSelectionBehavior(self.tableView.SelectRows)
+        horizontalHeader = self.tableView.horizontalHeader()
         try:
             # PyQt5
             horizontalHeader.setSectionsClickable(True)
@@ -507,104 +471,148 @@ class Elogviewer(QtWidgets.QMainWindow):
             # PyQt4
             horizontalHeader.setClickable(True)
             horizontalHeader.setResizeMode(horizontalHeader.ResizeToContents)
-        horizontalHeader.sortIndicatorChanged.connect(self._model.sort)
         horizontalHeader.setStretchLastSection(True)
+        self.tableView.verticalHeader().hide()
+        centralLayout.addWidget(self.tableView)
 
-        self._tableView.verticalHeader().hide()
+        self.textEdit = QtWidgets.QTextBrowser(centralWidget)
+        self.textEdit.setOpenExternalLinks(True)
+        self.textEdit.setText("""No elogs!""")
+        centralLayout.addWidget(self.textEdit)
 
-        self._textEdit = QtWidgets.QTextBrowser(self._centralWidget)
-        self._textEdit.setOpenExternalLinks(True)
-        self._textEdit.setText("""No elogs!""")
-        centralLayout.addWidget(self._textEdit)
+        self.toolBar = QtWidgets.QToolBar(self)
+        self.addToolBar(self.toolBar)
 
-        self._textWidgetMapper = QtWidgets.QDataWidgetMapper(self._tableView)
-        self._textWidgetMapper.setSubmitPolicy(
-            self._textWidgetMapper.AutoSubmit)
-        self._textWidgetMapper.setItemDelegate(TextToHtmlDelegate(
-            self._textWidgetMapper))
-        self._textWidgetMapper.setModel(self._model)
-        self._textWidgetMapper.addMapping(self._textEdit, 0)
-        self._textWidgetMapper.toFirst()
+        self.statusLabel = QtWidgets.QLabel(self.statusBar())
+        self.statusBar().addWidget(self.statusLabel)
+        self.unreadLabel = QtWidgets.QLabel(self.statusBar())
+        self.statusBar().addWidget(self.unreadLabel)
 
-        self._statusLabel = QtWidgets.QLabel(self.statusBar())
-        self.statusBar().addWidget(self._statusLabel)
-        self._unreadLabel = QtWidgets.QLabel(self.statusBar())
-        self.statusBar().addWidget(self._unreadLabel)
 
-        currentRowChanged = self._tableView.selectionModel().currentRowChanged
+class Elogviewer(ElogviewerUi):
+
+    def __init__(self, config):
+        super(Elogviewer, self).__init__()
+        self.config = config
+        self.settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
+        try:
+            Elog._readFlag = self.settings.value("readFlag", set())
+            Elog._importantFlag = self.settings.value("importantFlag", set())
+            if Elog._readFlag is None or Elog._importantFlag is None:
+                raise TypeError
+        except TypeError:
+            # The list is lost when going from py3 to py2
+            logger.error("The previous settings could not be loaded.")
+            Elog._readFlag = set()
+            Elog._importantFlag = set()
+
+        self.model = QtGui.QStandardItemModel(self.tableView)
+        self.model.setItemPrototype(ElogItem())
+        self.model.setColumnCount(6)
+        self.model.setHorizontalHeaderLabels(
+            ["!!", "Category", "Package", "Read", "Highest\neclass", "Date"])
+        self.model.setSortRole(Role.SortRole.value)
+
+        horizontalHeader = self.tableView.horizontalHeader()
+        horizontalHeader.sortIndicatorChanged.connect(self.model.sort)
+
+        self.proxyModel = QtCore.QSortFilterProxyModel(self.tableView)
+        self.proxyModel.setFilterKeyColumn(-1)
+        self.proxyModel.setSourceModel(self.model)
+        self.tableView.setModel(self.proxyModel)
+
+        self.__setupTableColumnDelegates()
+
+        self.textEditMapper = QtWidgets.QDataWidgetMapper(self.tableView)
+        self.textEditMapper.setSubmitPolicy(self.textEditMapper.AutoSubmit)
+        self.textEditMapper.setItemDelegate(
+            TextToHtmlDelegate(self.textEditMapper))
+        self.textEditMapper.setModel(self.model)
+        self.textEditMapper.addMapping(self.textEdit, 0)
+        self.textEditMapper.toFirst()
+
+        currentRowChanged = self.tableView.selectionModel().currentRowChanged
         currentRowChanged.connect(
-            lambda cur: self._textWidgetMapper.setCurrentModelIndex(
-                self._proxyModel.mapToSource(cur)))
-        currentRowChanged.connect(
-            lambda cur, prev: self.markPreviousItemRead(
-                *map(self._proxyModel.mapToSource, (cur, prev))))
-        currentRowChanged.connect(
-            lambda cur: self._statusLabel.setText(
-                "%i of %i elogs" % (cur.row() + 1, self._model.rowCount())))
-        currentRowChanged.connect(
-            lambda __: self.setWindowTitle("Elogviewer (%i unread)" % (
-                self._model.rowCount() - len(Elog._readFlag))))
-        currentRowChanged.connect(
-            lambda __: self._unreadLabel.setText("%i unread" % (
-                self._model.rowCount() - len(Elog._readFlag))))
+            lambda cur: self.textEditMapper.setCurrentModelIndex(
+                self.proxyModel.mapToSource(cur)))
 
-    def __initToolBar(self):
-        # see http://standards.freedesktop.org/icon-naming-spec/
-        #   icon-naming-spec-latest.html#names
-        # http://www.qtcentre.org/wiki/index.php?title=Embedded_resources
-        # http://doc.trolltech.com/latest/qstyle.html#StandardPixmap-enum
+        self.__initActions()
+
+        self.tableView.selectionModel().currentRowChanged.connect(
+            self.onCurrentRowChanged)
+
+        self.searchLineEdit = QtWidgets.QLineEdit(self.toolBar)
+        self.searchLineEdit.setPlaceholderText("search")
+        self.searchLineEdit.textEdited.connect(
+            self.proxyModel.setFilterRegExp)
+        self.toolBar.addWidget(self.searchLineEdit)
+
+        def populateAndInit(model, path):
+            populate(model, path)
+            self.tableView.selectionModel().currentRowChanged.emit(
+                QtCore.QModelIndex(), QtCore.QModelIndex())
+
+        QtCore.QTimer.singleShot(0, partial(
+            populateAndInit, self.model, self.config.elogpath))
+
+    def __setupTableColumnDelegates(self):
+        for column, delegate in (
+            (Column.Important, ButtonDelegate(Star(), self.tableView)),
+            (Column.Read, ButtonDelegate(Bullet(), self.tableView)),
+            (Column.Eclass, SeverityColorDelegate(self.tableView)),
+        ):
+            self.tableView.setItemDelegateForColumn(column.value, delegate)
+
+    def __initActions(self):
 
         def setToolTip(action):
             if action.shortcut().toString():
                 action.setToolTip("%s [%s]" % (
                     action.toolTip(), action.shortcut().toString()))
 
-        self._toolBar = QtWidgets.QToolBar(self)
-        self.addToolBar(self._toolBar)
+        self.refreshAction = QtWidgets.QAction("Refresh", self.toolBar)
+        self.refreshAction.setIcon(QtGui.QIcon.fromTheme("view-refresh"))
+        self.refreshAction.setShortcut(QtGui.QKeySequence.Refresh)
+        setToolTip(self.refreshAction)
+        self.refreshAction.triggered.connect(self.refresh)
+        self.toolBar.addAction(self.refreshAction)
 
-        self._refreshAction = QtWidgets.QAction("Refresh", self._toolBar)
-        self._refreshAction.setIcon(QtGui.QIcon.fromTheme("view-refresh"))
-        self._refreshAction.setShortcut(QtGui.QKeySequence.Refresh)
-        setToolTip(self._refreshAction)
-        self._refreshAction.triggered.connect(self.refresh)
-        self._toolBar.addAction(self._refreshAction)
-
-        self._markReadAction = QtWidgets.QAction("Mark read", self._toolBar)
-        self._markReadAction.setIcon(
+        self.markReadAction = QtWidgets.QAction("Mark read", self.toolBar)
+        self.markReadAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-read"))
-        self._markReadAction.triggered.connect(partial(
+        self.markReadAction.triggered.connect(partial(
             self._markSelectedRead, True))
-        setToolTip(self._markReadAction)
-        self._toolBar.addAction(self._markReadAction)
+        setToolTip(self.markReadAction)
+        self.toolBar.addAction(self.markReadAction)
 
-        self._markUnreadAction = QtWidgets.QAction("Mark unread", self._toolBar)
-        self._markUnreadAction.setIcon(
+        self.markUnreadAction = QtWidgets.QAction("Mark unread", self.toolBar)
+        self.markUnreadAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-unread"))
-        self._markUnreadAction.triggered.connect(partial(
+        self.markUnreadAction.triggered.connect(partial(
             self._markSelectedRead, False))
-        setToolTip(self._markUnreadAction)
-        self._toolBar.addAction(self._markUnreadAction)
+        setToolTip(self.markUnreadAction)
+        self.toolBar.addAction(self.markUnreadAction)
 
-        self._markImportantAction = QtWidgets.QAction("Important", self._toolBar)
-        self._markImportantAction.setIcon(
+        self.markImportantAction = QtWidgets.QAction("Important", self.toolBar)
+        self.markImportantAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-important"))
-        self._markImportantAction.triggered.connect(
+        self.markImportantAction.triggered.connect(
             self._toggleSelectedImportant)
-        setToolTip(self._markImportantAction)
-        self._toolBar.addAction(self._markImportantAction)
+        setToolTip(self.markImportantAction)
+        self.toolBar.addAction(self.markImportantAction)
 
-        self._deleteAction = QtWidgets.QAction("Delete", self._toolBar)
-        self._deleteAction.setIcon(QtGui.QIcon.fromTheme("edit-delete"))
-        self._deleteAction.setShortcut(QtGui.QKeySequence.Delete)
-        setToolTip(self._deleteAction)
-        self._deleteAction.triggered.connect(self.deleteSelected)
-        self._toolBar.addAction(self._deleteAction)
+        self.deleteAction = QtWidgets.QAction("Delete", self.toolBar)
+        self.deleteAction.setIcon(QtGui.QIcon.fromTheme("edit-delete"))
+        self.deleteAction.setShortcut(QtGui.QKeySequence.Delete)
+        setToolTip(self.deleteAction)
+        self.deleteAction.triggered.connect(self.deleteSelected)
+        self.toolBar.addAction(self.deleteAction)
 
-        self._aboutAction = QtWidgets.QAction("About", self._toolBar)
-        self._aboutAction.setIcon(QtGui.QIcon.fromTheme("help-about"))
-        self._aboutAction.setShortcut(QtGui.QKeySequence.HelpContents)
-        setToolTip(self._aboutAction)
-        self._aboutAction.triggered.connect(partial(
+        self.aboutAction = QtWidgets.QAction("About", self.toolBar)
+        self.aboutAction.setIcon(QtGui.QIcon.fromTheme("help-about"))
+        self.aboutAction.setShortcut(QtGui.QKeySequence.HelpContents)
+        setToolTip(self.aboutAction)
+        self.aboutAction.triggered.connect(partial(
             QtWidgets.QMessageBox.about,
             self, "About (k)elogviewer", " ".join((
                 """
@@ -632,75 +640,66 @@ class Elogviewer(QtWidgets.QMainWindow):
                 <a href="mailto:opfer@gentoo.org">&lt;opfer@gentoo.org&gt;</a>
 
                 """ % __version__).splitlines())))
-        self._toolBar.addAction(self._aboutAction)
+        self.toolBar.addAction(self.aboutAction)
 
-        self._quitAction = QtWidgets.QAction("Quit", self._toolBar)
-        self._quitAction.setIcon(QtGui.QIcon.fromTheme("application-exit"))
-        self._quitAction.setShortcut(QtGui.QKeySequence.Quit)
-        setToolTip(self._quitAction)
-        self._quitAction.triggered.connect(self.close)
-        self._toolBar.addAction(self._quitAction)
-
-        self._searchLineEdit = QtWidgets.QLineEdit(self._toolBar)
-        self._searchLineEdit.setPlaceholderText("search")
-        self._searchLineEdit.textEdited.connect(
-            self._proxyModel.setFilterRegExp)
-        self._toolBar.addWidget(self._searchLineEdit)
-
-    def __initSettings(self):
-        self._settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
-        try:
-            Elog._readFlag = self._settings.value("readFlag", set())
-            Elog._importantFlag = self._settings.value("importantFlag", set())
-            if Elog._readFlag is None or Elog._importantFlag is None:
-                raise TypeError
-        except TypeError:
-            # The list is lost when going from py3 to py2
-            logger.error("The previous settings could not be loaded.")
-            Elog._readFlag = set()
-            Elog._importantFlag = set()
+        self.quitAction = QtWidgets.QAction("Quit", self.toolBar)
+        self.quitAction.setIcon(QtGui.QIcon.fromTheme("application-exit"))
+        self.quitAction.setShortcut(QtGui.QKeySequence.Quit)
+        setToolTip(self.quitAction)
+        self.quitAction.triggered.connect(self.close)
+        self.toolBar.addAction(self.quitAction)
 
     def closeEvent(self, closeEvent):
-        self._settings.setValue("readFlag", Elog._readFlag)
-        self._settings.setValue("importantFlag", Elog._importantFlag)
+        self.settings.setValue("readFlag", Elog._readFlag)
+        self.settings.setValue("importantFlag", Elog._importantFlag)
         super(Elogviewer, self).closeEvent(closeEvent)
+
+    def onCurrentRowChanged(self, current, previous):
+        self.markPreviousItemRead(
+            *map(self.proxyModel.mapToSource, (current, previous)))
+        self.statusLabel.setText(
+            "%i of %i elogs" % (current.row() + 1, self.model.rowCount()))
+        self.setWindowTitle("Elogviewer (%i unread)" % (
+            self.model.rowCount() - len(Elog._readFlag)))
+        self.unreadLabel.setText("%i unread" % (
+            self.model.rowCount() - len(Elog._readFlag)))
 
     def markPreviousItemRead(self, current, previous):
         if not previous.isValid():
             return
-        for nCol in range(self._model.columnCount()):
-            self._model.item(previous.row(), nCol).setReadFlag()
+        for nCol in range(self.model.columnCount()):
+            self.model.item(previous.row(), nCol).setReadFlag()
 
     def deleteSelected(self):
-        selection = [self._proxyModel.mapToSource(idx) for idx in
-                     self._tableView.selectionModel().selectedRows()]
+        selection = [self.proxyModel.mapToSource(idx) for idx in
+                     self.tableView.selectionModel().selectedRows()]
         selectedRows = sorted(idx.row() for idx in selection)
-        selectedElogs = [self._model.itemFromIndex(idx).elog()
+        selectedElogs = [self.model.itemFromIndex(idx).elog()
                          for idx in selection]
 
         for nRow in reversed(selectedRows):
-            self._model.removeRow(nRow)
+            self.model.removeRow(nRow)
 
         for elog in selectedElogs:
             elog.delete()
 
     def _markSelectedRead(self, readFlag=True):
-        selection = (self._proxyModel.mapToSource(idx) for idx in
-                     self._tableView.selectionModel().selectedIndexes())
-        for item in (self._model.itemFromIndex(idx) for idx in selection):
+        selection = (self.proxyModel.mapToSource(idx) for idx in
+                     self.tableView.selectionModel().selectedIndexes())
+        for item in (self.model.itemFromIndex(idx) for idx in selection):
             item.setReadFlag(readFlag)
 
     def _toggleSelectedImportant(self):
-        selection = [self._proxyModel.mapToSource(idx) for idx in
-                     self._tableView.selectionModel().selectedRows()]
-        for item in (self._model.itemFromIndex(idx) for idx in selection):
+        selection = [self.proxyModel.mapToSource(idx) for idx in
+                     self.tableView.selectionModel().selectedRows()]
+        for item in (self.model.itemFromIndex(idx) for idx in selection):
             item.setImportantFlag(not item.importantFlag())
 
     def refresh(self):
-        self._model.beginResetModel()
-        self._model.removeRows(0, self._model.rowCount())
-        populate(self._model, self._args.elogpath)
-        self._model.endResetModel()
+        self.model.beginResetModel()
+        self.model.removeRows(0, self.model.rowCount())
+        populate(self.model, self.config.elogpath)
+        self.model.endResetModel()
 
 
 def main():
@@ -721,19 +720,19 @@ def main():
     parser.add_argument("-p", "--elogpath", help="path to the elog directory")
     parser.add_argument("--log", choices="DEBUG INFO WARNING ERROR".split(),
                         default="WARNING", help="set logging level")
-    args = parser.parse_args()
-    if args.elogpath is None:
+    config = parser.parse_args()
+    if config.elogpath is None:
         logdir = portage.settings.get(
             "PORT_LOGDIR",
             os.path.join(os.sep, portage.settings["EPREFIX"],
                          *"var/log/portage".split("/")))
-        args.elogpath = os.path.join(logdir, "elog")
-    logger.setLevel(getattr(logging, args.log))
+        config.elogpath = os.path.join(logdir, "elog")
+    logger.setLevel(getattr(logging, config.log))
 
     app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon.fromTheme("applications-system"))
 
-    elogviewer = Elogviewer(args)
+    elogviewer = Elogviewer(config)
     elogviewer.show()
 
     sys.exit(app.exec_())
