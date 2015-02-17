@@ -193,18 +193,16 @@ class Elog(object):
             ))
 
     @property
-    def importantFlag(self):
+    def important(self):
         return self.filename in Elog._importantFlag
 
-    @importantFlag.setter
-    def importantFlag(self, flag):
-        if flag:
-            Elog._importantFlag.add(self.filename)
-        else:
-            try:
-                Elog._importantFlag.remove(self.filename)
-            except KeyError:
-                pass
+    @important.setter
+    def important(self, flag):
+        try:
+            {True: Elog._importantFlag.add,
+             False: Elog._importantFlag.remove}[flag](self.filename)
+        except KeyError:  # for remove
+            pass
 
     @property
     def isoTime(self):
@@ -215,18 +213,16 @@ class Elog(object):
         return time.strftime("%x %X", self.date)
 
     @property
-    def readFlag(self):
+    def read(self):
         return self.filename in Elog._readFlag
 
-    @readFlag.setter
-    def readFlag(self, flag):
-        if flag:
-            Elog._readFlag.add(self.filename)
-        else:
-            try:
-                Elog._readFlag.remove(self.filename)
-            except KeyError:
-                pass
+    @read.setter
+    def read(self, flag):
+        try:
+            {True: Elog._readFlag.add,
+             False: Elog._readFlag.remove}[flag](self.filename)
+        except KeyError:  # for remove
+            pass
 
 
 class TextToHtmlDelegate(QtWidgets.QItemDelegate):
@@ -428,24 +424,24 @@ class ElogItem(QtGui.QStandardItem):
         return self.__elog
 
     def setReadState(self, state):
-        self.__elog.readFlag = state is Qt.Checked
+        self.__elog.read = state is Qt.Checked
         self.emitDataChanged()
 
     def readState(self):
-        return Qt.Checked if self.__elog.readFlag else Qt.Unchecked
+        return Qt.Checked if self.__elog.read else Qt.Unchecked
 
     def isReadState(self):
-        return self.__elog.readFlag is True
+        return self.__elog.read is True
 
     def setImportantState(self, state):
-        self.__elog.importantFlag = state is Qt.Checked
+        self.__elog.important = state is Qt.Checked
         self.emitDataChanged()
 
     def importantState(self):
-        return Qt.Checked if self.__elog.importantFlag else Qt.Unchecked
+        return Qt.Checked if self.__elog.important else Qt.Unchecked
 
     def isImportantState(self):
-        return self.__elog.importantFlag is True
+        return self.__elog.important is True
 
     def toggleImportantState(self):
         self.setImportantState(Qt.Unchecked if self.isImportantState() else
