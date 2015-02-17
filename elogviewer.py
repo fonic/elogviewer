@@ -157,7 +157,14 @@ class Elog(object):
 
     def delete(self):
         os.remove(self.filename)
-        Elog._readFlag.remove(self.filename)
+        try:
+            Elog._readFlag.remove(self.filename)
+        except KeyError:
+            pass
+        try:
+            Elog._importantFlag.remove(self.filename)
+        except KeyError:
+            pass
 
     @property
     def file(self):
