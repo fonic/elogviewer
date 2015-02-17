@@ -287,6 +287,19 @@ class SeverityColorDelegate(QtWidgets.QStyledItemDelegate):
         super(SeverityColorDelegate, self).paint(painter, option, index)
 
 
+class ReadFontStyleDelegate(QtWidgets.QStyledItemDelegate):
+
+    def __init__(self, parent=None):
+        super(ReadFontStyleDelegate, self).__init__(parent)
+
+    def paint(self, painter, option, index):
+        if not index.isValid():
+            return
+        self.initStyleOption(option, index)
+        option.font.setBold(not _itemFromIndex(index).isReadState())
+        super(ReadFontStyleDelegate, self).paint(painter, option, index)
+
+
 class Bullet(QtWidgets.QAbstractButton):
 
     _scaleFactor = 20
@@ -409,10 +422,6 @@ class ElogItem(QtGui.QStandardItem):
         self.__elog.readFlag = state is Qt.Checked
         self.emitDataChanged()
 
-        font = self.font()
-        font.setBold(not state)
-        self.setFont(font)
-
     def readState(self):
         return Qt.Checked if self.__elog.readFlag else Qt.Unchecked
 
@@ -469,7 +478,6 @@ def populate(model, path):
         row = []
         for nCol in range(model.columnCount()):
             item = ElogItem(elog)
-            item.setReadState(elog.readFlag)
             item.setEditable(nCol is Column.ImportantState.value)
             row.append(item)
         model.appendRow(row)
@@ -548,6 +556,7 @@ class Elogviewer(ElogviewerUi):
         self.tableView.setModel(self.proxyModel)
 
         self.__setupTableColumnDelegates()
+        self.tableView.setItemDelegate(ReadFontStyleDelegate(self.tableView))
 
         self.textEditMapper = QtWidgets.QDataWidgetMapper(self.tableView)
         self.textEditMapper.setSubmitPolicy(self.textEditMapper.AutoSubmit)
