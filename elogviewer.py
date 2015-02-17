@@ -81,10 +81,10 @@ class Role(Enum):
 
 class Column(Enum):
 
-    Important = 0
+    ImportantState = 0
     Category = 1
     Package = 2
-    Read = 3
+    ReadState = 3
     Eclass = 4
     Date = 5
 
@@ -99,6 +99,20 @@ class Color(Enum):
     def toHtml(self):
         color = self.value
         return "#%02X%02X%02X" % (color.red(), color.green(), color.blue())
+
+
+def _sourceIndex(index):
+    model = index.model()
+    try:
+        index = model.mapToSource(index)  # proxy
+    except AttributeError:
+        pass
+    return index
+
+
+def _itemFromIndex(index):
+    index = _sourceIndex(index)
+    return index.model().itemFromIndex(index)
 
 
 class Elog(object):
@@ -391,21 +405,32 @@ class ElogItem(QtGui.QStandardItem):
     def elog(self):
         return self.__elog
 
-    def setReadFlag(self, readFlag=True):
-        self.__elog.readFlag = readFlag
+    def setReadState(self, state):
+        self.__elog.readFlag = state
+        self.emitDataChanged()
 
         font = self.font()
-        font.setBold(not readFlag)
+        font.setBold(not state)
         self.setFont(font)
 
-    def readFlag(self):
+    def readState(self):
         return self.__elog.readFlag
 
-    def setImportantFlag(self, importantFlag=True):
-        self.setData(importantFlag, role=Qt.EditRole)
+    def isReadState(self):
+        return self.__elog.readFlag is True
 
-    def importantFlag(self):
+    def setImportantState(self, state):
+        self.__elog.importantFlag = state
+        self.emitDataChanged()
+
+    def importantState(self):
         return self.__elog.importantFlag
+
+    def isImportantState(self):
+        return self.__elog.importantFlag is True
+
+    def toggleImportantState(self):
+        self.setImportantState(not self.isImportantState())
 
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
@@ -416,8 +441,8 @@ class ElogItem(QtGui.QStandardItem):
             else:
                 return self.data(role=Qt.DisplayRole)
         if role in (Qt.DisplayRole, Qt.EditRole):
-            return {Column.Important.value: self.__elog.importantFlag,
-                    Column.Read.value: self.__elog.readFlag,
+            return {Column.ImportantState.value: self.__elog.importantFlag,
+                    Column.ReadState.value: self.__elog.readFlag,
                     Column.Category.value: self.__elog.category,
                     Column.Package.value: self.__elog.package,
                     Column.Eclass.value: self.__elog.eclass,
@@ -429,9 +454,9 @@ class ElogItem(QtGui.QStandardItem):
         if not self.__elog:
             return super(ElogItem, self).setData(data, role)
         if role in (Qt.DisplayRole, Qt.EditRole):
-            if self.column() is Column.Important.value:
+            if self.column() is Column.ImportantState.value:
                 self.__elog.importantFlag = data
-            elif self.column() is Column.Read.value:
+            elif self.column() is Column.ReadState.value:
                 self.__elog.readFlag = data
         super(ElogItem, self).setData(data, role)
 
@@ -443,8 +468,8 @@ def populate(model, path):
         row = []
         for nCol in range(model.columnCount()):
             item = ElogItem(elog)
-            item.setReadFlag(elog.readFlag)
-            item.setEditable(nCol is Column.Important.value)
+            item.setReadState(elog.readFlag)
+            item.setEditable(nCol is Column.ImportantState.value)
             row.append(item)
         model.appendRow(row)
 
@@ -529,12 +554,10 @@ class Elogviewer(ElogviewerUi):
             TextToHtmlDelegate(self.textEditMapper))
         self.textEditMapper.setModel(self.model)
         self.textEditMapper.addMapping(self.textEdit, 0)
+        self.tableView.selectionModel().currentRowChanged.connect(
+            lambda curr, prev:
+            self.textEditMapper.setCurrentModelIndex(_sourceIndex(curr)))
         self.textEditMapper.toFirst()
-
-        currentRowChanged = self.tableView.selectionModel().currentRowChanged
-        currentRowChanged.connect(
-            lambda cur: self.textEditMapper.setCurrentModelIndex(
-                self.proxyModel.mapToSource(cur)))
 
         self.__initActions()
 
@@ -557,8 +580,8 @@ class Elogviewer(ElogviewerUi):
 
     def __setupTableColumnDelegates(self):
         for column, delegate in (
-            (Column.Important, ButtonDelegate(Star(), self.tableView)),
-            (Column.Read, ButtonDelegate(Bullet(), self.tableView)),
+            (Column.ImportantState, ButtonDelegate(Star(), self.tableView)),
+            (Column.ReadState, ButtonDelegate(Bullet(), self.tableView)),
             (Column.Eclass, SeverityColorDelegate(self.tableView)),
         ):
             self.tableView.setItemDelegateForColumn(column.value, delegate)
@@ -581,7 +604,7 @@ class Elogviewer(ElogviewerUi):
         self.markReadAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-read"))
         self.markReadAction.triggered.connect(partial(
-            self._markSelectedRead, True))
+            self.setSelectedReadState, True))
         setToolTip(self.markReadAction)
         self.toolBar.addAction(self.markReadAction)
 
@@ -589,7 +612,7 @@ class Elogviewer(ElogviewerUi):
         self.markUnreadAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-unread"))
         self.markUnreadAction.triggered.connect(partial(
-            self._markSelectedRead, False))
+            self.setSelectedReadState, False))
         setToolTip(self.markUnreadAction)
         self.toolBar.addAction(self.markUnreadAction)
 
@@ -597,7 +620,7 @@ class Elogviewer(ElogviewerUi):
         self.markImportantAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-important"))
         self.markImportantAction.triggered.connect(
-            self._toggleSelectedImportant)
+            self.toggleSelectedImportantState)
         setToolTip(self.markImportantAction)
         self.toolBar.addAction(self.markImportantAction)
 
@@ -655,8 +678,7 @@ class Elogviewer(ElogviewerUi):
         super(Elogviewer, self).closeEvent(closeEvent)
 
     def onCurrentRowChanged(self, current, previous):
-        self.markPreviousItemRead(
-            *map(self.proxyModel.mapToSource, (current, previous)))
+        self.setReadState(current, True)
         self.statusLabel.setText(
             "%i of %i elogs" % (current.row() + 1, self.model.rowCount()))
         self.setWindowTitle("Elogviewer (%i unread)" % (
@@ -664,11 +686,26 @@ class Elogviewer(ElogviewerUi):
         self.unreadLabel.setText("%i unread" % (
             self.model.rowCount() - len(Elog._readFlag)))
 
-    def markPreviousItemRead(self, current, previous):
-        if not previous.isValid():
-            return
-        for nCol in range(self.model.columnCount()):
-            self.model.item(previous.row(), nCol).setReadFlag()
+    def setReadState(self, index, state):
+        if index.isValid():
+            _itemFromIndex(index).setReadState(state)
+
+    def setSelectedReadState(self, state):
+        for index in self.tableView.selectionModel().selectedIndexes():
+            self.setReadState(index, state)
+
+    def setImportantState(self, index, state):
+        if index.isValid():
+            _itemFromIndex(index).setImportantState(state)
+
+    def toggleImportantState(self, index):
+        if index.isValid():
+            _itemFromIndex(index).toggleImportantState()
+
+    def toggleSelectedImportantState(self):
+        for index in self.tableView.selectionModel().selectedRows(
+                Column.ImportantState.value):
+            self.toggleImportantState(index)
 
     def deleteSelected(self):
         selection = [self.proxyModel.mapToSource(idx) for idx in
@@ -682,18 +719,6 @@ class Elogviewer(ElogviewerUi):
 
         for elog in selectedElogs:
             elog.delete()
-
-    def _markSelectedRead(self, readFlag=True):
-        selection = (self.proxyModel.mapToSource(idx) for idx in
-                     self.tableView.selectionModel().selectedIndexes())
-        for item in (self.model.itemFromIndex(idx) for idx in selection):
-            item.setReadFlag(readFlag)
-
-    def _toggleSelectedImportant(self):
-        selection = [self.proxyModel.mapToSource(idx) for idx in
-                     self.tableView.selectionModel().selectedRows()]
-        for item in (self.model.itemFromIndex(idx) for idx in selection):
-            item.setImportantFlag(not item.importantFlag())
 
     def refresh(self):
         self.model.beginResetModel()
