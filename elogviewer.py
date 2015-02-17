@@ -445,11 +445,6 @@ class ElogItem(QtGui.QStandardItem):
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
             return super(ElogItem, self).data(role)
-        if role is Role.SortRole:
-            if self.column() == Column.Date.value:
-                return self.__elog.isoTime
-            else:
-                return self.data(role=Qt.DisplayRole)
         if role in (Qt.DisplayRole, Qt.EditRole):
             return {
                 Column.Category.value: self.__elog.category,
@@ -462,13 +457,22 @@ class ElogItem(QtGui.QStandardItem):
                 Column.ImportantState.value: self.importantState,
                 Column.ReadState.value: self.readState,
             }.get(self.column(), lambda: None)()
+        elif role == Role.SortRole.value:
+            if self.column() in (
+                    Column.ImportantState.value,
+                    Column.ReadState.value):
+                return self.data(Qt.CheckStateRole)
+            elif self.column() is Column.Date.value:
+                return self.__elog.isoTime
+            elif self.column() is Column.Eclass.value:
+                return {"eerror": 5,
+                        "ewarn": 4,
+                        "einfo": 3,
+                        "elog": 2}.get(self.__elog.eclass, 0)
+            else:
+                return self.data(Qt.DisplayRole)
         else:
             return super(ElogItem, self).data(role)
-
-    def setData(self, data, role=Qt.UserRole + 1):
-        if not self.__elog:
-            return super(ElogItem, self).setData(data, role)
-        super(ElogItem, self).setData(data, role)
 
 
 def populate(model, path):
@@ -545,15 +549,15 @@ class Elogviewer(ElogviewerUi):
         self.model.setColumnCount(6)
         self.model.setHorizontalHeaderLabels(
             ["!!", "Category", "Package", "Read", "Highest\neclass", "Date"])
-        self.model.setSortRole(Role.SortRole.value)
-
-        horizontalHeader = self.tableView.horizontalHeader()
-        horizontalHeader.sortIndicatorChanged.connect(self.model.sort)
 
         self.proxyModel = QtCore.QSortFilterProxyModel(self.tableView)
         self.proxyModel.setFilterKeyColumn(-1)
         self.proxyModel.setSourceModel(self.model)
         self.tableView.setModel(self.proxyModel)
+
+        self.proxyModel.setSortRole(Role.SortRole.value)
+        horizontalHeader = self.tableView.horizontalHeader()
+        horizontalHeader.sortIndicatorChanged.connect(self.proxyModel.sort)
 
         self.__setupTableColumnDelegates()
         self.tableView.setItemDelegate(ReadFontStyleDelegate(self.tableView))
