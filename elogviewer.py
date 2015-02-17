@@ -361,10 +361,10 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
         return None
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.isChecked())
+        model.setData(index, editor.isChecked(), role=Qt.CheckStateRole)
 
     def paint(self, painter, option, index):
-        self._btn.setChecked(index.data())
+        self._btn.setChecked(index.data(role=Qt.CheckStateRole))
         self._btn.setGeometry(option.rect)
         if option.state & QtWidgets.QStyle.State_Selected:
             painter.fillRect(option.rect, option.palette.highlight())
@@ -406,7 +406,7 @@ class ElogItem(QtGui.QStandardItem):
         return self.__elog
 
     def setReadState(self, state):
-        self.__elog.readFlag = state
+        self.__elog.readFlag = state is Qt.Checked
         self.emitDataChanged()
 
         font = self.font()
@@ -414,23 +414,24 @@ class ElogItem(QtGui.QStandardItem):
         self.setFont(font)
 
     def readState(self):
-        return self.__elog.readFlag
+        return Qt.Checked if self.__elog.readFlag else Qt.Unchecked
 
     def isReadState(self):
         return self.__elog.readFlag is True
 
     def setImportantState(self, state):
-        self.__elog.importantFlag = state
+        self.__elog.importantFlag = state is Qt.Checked
         self.emitDataChanged()
 
     def importantState(self):
-        return self.__elog.importantFlag
+        return Qt.Checked if self.__elog.importantFlag else Qt.Unchecked
 
     def isImportantState(self):
         return self.__elog.importantFlag is True
 
     def toggleImportantState(self):
-        self.setImportantState(not self.isImportantState())
+        self.setImportantState(Qt.Unchecked if self.isImportantState() else
+                               Qt.Checked)
 
     def data(self, role=Qt.UserRole + 1):
         if not self.__elog:
@@ -441,23 +442,23 @@ class ElogItem(QtGui.QStandardItem):
             else:
                 return self.data(role=Qt.DisplayRole)
         if role in (Qt.DisplayRole, Qt.EditRole):
-            return {Column.ImportantState.value: self.__elog.importantFlag,
-                    Column.ReadState.value: self.__elog.readFlag,
-                    Column.Category.value: self.__elog.category,
-                    Column.Package.value: self.__elog.package,
-                    Column.Eclass.value: self.__elog.eclass,
-                    Column.Date.value: self.__elog.localeTime}[self.column()]
+            return {
+                Column.Category.value: self.__elog.category,
+                Column.Package.value: self.__elog.package,
+                Column.Eclass.value: self.__elog.eclass,
+                Column.Date.value: self.__elog.localeTime,
+            }.get(self.column(), "")
+        elif role == Qt.CheckStateRole:
+            return {
+                Column.ImportantState.value: self.importantState,
+                Column.ReadState.value: self.readState,
+            }.get(self.column(), lambda: None)()
         else:
             return super(ElogItem, self).data(role)
 
     def setData(self, data, role=Qt.UserRole + 1):
         if not self.__elog:
             return super(ElogItem, self).setData(data, role)
-        if role in (Qt.DisplayRole, Qt.EditRole):
-            if self.column() is Column.ImportantState.value:
-                self.__elog.importantFlag = data
-            elif self.column() is Column.ReadState.value:
-                self.__elog.readFlag = data
         super(ElogItem, self).setData(data, role)
 
 
@@ -604,7 +605,7 @@ class Elogviewer(ElogviewerUi):
         self.markReadAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-read"))
         self.markReadAction.triggered.connect(partial(
-            self.setSelectedReadState, True))
+            self.setSelectedReadState, Qt.Checked))
         setToolTip(self.markReadAction)
         self.toolBar.addAction(self.markReadAction)
 
@@ -612,7 +613,7 @@ class Elogviewer(ElogviewerUi):
         self.markUnreadAction.setIcon(
             QtGui.QIcon.fromTheme("mail-mark-unread"))
         self.markUnreadAction.triggered.connect(partial(
-            self.setSelectedReadState, False))
+            self.setSelectedReadState, Qt.Unchecked))
         setToolTip(self.markUnreadAction)
         self.toolBar.addAction(self.markUnreadAction)
 
@@ -678,7 +679,7 @@ class Elogviewer(ElogviewerUi):
         super(Elogviewer, self).closeEvent(closeEvent)
 
     def onCurrentRowChanged(self, current, previous):
-        self.setReadState(current, True)
+        self.setReadState(current, Qt.Checked)
         self.statusLabel.setText(
             "%i of %i elogs" % (current.row() + 1, self.model.rowCount()))
         self.setWindowTitle("Elogviewer (%i unread)" % (
