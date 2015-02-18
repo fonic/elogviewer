@@ -1,34 +1,167 @@
-from elogviewer import Elog, TextToHtmlDelegate
-import unittest
+import sys
+import os
 from glob import glob
-from os import path
+import unittest
+from collections import namedtuple
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtTest import QTest
+Qt = QtCore.Qt
+import elogviewer as e
+e.logger.setLevel(100)  # silence logging
 
 
-class TestElog(unittest.TestCase):
+class TestBase(unittest.TestCase):
 
     def setUp(self):
+        self.reset_test_set()
+
+    def reset_test_set(self):
+        self.config = namedtuple("Config", "elogpath")
+        self.config.elogpath = "data"
+        self.assertEqual(os.getcwd(), os.path.dirname(e.__file__))
+        os.system("rm -r %s" % self.config.elogpath)
+        os.system("git checkout -- %s" % self.config.elogpath)
+
+    @property
+    def elogs(self):
+        return glob(os.path.join(self.config.elogpath, "*.log"))
+
+    @property
+    def htmls(self):
+        return [".".join((os.path.splitext(elog)[0], "html"))
+                for elog in self.elogs]
+
+
+class TestElogviewer(TestBase):
+
+    def setUp(self):
+        super().setUp()
         self.maxDiff = None
-        datadir = "./data"
-        self.elogs = glob(path.join(datadir, "*.log"))
-        self.htmls = [".".join((path.splitext(elog)[0], "html"))
-                      for elog in self.elogs]
         for elog, html in zip(self.elogs, self.htmls):
-            if not path.isfile(html):
+            if not os.path.isfile(html):
                 with open(html, "w") as html_file:
-                    html_file.writelines(TextToHtmlDelegate.toHtml(Elog(elog)))
+                    html_file.writelines(
+                        e.TextToHtmlDelegate.toHtml(e.Elog(elog)))
 
     def test_html_parser(self):
         for elog, html in zip(self.elogs, self.htmls):
             with open(html, "r") as html_file:
                 self.assertMultiLineEqual(
-                    TextToHtmlDelegate.toHtml(Elog(elog)),
+                    e.TextToHtmlDelegate.toHtml(e.Elog(elog)),
                     "".join(html_file.readlines()))
 
     def test_unsupported_format(self):
-        with Elog(self.htmls[0]).file as elogfile:
+        with e.Elog(self.htmls[0]).file as elogfile:
             content = elogfile.readlines()
         self.assertNotEqual(content, [])
         self.assertIsInstance(b"".join(content), bytes)
+
+
+class TestGui(TestBase):
+
+    def setUp(self):
+        super().setUp()
+
+        def button(name):
+            action = getattr(self.elogviewer, "%sAction" % name)
+            button = self.elogviewer.toolBar.widgetForAction(action)
+            return button
+
+        self.app = QtWidgets.QApplication(sys.argv)
+        self.elogviewer = e.Elogviewer(self.config)
+        self.refreshButton = button("refresh")
+        self.markReadButton = button("markRead")
+        self.markUnreadButton = button("markUnread")
+        self.toggleImportantButton = button("markImportant")
+        self.deleteButton = button("delete")
+        self.aboutAction = button("about")
+
+    def select_all(self):
+        QTest.keyClick(self.elogviewer.tableView, Qt.Key_A, Qt.ControlModifier)
+
+    def reset_select_all(self):
+        self.elogviewer.tableView.selectionModel().clear()
+        self.elogviewer.tableView.selectRow(0)
+
+    def test_elog_count(self):
+        elogCount = len(self.elogs)
+        self.assertNotEqual(elogCount, 0)
+        self.assertNotEqual(self.elogviewer.elogCount(), 0)
+        self.assertEqual(self.elogviewer.elogCount(), elogCount)
+
+    def test_delete_and_refresh_buttons(self):
+        # sanity check
+        self.reset_test_set()
+        elogCount = self.elogviewer.elogCount()
+        self.assertNotEqual(elogCount, 0)
+        # delete one
+        self.elogviewer.tableView.selectRow(0)
+        self.deleteButton.click()
+        self.assertEqual(self.elogviewer.elogCount(), elogCount - 1)
+        # delete all
+        self.select_all()
+        self.deleteButton.click()
+        self.assertEqual(self.elogviewer.elogCount(), 0)
+        self.assertEqual(self.elogviewer.currentRow(), 0)
+        self.assertEqual(self.elogviewer.unreadCount(), 0)
+        self.assertEqual(self.elogviewer.readCount(), 0)
+        self.assertEqual(len(self.elogs), 0)
+        # undelete and check refresh
+        self.reset_test_set()
+        self.assertNotEqual(len(self.elogs), 0)
+        self.assertEqual(self.elogviewer.elogCount(), 0)
+        self.refreshButton.click()
+        self.assertEqual(self.elogviewer.elogCount(), len(self.elogs))
+        self.assertEqual(self.elogviewer.elogCount(), elogCount)
+
+    def test_mark_read_unread_buttons(self):
+        # sanity check
+        elogviewer = self.elogviewer
+        self.assertNotEqual(elogviewer.elogCount(), 0)
+        self.select_all()
+        # check unread
+        self.markUnreadButton.click()
+        self.assertEqual(elogviewer.unreadCount(), elogviewer.elogCount())
+        self.assertEqual(elogviewer.unreadCount(), len(self.elogs))
+        self.assertNotEqual(elogviewer.unreadCount(), elogviewer.readCount())
+        self.assertEqual(len(e.Elog._readFlag), elogviewer.readCount())
+        # check read
+        self.markReadButton.click()
+        self.assertEqual(elogviewer.readCount(), elogviewer.elogCount())
+        self.assertNotEqual(elogviewer.unreadCount(), elogviewer.readCount())
+        self.assertEqual(elogviewer.readCount(), len(self.elogs))
+        self.assertEqual(len(e.Elog._readFlag), elogviewer.readCount())
+        # reset selection
+        self.reset_select_all()
+
+    def test_important_button(self):
+        def reset_important_flag():
+            self.select_all()
+            for index in elogviewer.tableView.selectionModel().selectedRows(
+                    e.Column.ImportantState):
+                elogviewer.setImportantState(index, Qt.Unchecked)
+        # sanity check
+        elogviewer = self.elogviewer
+        self.assertNotEqual(elogviewer.elogCount(), 0)
+        # initialize: all not important
+        reset_important_flag()
+        self.assertEqual(elogviewer.importantCount(), 0)
+        # test one important
+        reset_important_flag()
+        self.reset_select_all()
+        self.toggleImportantButton.click()
+        self.assertEqual(elogviewer.importantCount(), 1)
+        # test all important
+        reset_important_flag()
+        self.select_all()
+        self.toggleImportantButton.click()
+        self.assertEqual(elogviewer.importantCount(), elogviewer.elogCount())
+        # test toggle important
+        self.toggleImportantButton.click()
+        self.assertEqual(elogviewer.importantCount(), 0)
+        # reset selection
+        reset_important_flag()
+        self.reset_select_all()
 
 
 if __name__ == "__main__":
