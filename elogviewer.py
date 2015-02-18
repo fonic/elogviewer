@@ -245,19 +245,29 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
         join = os.linesep.join
         text = ""
         with elog.file as elogfile:
+            header = "<h1>{category}/{package}</h1>".format(
+                category=elog.category,
+                package=elog.package,
+            )
             for line in elogfile:
                 line = _(line.strip())
-                # Color eclasses
                 try:
-                    prefix = '<p style="color: {}">'.format(
-                        EClass["e%s" % line.split(":")[0].lower()].htmlColor())
-                except KeyError:
-                    prefix = ""
-                if text and prefix:
-                    text = join((text, "</p>"))
-                # EOL
-                text = join((text, "".join((prefix, line, " <br />"))))
-        text = join((text, "</p>"))
+                    eclass, stage = line.split(":")
+                    eclass = EClass["e%s" % eclass.lower()]
+                except (ValueError, KeyError):
+                    # Not a section header: write line
+                    text = join((text, "{} <br />".format(line)))
+                else:
+                    # Format section header
+                    sectionHeader = "".join((
+                        "<h2>{eclass}: {stage}</h2>".format(
+                            eclass=eclass.name[1:].capitalize(),
+                            stage=stage,
+                        ),
+                        '<p style="color: {}">'.format(eclass.htmlColor())))
+                    # Close previous section if exists and open new section
+                    text = join((text, "</p>" if text else "", sectionHeader))
+        text = join((header, text, "</p>"))
         # Strip ANSI colors
         text = re.sub("\x1b\[[0-9;]+m", "", text)
         # Hyperlink
@@ -269,8 +279,9 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
             text)
         # Hyperlink packages
         text = re.sub(
-            "\s([a-z1]+[-][a-z0-9]+/[a-z0-9-]+)\s",
-            r'<a href="http://packages.gentoo.org/package/\1"> \1 </a>', text)
+            "(\s)([a-z1]+[-][a-z0-9]+/[a-z0-9-]+)([\s,.:;!?])",
+            r'\1<a href="http://packages.gentoo.org/package/\2">\2</a>\3',
+            text)
         return text
 
 

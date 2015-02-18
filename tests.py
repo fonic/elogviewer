@@ -15,7 +15,7 @@ class TestElog(unittest.TestCase):
         for elog, html in zip(self.elogs, self.htmls):
             if not path.isfile(html):
                 with open(html, "w") as html_file:
-                    html_file.writelines(Elog(elog).htmltext)
+                    html_file.writelines(TextToHtmlDelegate.toHtml(Elog(elog)))
 
     def test_html_parser(self):
         for elog, html in zip(self.elogs, self.htmls):
