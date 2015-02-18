@@ -792,12 +792,14 @@ def main():
     parser.add_argument("--log", choices="DEBUG INFO WARNING ERROR".split(),
                         default="WARNING", help="set logging level")
     config = parser.parse_args()
-    if config.elogpath is None:
+    if portage and not config.elogpath:
         logdir = portage.settings.get(
             "PORT_LOGDIR",
             os.path.join(os.sep, portage.settings["EPREFIX"],
                          *"var/log/portage".split("/")))
         config.elogpath = os.path.join(logdir, "elog")
+    else:
+        config.elogpath = ""
     logger.setLevel(getattr(logging, config.log))
 
     app = QtWidgets.QApplication(sys.argv)
