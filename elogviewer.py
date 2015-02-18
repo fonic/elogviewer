@@ -98,11 +98,11 @@ class EClass(IntEnum):
     eqa = 0
 
     def color(self):
-        return dict(eerror=QtGui.QColor(Qt.red),
-                    ewarn=QtGui.QColor(229, 103, 23),
-                    einfo=QtGui.QColor(Qt.darkGreen),
-                    elog=QtGui.QColor(Qt.black),
-                    ).get(self.name, Qt.black)
+        return dict(
+            eerror=QtGui.QColor(Qt.red),
+            ewarn=QtGui.QColor(229, 103, 23),
+            einfo=QtGui.QColor(Qt.darkGreen),
+        ).get(self.name, QtGui.QPalette().color(QtGui.QPalette.Text))
 
     def htmlColor(self):
         color = self.color()
