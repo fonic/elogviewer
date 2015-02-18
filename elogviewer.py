@@ -16,6 +16,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+"""
+Elogviewer should help you not to miss important information.
+
+You need to enable the elog feature by setting at least one of
+PORTAGE_ELOG_CLASSES="info warn error log qa" and
+PORTAGE_ELOG_SYSTEM="save" in /etc/make.conf.
+
+You need to add yourself to the portage group to use elogviewer
+without privileges.
+
+Read /etc/make.conf.example for more information.
+"""
+
 import sys
 import os
 import logging
@@ -773,20 +786,7 @@ class Elogviewer(ElogviewerUi):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=os.linesep.join(
-        """
-        Elogviewer should help you not to miss important information.
-
-        You need to enable the elog feature by setting at least one of
-        PORTAGE_ELOG_CLASSES="info warn error log qa" and
-        PORTAGE_ELOG_SYSTEM="save" in /etc/make.conf.
-
-        You need to add yourself to the portage group to use elogviewer
-        without privileges.
-
-        Read /etc/make.conf.example for more information.
-
-        """.splitlines()))
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-p", "--elogpath", help="path to the elog directory")
     parser.add_argument("--log", choices="DEBUG INFO WARNING ERROR".split(),
                         default="WARNING", help="set logging level")
