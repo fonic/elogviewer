@@ -570,7 +570,6 @@ class Elogviewer(ElogviewerUi):
         self.tableView.selectionModel().currentRowChanged.connect(
             lambda curr, prev:
             self.textEditMapper.setCurrentModelIndex(_sourceIndex(curr)))
-        self.textEditMapper.toFirst()
 
         self.__initActions()
 
@@ -687,20 +686,41 @@ class Elogviewer(ElogviewerUi):
 
     def onCurrentRowChanged(self, current, previous):
         self.setReadState(current, Qt.Checked)
-        self.statusLabel.setText(
-            "%i of %i elogs" % (current.row() + 1, self.model.rowCount()))
-        self.setWindowTitle("Elogviewer (%i unread)" % (
-            self.model.rowCount() - len(Elog._readFlag)))
-        self.unreadLabel.setText("%i unread" % (
-            self.model.rowCount() - len(Elog._readFlag)))
+        self.updateStatus()
+        self.updateUnreadCount()
+
+    def updateStatus(self):
+        text = "%i of %i elogs" % (self.currentRow(), self.elogCount())
+        self.statusLabel.setText(text)
+
+    def updateUnreadCount(self):
+        text = "%i unread" % self.unreadCount()
+        self.unreadLabel.setText(text)
+        self.setWindowTitle("Elogviewer (%s)" % text)
+
+    def currentRow(self):
+        return self.tableView.selectionModel().currentIndex().row() + 1
+
+    def elogCount(self):
+        return self.model.rowCount()
+
+    def readCount(self):
+        return len(Elog._readFlag)
+
+    def unreadCount(self):
+        return self.elogCount() - self.readCount()
 
     def setReadState(self, index, state):
         if index.isValid():
             _itemFromIndex(index).setReadState(state)
+        self.updateUnreadCount()
 
     def setSelectedReadState(self, state):
         for index in self.tableView.selectionModel().selectedIndexes():
             self.setReadState(index, state)
+
+    def importantCount(self):
+        return len(Elog._importantFlag)
 
     def setImportantState(self, index, state):
         if index.isValid():
@@ -727,6 +747,8 @@ class Elogviewer(ElogviewerUi):
 
         for elog in selectedElogs:
             elog.delete()
+
+        self.updateStatus()
 
     def refresh(self):
         self.model.beginResetModel()
