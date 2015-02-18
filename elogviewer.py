@@ -486,18 +486,6 @@ class ElogItem(QtGui.QStandardItem):
             return super(ElogItem, self).data(role)
 
 
-def populate(model, path):
-    for filename in (glob(os.path.join(path, "*:*:*.log*")) +
-                     glob(os.path.join(path, "*", "*:*.log*"))):
-        elog = Elog(filename)
-        row = []
-        for nCol in range(model.columnCount()):
-            item = ElogItem(elog)
-            item.setEditable(nCol == Column.ImportantState)
-            row.append(item)
-        model.appendRow(row)
-
-
 class ElogviewerUi(QtWidgets.QMainWindow):
 
     def __init__(self):
@@ -595,13 +583,8 @@ class Elogviewer(ElogviewerUi):
             self.proxyModel.setFilterRegExp)
         self.toolBar.addWidget(self.searchLineEdit)
 
-        def populateAndInit(model, path):
-            populate(model, path)
-            self.tableView.selectionModel().currentRowChanged.emit(
-                QtCore.QModelIndex(), QtCore.QModelIndex())
-
-        QtCore.QTimer.singleShot(0, partial(
-            populateAndInit, self.model, self.config.elogpath))
+        self.refresh()
+        self.tableView.selectRow(0)
 
     def __setupTableColumnDelegates(self):
         for column, delegate in (
@@ -747,9 +730,25 @@ class Elogviewer(ElogviewerUi):
 
     def refresh(self):
         self.model.beginResetModel()
+        # Clear
         self.model.removeRows(0, self.model.rowCount())
-        populate(self.model, self.config.elogpath)
+        # Populate
+        loaded = set()
+        for filename in (
+                glob(os.path.join(self.config.elogpath, "*:*:*.log*")) +
+                glob(os.path.join(self.config.elogpath, "*", "*:*.log*"))):
+            elog = Elog(filename)
+            row = []
+            for nCol in range(self.model.columnCount()):
+                item = ElogItem(elog)
+                item.setEditable(nCol == Column.ImportantState)
+                row.append(item)
+            self.model.appendRow(row)
+            loaded.add(filename)
         self.model.endResetModel()
+        # Sanitize settings
+        Elog._readFlag = Elog._readFlag.intersection(loaded)
+        Elog._importantFlag = Elog._importantFlag.intersection(loaded)
 
 
 def main():
