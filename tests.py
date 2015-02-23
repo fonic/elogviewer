@@ -96,11 +96,11 @@ class TestGui(TestBase):
         self.assertNotEqual(elogCount, 0)
         # delete one
         self.elogviewer.tableView.selectRow(0)
-        self.deleteButton.click()
+        QTest.mouseClick(self.deleteButton, Qt.LeftButton)
         self.assertEqual(self.elogviewer.elogCount(), elogCount - 1)
         # delete all
         self.select_all()
-        self.deleteButton.click()
+        QTest.mouseClick(self.deleteButton, Qt.LeftButton)
         self.assertEqual(self.elogviewer.elogCount(), 0)
         self.assertEqual(self.elogviewer.currentRow(), 0)
         self.assertEqual(self.elogviewer.unreadCount(), 0)
@@ -110,7 +110,7 @@ class TestGui(TestBase):
         self.reset_test_set()
         self.assertNotEqual(len(self.elogs), 0)
         self.assertEqual(self.elogviewer.elogCount(), 0)
-        self.refreshButton.click()
+        QTest.mouseClick(self.refreshButton, Qt.LeftButton)
         self.assertEqual(self.elogviewer.elogCount(), len(self.elogs))
         self.assertEqual(self.elogviewer.elogCount(), elogCount)
 
@@ -120,13 +120,13 @@ class TestGui(TestBase):
         self.assertNotEqual(elogviewer.elogCount(), 0)
         self.select_all()
         # check unread
-        self.markUnreadButton.click()
+        QTest.mouseClick(self.markUnreadButton, Qt.LeftButton)
         self.assertEqual(elogviewer.unreadCount(), elogviewer.elogCount())
         self.assertEqual(elogviewer.unreadCount(), len(self.elogs))
         self.assertNotEqual(elogviewer.unreadCount(), elogviewer.readCount())
         self.assertEqual(len(e.Elog._readFlag), elogviewer.readCount())
         # check read
-        self.markReadButton.click()
+        QTest.mouseClick(self.markReadButton, Qt.LeftButton)
         self.assertEqual(elogviewer.readCount(), elogviewer.elogCount())
         self.assertNotEqual(elogviewer.unreadCount(), elogviewer.readCount())
         self.assertEqual(elogviewer.readCount(), len(self.elogs))
@@ -149,15 +149,15 @@ class TestGui(TestBase):
         # test one important
         reset_important_flag()
         self.reset_select_all()
-        self.toggleImportantButton.click()
+        QTest.mouseClick(self.toggleImportantButton, Qt.LeftButton)
         self.assertEqual(elogviewer.importantCount(), 1)
         # test all important
         reset_important_flag()
         self.select_all()
-        self.toggleImportantButton.click()
+        QTest.mouseClick(self.toggleImportantButton, Qt.LeftButton)
         self.assertEqual(elogviewer.importantCount(), elogviewer.elogCount())
         # test toggle important
-        self.toggleImportantButton.click()
+        QTest.mouseClick(self.toggleImportantButton, Qt.LeftButton)
         self.assertEqual(elogviewer.importantCount(), 0)
         # reset selection
         reset_important_flag()
