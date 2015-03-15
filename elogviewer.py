@@ -756,19 +756,15 @@ class Elogviewer(ElogviewerUi):
     def deleteSelected(self):
         selection = [self.proxyModel.mapToSource(idx) for idx in
                      self.tableView.selectionModel().selectedRows()]
-        selectedRows = sorted(idx.row() for idx in selection)
-        selectedElogs = [self.model.itemFromIndex(idx).elog()
-                         for idx in selection]
+        selection.sort(key=lambda idx: idx.row())
         # Avoid call to onCurrentRowChanged() by clearing
         # selection with reset().
         currentRow = self.currentRow()
         self.tableView.selectionModel().reset()
 
-        for nRow in reversed(selectedRows):
-            self.model.removeRow(nRow)
-
-        for elog in selectedElogs:
-            elog.delete()
+        for index in reversed(selection):
+            self.model.itemFromIndex(index).elog().delete()
+            self.model.removeRow(index.row())
 
         self.tableView.selectRow(min(currentRow, self.rowCount() - 1))
         self.updateStatus()
