@@ -102,7 +102,7 @@ class TestGui(TestBase):
         self.select_all()
         QTest.mouseClick(self.deleteButton, Qt.LeftButton)
         self.assertEqual(self.elogviewer.elogCount(), 0)
-        self.assertEqual(self.elogviewer.currentRow(), 0)
+        self.assertEqual(self.elogviewer.currentRow(), -1)
         self.assertEqual(self.elogviewer.unreadCount(), 0)
         self.assertEqual(self.elogviewer.readCount(), 0)
         self.assertEqual(len(self.elogs), 0)

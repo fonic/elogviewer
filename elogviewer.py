@@ -705,7 +705,7 @@ class Elogviewer(ElogviewerUi):
         self.updateUnreadCount()
 
     def updateStatus(self):
-        text = "%i of %i elogs" % (self.currentRow(), self.elogCount())
+        text = "%i of %i elogs" % (self.currentRow() + 1, self.elogCount())
         self.statusLabel.setText(text)
 
     def updateUnreadCount(self):
@@ -714,7 +714,7 @@ class Elogviewer(ElogviewerUi):
         self.setWindowTitle("Elogviewer (%s)" % text)
 
     def currentRow(self):
-        return self.tableView.selectionModel().currentIndex().row() + 1
+        return self.tableView.selectionModel().currentIndex().row()
 
     def elogCount(self):
         return self.model.rowCount()
