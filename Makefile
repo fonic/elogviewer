@@ -3,4 +3,6 @@ doc:
 
 upload-doc: doc
 	rsync -avzP -e ssh html/ mathias_laurin@web.sourceforge.net:/home/project-web/elogviewer/htdocs/ 
-	
+
+test:
+	python ./tests.py
