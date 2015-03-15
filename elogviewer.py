@@ -53,7 +53,7 @@ except ImportError:
     lzma = None
 
 try:
-    import sip as _sip
+    import sip
 except ImportError:
     from PySide import QtGui, QtCore
     QtCore.QSortFilterProxyModel = QtGui.QSortFilterProxyModel
@@ -62,11 +62,14 @@ else:
     try:
         from PyQt5 import QtGui, QtWidgets, QtCore
     except ImportError:
-        for _type in "QDate QDateTime QString QVariant".split():
-            _sip.setapi(_type, 2)
+        for type in "QDate QDateTime QString QVariant".split():
+            sip.setapi(type, 2)
         from PyQt4 import QtGui, QtCore
         QtCore.QSortFilterProxyModel = QtGui.QSortFilterProxyModel
         QtWidgets = QtGui
+        del type
+    finally:
+        del sip
 
 Qt = QtCore.Qt
 
