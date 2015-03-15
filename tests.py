@@ -163,6 +163,22 @@ class TestGui(TestBase):
         reset_important_flag()
         self.reset_select_all()
 
+    def test_repeated_delete_press(self):
+        # sanity check
+        self.reset_test_set()
+        elogCount = self.elogviewer.elogCount()
+        self.assertNotEqual(elogCount, 0)
+        for n in range(elogCount):
+            # repeatedly press delete button
+            QTest.mouseClick(self.deleteButton, Qt.LeftButton)
+            self.assertEqual(self.elogviewer.elogCount(), elogCount - n - 1)
+        self.assertEqual(self.elogviewer.elogCount(), 0)
+        # one more
+        QTest.mouseClick(self.deleteButton, Qt.LeftButton)
+        self.assertEqual(self.elogviewer.elogCount(), 0)
+        # reset
+        self.reset_test_set()
+
 
 if __name__ == "__main__":
     unittest.main()

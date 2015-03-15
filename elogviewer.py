@@ -716,6 +716,9 @@ class Elogviewer(ElogviewerUi):
     def currentRow(self):
         return self.tableView.selectionModel().currentIndex().row()
 
+    def rowCount(self):
+        return self.proxyModel.rowCount()
+
     def elogCount(self):
         return self.model.rowCount()
 
@@ -756,6 +759,10 @@ class Elogviewer(ElogviewerUi):
         selectedRows = sorted(idx.row() for idx in selection)
         selectedElogs = [self.model.itemFromIndex(idx).elog()
                          for idx in selection]
+        # Avoid call to onCurrentRowChanged() by clearing
+        # selection with reset().
+        currentRow = self.currentRow()
+        self.tableView.selectionModel().reset()
 
         for nRow in reversed(selectedRows):
             self.model.removeRow(nRow)
@@ -763,6 +770,7 @@ class Elogviewer(ElogviewerUi):
         for elog in selectedElogs:
             elog.delete()
 
+        self.tableView.selectRow(min(currentRow, self.rowCount() - 1))
         self.updateStatus()
 
     def refresh(self):
