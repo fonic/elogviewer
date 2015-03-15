@@ -770,6 +770,8 @@ class Elogviewer(ElogviewerUi):
         self.updateStatus()
 
     def refresh(self):
+        currentRow = self.currentRow()
+        self.tableView.selectionModel().reset()
         self.model.beginResetModel()
         # Clear
         self.model.removeRows(0, self.model.rowCount())
@@ -787,6 +789,7 @@ class Elogviewer(ElogviewerUi):
             self.model.appendRow(row)
             loaded.add(filename)
         self.model.endResetModel()
+        self.tableView.selectRow(min(currentRow, self.rowCount() - 1))
         # Sanitize settings
         Elog._readFlag = Elog._readFlag.intersection(loaded)
         Elog._importantFlag = Elog._importantFlag.intersection(loaded)
