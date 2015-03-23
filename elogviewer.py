@@ -367,9 +367,10 @@ class Star(QtWidgets.QAbstractButton):
         self.setCheckable(True)
         self._starPolygon = QtGui.QPolygonF([QtCore.QPointF(1.0, 0.5)])
         for i in range(5):
-            self._starPolygon << QtCore.QPointF(
+            self._starPolygon.append(QtCore.QPointF(
                 0.5 + 0.5 * cos(0.8 * i * 3.14),
                 0.5 + 0.5 * sin(0.8 * i * 3.14))
+            )
 
     def paintEvent(self, event):
         painter = QtGui.QPainter(self)
