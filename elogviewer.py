@@ -40,6 +40,7 @@ import re
 from math import cos, sin
 from glob import glob
 from functools import partial
+from collections import namedtuple
 from contextlib import closing
 
 from enum import IntEnum
@@ -135,62 +136,21 @@ def _sourceIndex(index):
 
 
 def _itemFromIndex(index):
-    index = _sourceIndex(index)
-    return index.model().itemFromIndex(index)
+    if index.isValid():
+        index = _sourceIndex(index)
+        return index.model().itemFromIndex(index)
+    else:
+        return ElogItem()
 
 
-class Elog(object):
-
-    _readFlag = set()
-    _importantFlag = set()
-
-    def __init__(self, filename):
-        self.filename = filename
-        basename = os.path.basename(filename)
-        try:
-            self.category, self.package, rest = basename.split(":")
-        except ValueError:
-            self.category = os.path.dirname(filename).split(os.sep)[-1]
-            self.package, rest = basename.split(":")
-        date = rest.split(".")[0]
-        self.date = time.strptime(date, "%Y%m%d-%H%M%S")
-
-        # Get the highest elog class. Adapted from Luca Marturana's elogv.
-        with self.file as elogfile:
-            eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:",
-                                  _(elogfile.read()))
-            if "ERROR:" in eClasses:
-                self.eclass = EClass.eerror
-            elif "WARN:" in eClasses:
-                self.eclass = EClass.ewarn
-            elif "LOG:" in eClasses:
-                self.eclass = EClass.elog
-            else:
-                self.eclass = EClass.einfo
-
-    def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.filename)
-
-    def delete(self):
-        os.remove(self.filename)
-        try:
-            Elog._readFlag.remove(self.filename)
-        except KeyError:
-            pass
-        try:
-            Elog._importantFlag.remove(self.filename)
-        except KeyError:
-            pass
-
-    @property
-    def file(self):
-        root, ext = os.path.splitext(self.filename)
+def _file(filename):
+        root, ext = os.path.splitext(filename)
         try:
             return {".gz": gzip.open,
                     ".bz2": bz2.BZ2File,
-                    ".log": open}[ext](self.filename, "rb")
+                    ".log": open}[ext](filename, "rb")
         except KeyError:
-            logger.error("%s: unsupported format" % self.filename)
+            logger.error("%s: unsupported format" % filename)
             return closing(BytesIO(
                 b"""
                 <!-- set eclass: ERROR: -->
@@ -199,7 +159,7 @@ class Elog(object):
                 """
             ))
         except IOError:
-            logger.error("%s: could not open file" % self.filename)
+            logger.error("%s: could not open file" % filename)
             return closing(BytesIO(
                 b"""
                 <!-- set eclass: ERROR: -->
@@ -208,17 +168,33 @@ class Elog(object):
                 """
             ))
 
-    @property
-    def important(self):
-        return self.filename in Elog._importantFlag
 
-    @important.setter
-    def important(self, flag):
+class Elog(namedtuple("Elog", ["filename", "category", "package",
+                               "date", "eclass"])):
+
+    @classmethod
+    def fromFilename(cls, filename):
+        basename = os.path.basename(filename)
         try:
-            {True: Elog._importantFlag.add,
-             False: Elog._importantFlag.remove}[flag](self.filename)
-        except KeyError:  # for remove
-            pass
+            category, package, rest = basename.split(":")
+        except ValueError:
+            category = os.path.dirname(filename).split(os.sep)[-1]
+            package, rest = basename.split(":")
+        date = rest.split(".")[0]
+        date = time.strptime(date, "%Y%m%d-%H%M%S")
+        # Get the highest elog class. Adapted from Luca Marturana's elogv.
+        with _file(filename) as elogfile:
+            eClasses = re.findall("LOG:|INFO:|WARN:|ERROR:",
+                                  _(elogfile.read()))
+            if "ERROR:" in eClasses:
+                eclass = EClass.eerror
+            elif "WARN:" in eClasses:
+                eclass = EClass.ewarn
+            elif "LOG:" in eClasses:
+                eclass = EClass.elog
+            else:
+                eclass = EClass.einfo
+        return cls(filename, category, package, date, eclass)
 
     @property
     def isoTime(self):
@@ -227,18 +203,6 @@ class Elog(object):
     @property
     def localeTime(self):
         return time.strftime("%x %X", self.date)
-
-    @property
-    def read(self):
-        return self.filename in Elog._readFlag
-
-    @read.setter
-    def read(self, flag):
-        try:
-            {True: Elog._readFlag.add,
-             False: Elog._readFlag.remove}[flag](self.filename)
-        except KeyError:  # for remove
-            pass
 
 
 class TextToHtmlDelegate(QtWidgets.QItemDelegate):
@@ -253,14 +217,14 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
         if not index.isValid() or not isinstance(editor, QtWidgets.QTextEdit):
             return
         model = index.model()
-        elog = model.itemFromIndex(index).elog()
+        elog = model.itemFromIndex(index)._elog
         editor.setHtml(TextToHtmlDelegate.toHtml(elog))
 
     @staticmethod
     def toHtml(elog):
         join = os.linesep.join
         text = ""
-        with elog.file as elogfile:
+        with _file(elog.filename) as elogfile:
             header = "<h1>{category}/{package}</h1>".format(
                 category=elog.category,
                 package=elog.package,
@@ -328,7 +292,7 @@ class ReadFontStyleDelegate(QtWidgets.QStyledItemDelegate):
         if not index.isValid():
             return
         self.initStyleOption(option, index)
-        option.font.setBold(not _itemFromIndex(index).isReadState())
+        option.font.setBold(_itemFromIndex(index).readState() is Qt.Unchecked)
         super(ReadFontStyleDelegate, self).paint(painter, option, index)
 
 
@@ -393,6 +357,7 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, button=None, parent=None):
         super(ButtonDelegate, self).__init__(parent)
         self._btn = QtWidgets.QPushButton() if button is None else button
+        self._btn.setCheckable(True)
         self._btn.setParent(parent)
         self._btn.hide()
 
@@ -407,7 +372,8 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
         return None
 
     def setModelData(self, editor, model, index):
-        model.setData(index, editor.isChecked(), role=Qt.CheckStateRole)
+        data = Qt.Checked if editor.isChecked() else Qt.Unchecked
+        model.setData(index, data, role=Qt.CheckStateRole)
 
     def paint(self, painter, option, index):
         self._btn.setChecked(index.data(role=Qt.CheckStateRole))
@@ -436,11 +402,14 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
         return False
 
 
-class ElogItem(QtGui.QStandardItem):
+class ElogRowItem(QtGui.QStandardItem):
 
-    def __init__(self, elog=None):
-        super(ElogItem, self).__init__()
-        self.__elog = elog
+    def __init__(self, filename="", parent=None):
+        super(ElogRowItem, self).__init__(parent)
+        self._elog = Elog.fromFilename(filename) if filename else Elog(
+            "", None, None, time.localtime(), EClass.einfo)
+        self._readState = Qt.Unchecked
+        self._importantState = Qt.Unchecked
 
     def type(self):
         return self.UserType + 1
@@ -448,42 +417,72 @@ class ElogItem(QtGui.QStandardItem):
     def clone(self):
         return self.__class__()
 
-    def elog(self):
-        return self.__elog
+    def filename(self):
+        return self._elog.filename
 
     def setReadState(self, state):
-        self.__elog.read = state is Qt.Checked
+        self._readState = state
         self.emitDataChanged()
 
     def readState(self):
-        return Qt.Checked if self.__elog.read else Qt.Unchecked
-
-    def isReadState(self):
-        return self.__elog.read is True
+        return self._readState
 
     def setImportantState(self, state):
-        self.__elog.important = state is Qt.Checked
+        self._importantState = state
         self.emitDataChanged()
 
     def importantState(self):
-        return Qt.Checked if self.__elog.important else Qt.Unchecked
+        return self._importantState
 
     def isImportantState(self):
-        return self.__elog.important is True
+        return self.importantState() is Qt.Checked
 
     def toggleImportantState(self):
         self.setImportantState(Qt.Unchecked if self.isImportantState() else
                                Qt.Checked)
 
+
+class ElogItem(QtGui.QStandardItem):
+
+    def __init__(self, parent=None):
+        super(ElogItem, self).__init__(parent)
+
+    def type(self):
+        return self.UserType + 2
+
+    def clone(self):
+        return self.__class__()
+
+    def __getattr__(self, name):
+
+        def verticalHeaderItem():
+            try:
+                item = self.model().verticalHeaderItem(self.row())
+            except AttributeError:
+                assert(self.model() is None)
+                item = None
+            return item if item else ElogRowItem()
+
+        return getattr(verticalHeaderItem(), name)
+
+    def setData(self, value, role=Qt.UserRole + 1):
+        if role == Qt.CheckStateRole:
+            return {
+                Column.ImportantState: self.setImportantState,
+                Column.ReadState: self.setReadState,
+            }.get(self.column(), lambda: None)(value)
+        super(ElogItem, self).setData(value, role)
+
     def data(self, role=Qt.UserRole + 1):
-        if not self.__elog:
+        elog = self._elog
+        if not elog:
             return super(ElogItem, self).data(role)
         if role in (Qt.DisplayRole, Qt.EditRole):
             return {
-                Column.Category: self.__elog.category,
-                Column.Package: self.__elog.package,
-                Column.Eclass: self.__elog.eclass.name,
-                Column.Date: self.__elog.localeTime,
+                Column.Category: elog.category,
+                Column.Package: elog.package,
+                Column.Eclass: elog.eclass.name,
+                Column.Date: elog.localeTime,
             }.get(self.column(), "")
         elif role == Qt.CheckStateRole:
             return {
@@ -494,9 +493,9 @@ class ElogItem(QtGui.QStandardItem):
             if self.column() in (Column.ImportantState, Column.ReadState):
                 return self.data(Qt.CheckStateRole)
             elif self.column() == Column.Date:
-                return self.__elog.isoTime
+                return elog.isoTime
             elif self.column() == Column.Eclass:
-                return self.__elog.eclass.value
+                return elog.eclass.value
             else:
                 return self.data(Qt.DisplayRole)
         else:
@@ -549,22 +548,13 @@ class Elogviewer(ElogviewerUi):
         super(Elogviewer, self).__init__()
         self.config = config
         self.settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
-        try:
-            Elog._readFlag = self.settings.value("readFlag", set())
-            Elog._importantFlag = self.settings.value("importantFlag", set())
-            if Elog._readFlag is None or Elog._importantFlag is None:
-                raise TypeError
-        except TypeError:
-            # The list is lost when going from py3 to py2
-            logger.error("The previous settings could not be loaded.")
-            Elog._readFlag = set()
-            Elog._importantFlag = set()
 
         self.model = QtGui.QStandardItemModel(self.tableView)
-        self.model.setItemPrototype(ElogItem())
-        self.model.setColumnCount(6)
+        # Use QStandardItem for horizontal headers
         self.model.setHorizontalHeaderLabels(
             ["!!", "Category", "Package", "Read", "Highest\neclass", "Date"])
+        # Then default to ElogItem -- else, the labels are not displayed
+        self.model.setItemPrototype(ElogItem())
 
         self.proxyModel = QtCore.QSortFilterProxyModel(self.tableView)
         self.proxyModel.setFilterKeyColumn(-1)
@@ -599,7 +589,7 @@ class Elogviewer(ElogviewerUi):
             self.proxyModel.setFilterRegExp)
         self.toolBar.addWidget(self.searchLineEdit)
 
-        self.refresh()
+        self.populate()
         self.tableView.selectRow(0)
 
     def __setupTableColumnDelegates(self):
@@ -695,13 +685,28 @@ class Elogviewer(ElogviewerUi):
         self.quitAction.triggered.connect(self.close)
         self.toolBar.addAction(self.quitAction)
 
+    def saveSettings(self):
+        readFlag = set()
+        importantFlag = set()
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row, Column.ReadState)
+            if item.readState() is Qt.Checked:
+                readFlag.add(item.filename())
+            if item.importantState() is Qt.Checked:
+                importantFlag.add(item.filename())
+        self.settings.setValue("readFlag", readFlag)
+        self.settings.setValue("importantFlag", importantFlag)
+
     def closeEvent(self, closeEvent):
-        self.settings.setValue("readFlag", Elog._readFlag)
-        self.settings.setValue("importantFlag", Elog._importantFlag)
+        self.saveSettings()
         super(Elogviewer, self).closeEvent(closeEvent)
 
     def onCurrentRowChanged(self, current, previous):
-        self.setReadState(current, Qt.Checked)
+        currentItem, previousItem = map(_itemFromIndex, (current, previous))
+        if currentItem.readState() is Qt.Unchecked:
+            currentItem.setReadState(Qt.PartiallyChecked)
+        if previousItem.readState() is Qt.PartiallyChecked:
+            previousItem.setReadState(Qt.Checked)
         self.updateStatus()
         self.updateUnreadCount()
 
@@ -724,35 +729,31 @@ class Elogviewer(ElogviewerUi):
         return self.model.rowCount()
 
     def readCount(self):
-        return len(Elog._readFlag)
+        count = 0
+        for row in range(self.model.rowCount()):
+            if self.model.item(row, 0).readState() is not Qt.Unchecked:
+                count += 1
+        return count
 
     def unreadCount(self):
         return self.elogCount() - self.readCount()
 
-    def setReadState(self, index, state):
-        if index.isValid():
+    def setSelectedReadState(self, state):
+        for index in self.tableView.selectionModel().selectedIndexes():
             _itemFromIndex(index).setReadState(state)
         self.updateUnreadCount()
 
-    def setSelectedReadState(self, state):
-        for index in self.tableView.selectionModel().selectedIndexes():
-            self.setReadState(index, state)
-
     def importantCount(self):
-        return len(Elog._importantFlag)
-
-    def setImportantState(self, index, state):
-        if index.isValid():
-            _itemFromIndex(index).setImportantState(state)
-
-    def toggleImportantState(self, index):
-        if index.isValid():
-            _itemFromIndex(index).toggleImportantState()
+        count = 0
+        for row in range(self.model.rowCount()):
+            if self.model.item(row, 0).importantState() is Qt.Checked:
+                count += 1
+        return count
 
     def toggleSelectedImportantState(self):
         for index in self.tableView.selectionModel().selectedRows(
                 Column.ImportantState):
-            self.toggleImportantState(index)
+            _itemFromIndex(index).toggleImportantState()
 
     def deleteSelected(self):
         selection = [self.proxyModel.mapToSource(idx) for idx in
@@ -764,36 +765,42 @@ class Elogviewer(ElogviewerUi):
         self.tableView.selectionModel().reset()
 
         for index in reversed(selection):
-            self.model.itemFromIndex(index).elog().delete()
+            os.remove(self.model.itemFromIndex(index).filename())
             self.model.removeRow(index.row())
 
         self.tableView.selectRow(min(currentRow, self.rowCount() - 1))
         self.updateStatus()
 
     def refresh(self):
+        self.saveSettings()
+        self.populate()
+
+    def populate(self):
         currentRow = self.currentRow()
         self.tableView.selectionModel().reset()
         self.model.beginResetModel()
         # Clear
         self.model.removeRows(0, self.model.rowCount())
         # Populate
-        loaded = set()
-        for filename in (
+        for row, filename in enumerate(
                 glob(os.path.join(self.config.elogpath, "*:*:*.log*")) +
                 glob(os.path.join(self.config.elogpath, "*", "*:*.log*"))):
-            elog = Elog(filename)
-            row = []
-            for nCol in range(self.model.columnCount()):
-                item = ElogItem(elog)
-                item.setEditable(nCol == Column.ImportantState)
-                row.append(item)
-            self.model.appendRow(row)
-            loaded.add(filename)
+            elogRowItem = ElogRowItem(filename)
+            elogRowItem.setReadState(
+                Qt.Checked
+                if filename in self.settings.value("readFlag")
+                else Qt.Unchecked)
+            elogRowItem.setImportantState(
+                Qt.Checked
+                if filename in self.settings.value("importantFlag")
+                else Qt.Unchecked)
+            self.model.setVerticalHeaderItem(row, elogRowItem)
+            for column in range(self.model.columnCount()):
+                item = ElogItem()
+                item.setEditable(column == Column.ImportantState)
+                self.model.setItem(row, column, item)
         self.model.endResetModel()
         self.tableView.selectRow(min(currentRow, self.rowCount() - 1))
-        # Sanitize settings
-        Elog._readFlag = Elog._readFlag.intersection(loaded)
-        Elog._importantFlag = Elog._importantFlag.intersection(loaded)
 
 
 def main():

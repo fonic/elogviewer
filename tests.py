@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtTest import QTest
 Qt = QtCore.Qt
 import elogviewer as e
+from elogviewer import _file, _itemFromIndex
 e.logger.setLevel(100)  # silence logging
 
 
@@ -47,11 +48,11 @@ class TestElogviewer(TestBase):
         for elog, html in zip(self.elogs, self.htmls):
             with open(html, "r") as html_file:
                 self.assertMultiLineEqual(
-                    e.TextToHtmlDelegate.toHtml(e.Elog(elog)),
+                    e.TextToHtmlDelegate.toHtml(e.Elog.fromFilename(elog)),
                     "".join(html_file.readlines()))
 
     def test_unsupported_format(self):
-        with e.Elog(self.htmls[0]).file as elogfile:
+        with _file(self.htmls[0]) as elogfile:
             content = elogfile.readlines()
         self.assertNotEqual(content, [])
         self.assertIsInstance(b"".join(content), bytes)
@@ -124,13 +125,11 @@ class TestGui(TestBase):
         self.assertEqual(elogviewer.unreadCount(), elogviewer.elogCount())
         self.assertEqual(elogviewer.unreadCount(), len(self.elogs))
         self.assertNotEqual(elogviewer.unreadCount(), elogviewer.readCount())
-        self.assertEqual(len(e.Elog._readFlag), elogviewer.readCount())
         # check read
         QTest.mouseClick(self.markReadButton, Qt.LeftButton)
         self.assertEqual(elogviewer.readCount(), elogviewer.elogCount())
         self.assertNotEqual(elogviewer.unreadCount(), elogviewer.readCount())
         self.assertEqual(elogviewer.readCount(), len(self.elogs))
-        self.assertEqual(len(e.Elog._readFlag), elogviewer.readCount())
         # reset selection
         self.reset_select_all()
 
@@ -139,7 +138,7 @@ class TestGui(TestBase):
             self.select_all()
             for index in elogviewer.tableView.selectionModel().selectedRows(
                     e.Column.ImportantState):
-                elogviewer.setImportantState(index, Qt.Unchecked)
+                _itemFromIndex(index).setImportantState(Qt.Unchecked)
         # sanity check
         elogviewer = self.elogviewer
         self.assertNotEqual(elogviewer.elogCount(), 0)
