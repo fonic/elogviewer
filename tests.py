@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtTest import QTest
 Qt = QtCore.Qt
 import elogviewer as e
-from elogviewer import _file, _itemFromIndex
+from elogviewer import _file, _itemFromIndex, _html
 e.logger.setLevel(100)  # silence logging
 
 
@@ -41,15 +41,13 @@ class TestElogviewer(TestBase):
         for elog, html in zip(self.elogs, self.htmls):
             if not os.path.isfile(html):
                 with open(html, "w") as html_file:
-                    html_file.writelines(
-                        e.TextToHtmlDelegate.toHtml(e.Elog(elog)))
+                    html_file.writelines(_html(elog))
 
     def test_html_parser(self):
         for elog, html in zip(self.elogs, self.htmls):
             with open(html, "r") as html_file:
                 self.assertMultiLineEqual(
-                    e.TextToHtmlDelegate.toHtml(e.Elog.fromFilename(elog)),
-                    "".join(html_file.readlines()))
+                    _html(elog), "".join(html_file.readlines()))
 
     def test_unsupported_format(self):
         with _file(self.htmls[0]) as elogfile:

@@ -169,6 +169,49 @@ def _file(filename):
             ))
 
 
+def _html(filename):
+    lines = []
+    with _file(filename) as elogfile:
+        for line in elogfile:
+            line = _(line.strip())
+            try:
+                eclass, stage = line.split(":")
+                eclass = EClass["e%s" % eclass.lower()]
+            except (ValueError, KeyError):
+                # Not a section header: write line
+                lines.append("{} <br />".format(line))
+            else:
+                # Format section header
+                sectionHeader = "".join((
+                    "<h2>{eclass}: {stage}</h2>".format(
+                        eclass=eclass.name[1:].capitalize(),
+                        stage=stage,
+                    ),
+                    '<p style="color: {}">'.format(eclass.htmlColor())))
+                # Close previous section if exists and open new section
+                if lines:
+                    lines.append("</p>")
+                lines.append(sectionHeader)
+    lines.append("</p>")
+    lines.append("")
+    text = os.linesep.join(lines)
+    # Strip ANSI colors
+    text = re.sub("\x1b\[[0-9;]+m", "", text)
+    # Hyperlink
+    text = re.sub("((https?|ftp)://\S+)", r'<a href="\1">\1</a>', text)
+    # Hyperlink bugs
+    text = re.sub(
+        "bug\s+#([0-9]+)",
+        r'<a href="https://bugs.gentoo.org/\1">bug #\1</a>',
+        text)
+    # Hyperlink packages
+    text = re.sub(
+        "(\s)([a-z1]+[-][a-z0-9]+/[a-z0-9-]+)([\s,.:;!?])",
+        r'\1<a href="http://packages.gentoo.org/package/\2">\2</a>\3',
+        text)
+    return text
+
+
 class Elog(namedtuple("Elog", ["filename", "category", "package",
                                "date", "eclass"])):
 
@@ -217,52 +260,7 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
         if not index.isValid() or not isinstance(editor, QtWidgets.QTextEdit):
             return
         model = index.model()
-        elog = model.itemFromIndex(index)._elog
-        editor.setHtml(TextToHtmlDelegate.toHtml(elog))
-
-    @staticmethod
-    def toHtml(elog):
-        join = os.linesep.join
-        text = ""
-        with _file(elog.filename) as elogfile:
-            header = "<h1>{category}/{package}</h1>".format(
-                category=elog.category,
-                package=elog.package,
-            )
-            for line in elogfile:
-                line = _(line.strip())
-                try:
-                    eclass, stage = line.split(":")
-                    eclass = EClass["e%s" % eclass.lower()]
-                except (ValueError, KeyError):
-                    # Not a section header: write line
-                    text = join((text, "{} <br />".format(line)))
-                else:
-                    # Format section header
-                    sectionHeader = "".join((
-                        "<h2>{eclass}: {stage}</h2>".format(
-                            eclass=eclass.name[1:].capitalize(),
-                            stage=stage,
-                        ),
-                        '<p style="color: {}">'.format(eclass.htmlColor())))
-                    # Close previous section if exists and open new section
-                    text = join((text, "</p>" if text else "", sectionHeader))
-        text = join((header, text, "</p>"))
-        # Strip ANSI colors
-        text = re.sub("\x1b\[[0-9;]+m", "", text)
-        # Hyperlink
-        text = re.sub("((https?|ftp)://\S+)", r'<a href="\1">\1</a>', text)
-        # Hyperlink bugs
-        text = re.sub(
-            "bug\s+#([0-9]+)",
-            r'<a href="https://bugs.gentoo.org/\1">bug #\1</a>',
-            text)
-        # Hyperlink packages
-        text = re.sub(
-            "(\s)([a-z1]+[-][a-z0-9]+/[a-z0-9-]+)([\s,.:;!?])",
-            r'\1<a href="http://packages.gentoo.org/package/\2">\2</a>\3',
-            text)
-        return text
+        editor.setHtml(model.itemFromIndex(index).html())
 
 
 class SeverityColorDelegate(QtWidgets.QStyledItemDelegate):
@@ -419,6 +417,14 @@ class ElogRowItem(QtGui.QStandardItem):
 
     def filename(self):
         return self._elog.filename
+
+    def html(self):
+        header = "<h1>{category}/{package}</h1>".format(
+            category=self._elog.category,
+            package=self._elog.package,
+        )
+        text = _html(self._elog.filename)
+        return header + text
 
     def setReadState(self, state):
         self._readState = state
