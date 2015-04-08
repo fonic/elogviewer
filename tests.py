@@ -7,17 +7,15 @@ from collections import namedtuple
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtTest import QTest
 Qt = QtCore.Qt
-from elogviewer import (_file, _itemFromIndex, _html, logger,
-                        TextToHtmlDelegate, ButtonDelegate,
-                        Elogviewer, Column)
-from elogviewer import __file__ as __elogviewer_file__
-logger.setLevel(100)  # silence logging
+import elogviewer
+Column = elogviewer.Column
+elogviewer.logger.setLevel(100)  # silence logging
+from elogviewer import _file, _itemFromIndex, _html
 
 
 config = namedtuple("Config", "elogpath")
 config.elogpath = "data"
 app = QtWidgets.QApplication(sys.argv)
-elogviewer = Elogviewer(config)
 
 TEST_SET_SIZE = 5
 
@@ -31,13 +29,13 @@ class TestRepr(unittest.TestCase):
 class TestDelegateRepr(TestRepr):
 
     def test_TextToHtmlDelegate(self):
-        self.assert_well_formatted_repr(TextToHtmlDelegate())
+        self.assert_well_formatted_repr(elogviewer.TextToHtmlDelegate())
 
     def test_ButtonDelegate(self):
         button = mock.Mock()
         button.__repr__ = mock.Mock()
         button.__repr__.return_value = "QtWidgets.QPushButton()"
-        self.assert_well_formatted_repr(ButtonDelegate(button))
+        self.assert_well_formatted_repr(elogviewer.ButtonDelegate(button))
 
 
 class TestBase(unittest.TestCase):
@@ -55,7 +53,7 @@ class TestBase(unittest.TestCase):
                 for elog in self.elogs]
 
     def delete_test_set(self):
-        assert(os.getcwd() == os.path.dirname(__elogviewer_file__))
+        assert(os.getcwd() == os.path.dirname(elogviewer.__file__))
         os.system("rm -r %s" % config.elogpath)
 
     def reset_test_set(self):
@@ -83,6 +81,11 @@ class TestEnvironment(TestBase):
             if not os.path.isfile(html):
                 with open(html, "w") as html_file:
                     html_file.writelines(_html(elog))
+        self.elogviewer = elogviewer.Elogviewer(config)
+
+    def tearDown(self):
+        assert self.elogviewer.close()
+        del self.elogviewer
 
     def test_delete_test_set(self):
         self.delete_test_set()
@@ -95,7 +98,7 @@ class TestEnvironment(TestBase):
 
     def test_elog_loaded(self):
         self.assert_elog_files_exist()
-        self.assertEqual(elogviewer.elogCount(), TEST_SET_SIZE)
+        self.assertEqual(self.elogviewer.elogCount(), TEST_SET_SIZE)
 
     def test_html_parser(self):
         for elog, html in zip(self.elogs, self.htmls):
@@ -113,10 +116,11 @@ class TestGui(TestBase):
 
     def setUp(self):
         super().setUp()
+        self.elogviewer = elogviewer.Elogviewer(config)
 
         def button(name):
-            action = getattr(elogviewer, "%sAction" % name)
-            button = elogviewer.toolBar.widgetForAction(action)
+            action = getattr(self.elogviewer, "%sAction" % name)
+            button = self.elogviewer.toolBar.widgetForAction(action)
             return button
 
         self.refreshButton = button("refresh")
@@ -126,41 +130,45 @@ class TestGui(TestBase):
         self.deleteButton = button("delete")
         self.aboutAction = button("about")
 
-        elogviewer.refresh()
+        self.elogviewer.refresh()
         self.unset_important_flag()
         self.unset_read_flag()
         self.select_first()
 
+    def tearDown(self):
+        assert self.elogviewer.close()
+        del self.elogviewer
+
     def select_first(self):
-        elogviewer.tableView.selectionModel().clear()
-        elogviewer.tableView.selectRow(0)
+        self.elogviewer.tableView.selectionModel().clear()
+        self.elogviewer.tableView.selectRow(0)
 
     def select_all(self):
-        QTest.keyClick(elogviewer.tableView, Qt.Key_A, Qt.ControlModifier)
+        QTest.keyClick(self.elogviewer.tableView, Qt.Key_A, Qt.ControlModifier)
 
     def unset_important_flag(self):
         self.select_all()
-        for index in elogviewer.tableView.selectionModel().selectedRows(
+        for index in self.elogviewer.tableView.selectionModel().selectedRows(
                 Column.ImportantState):
             _itemFromIndex(index).setImportantState(Qt.Unchecked)
 
     def unset_read_flag(self):
         self.select_all()
-        for index in elogviewer.tableView.selectionModel().selectedRows(
+        for index in self.elogviewer.tableView.selectionModel().selectedRows(
                 Column.ReadState):
             _itemFromIndex(index).setReadState(Qt.Unchecked)
 
     def assert_elog_count_consistent(self):
-        self.assertEqual(elogviewer.elogCount(), len(self.elogs))
+        self.assertEqual(self.elogviewer.elogCount(), len(self.elogs))
 
     def assert_elog_count_equal(self, value):
-        self.assertEqual(elogviewer.elogCount(), value)
+        self.assertEqual(self.elogviewer.elogCount(), value)
 
     def assert_read_count_equal(self, value):
-        self.assertEqual(elogviewer.readCount(), value)
+        self.assertEqual(self.elogviewer.readCount(), value)
 
     def assert_important_count_equal(self, value):
-        self.assertEqual(elogviewer.importantCount(), value)
+        self.assertEqual(self.elogviewer.importantCount(), value)
 
 
 class TestGuiButtons(TestGui):
@@ -236,9 +244,9 @@ class TestGuiButtons(TestGui):
 class TestReadCounter(TestGui):
 
     def test_decrease_count_on_leaving_row(self):
-        elogviewer.tableView.selectRow(0)
-        elogviewer.tableView.selectRow(1)
-        elogviewer.tableView.selectRow(2)
+        self.elogviewer.tableView.selectRow(0)
+        self.elogviewer.tableView.selectRow(1)
+        self.elogviewer.tableView.selectRow(2)
 
         self.assert_read_count_equal(TEST_SET_SIZE - 2)
 

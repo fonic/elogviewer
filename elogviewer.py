@@ -254,7 +254,7 @@ class TextToHtmlDelegate(QtWidgets.QItemDelegate):
         super(TextToHtmlDelegate, self).__init__(parent)
 
     def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.parent())
+        return "elogviewer.%s(%r)" % (self.__class__.__name__, self.parent())
 
     def setEditorData(self, editor, index):
         if not index.isValid() or not isinstance(editor, QtWidgets.QTextEdit):
@@ -360,7 +360,7 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
         self._btn.hide()
 
     def __repr__(self):
-        return "%s(button=%r, parent=%r)" % (
+        return "elogviewer.%s(button=%r, parent=%r)" % (
             self.__class__.__name__, self._btn, self.parent())
 
     def sizeHint(self, option, index):
