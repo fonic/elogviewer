@@ -88,7 +88,7 @@ def _(bytes):
     under python2.
 
     """
-    return bytes.decode(locale.getpreferredencoding())
+    return bytes.decode(locale.getpreferredencoding(), "replace")
 
 
 class Role(IntEnum):
