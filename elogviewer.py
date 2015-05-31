@@ -554,6 +554,10 @@ class Elogviewer(ElogviewerUi):
         super(Elogviewer, self).__init__()
         self.config = config
         self.settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
+        if not self.settings.contains("readFlag"):
+            self.settings.setValue("readFlag", set())
+        if not self.settings.contains("importantFlag"):
+            self.settings.setValue("importantFlag", set())
 
         self.model = QtGui.QStandardItemModel(self.tableView)
         # Use QStandardItem for horizontal headers
