@@ -80,7 +80,7 @@ except ImportError:
     portage = None
 
 
-__version__ = "2.5"
+__version__ = "2.6"
 
 
 def _(bytes):
