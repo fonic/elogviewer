@@ -80,7 +80,7 @@ except ImportError:
     portage = None
 
 
-__version__ = "2.5"
+__version__ = "2.6"
 
 
 def _(bytes):
@@ -88,7 +88,7 @@ def _(bytes):
     under python2.
 
     """
-    return bytes.decode(locale.getpreferredencoding())
+    return bytes.decode(locale.getpreferredencoding(), "replace")
 
 
 class Role(IntEnum):
@@ -554,6 +554,10 @@ class Elogviewer(ElogviewerUi):
         super(Elogviewer, self).__init__()
         self.config = config
         self.settings = QtCore.QSettings("Mathias Laurin", "elogviewer")
+        if not self.settings.contains("readFlag"):
+            self.settings.setValue("readFlag", set())
+        if not self.settings.contains("importantFlag"):
+            self.settings.setValue("importantFlag", set())
 
         self.model = QtGui.QStandardItemModel(self.tableView)
         # Use QStandardItem for horizontal headers
