@@ -518,6 +518,9 @@ class ElogviewerUi(QtWidgets.QMainWindow):
         self.setCentralWidget(centralWidget)
 
         self.tableView = QtWidgets.QTableView(centralWidget)
+        # [Fonic] Enable sorting so that the sorting indicator (i.e. the
+        #         small arrow in the table header row) will be displayed
+        self.tableView.setSortingEnabled(True)
         self.tableView.setSelectionMode(self.tableView.ExtendedSelection)
         self.tableView.setSelectionBehavior(self.tableView.SelectRows)
         horizontalHeader = self.tableView.horizontalHeader()
@@ -558,6 +561,14 @@ class Elogviewer(ElogviewerUi):
             self.settings.setValue("readFlag", set())
         if not self.settings.contains("importantFlag"):
             self.settings.setValue("importantFlag", set())
+        # [Fonic] Set window width/height from config values
+        if self.settings.contains("windowWidth") and self.settings.contains("windowHeight"):
+            self.resize(int(self.settings.value("windowWidth")), int(self.settings.value("windowHeight")))
+        else:
+            # [Fonic] Use a sane default width/height if config values
+            #         are absent -> quarter of screen size
+            screenSize = QtWidgets.QApplication.desktop().screenGeometry()
+            self.resize(screenSize.width() / 2, screenSize.height() / 2)
 
         self.model = QtGui.QStandardItemModel(self.tableView)
         # Use QStandardItem for horizontal headers
@@ -600,6 +611,13 @@ class Elogviewer(ElogviewerUi):
         self.toolBar.addWidget(self.searchLineEdit)
 
         self.populate()
+        # [Fonic] Set sorting column/order from config values
+        if self.settings.contains("sortColumn") and self.settings.contains("sortOrder"):
+            self.tableView.sortByColumn(int(self.settings.value("sortColumn")), int(self.settings.value("sortOrder")))
+        else:
+            # [Fonic] Use a sane default sorting column/order if config
+            #         values are absent -> sort by date, latest on top
+            self.tableView.sortByColumn(Column.Date, Qt.DescendingOrder)
         self.tableView.selectRow(0)
 
     def __setupTableColumnDelegates(self):
@@ -706,17 +724,26 @@ class Elogviewer(ElogviewerUi):
                 importantFlag.add(item.filename())
         self.settings.setValue("readFlag", readFlag)
         self.settings.setValue("importantFlag", importantFlag)
+        # [Fonic] Save current sorting column/order
+        self.settings.setValue("sortColumn", self.tableView.horizontalHeader().sortIndicatorSection())
+        self.settings.setValue("sortOrder", self.tableView.horizontalHeader().sortIndicatorOrder())
+        # [Fonic] Save current window width/height
+        self.settings.setValue("windowWidth", self.width())
+        self.settings.setValue("windowHeight", self.height())
 
     def closeEvent(self, closeEvent):
         self.saveSettings()
         super(Elogviewer, self).closeEvent(closeEvent)
 
     def onCurrentRowChanged(self, current, previous):
-        currentItem, previousItem = map(_itemFromIndex, (current, previous))
-        if currentItem.readState() is Qt.Unchecked:
-            currentItem.setReadState(Qt.PartiallyChecked)
-        if previousItem.readState() is Qt.PartiallyChecked:
-            previousItem.setReadState(Qt.Checked)
+        # [Fonic] Do not mark first selected item as 'read' on application
+        #         start as this might be undesired behaviour for users
+        if (previous.row() != -1):
+            currentItem, previousItem = map(_itemFromIndex, (current, previous))
+            if currentItem.readState() is Qt.Unchecked:
+                currentItem.setReadState(Qt.PartiallyChecked)
+            if previousItem.readState() is Qt.PartiallyChecked:
+                previousItem.setReadState(Qt.Checked)
         self.updateStatus()
         self.updateUnreadCount()
 
