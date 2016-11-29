@@ -790,8 +790,14 @@ class Elogviewer(ElogviewerUi):
         self.tableView.selectionModel().reset()
 
         for index in reversed(selection):
-            os.remove(self.model.itemFromIndex(index).filename())
-            self.model.removeRow(index.row())
+            # [Fonic] Check for errors when removing logfile. This is
+            #         important if elogviewer is run by an unprivileged
+            #         user who lacks proper permissions
+            try:
+                os.remove(self.model.itemFromIndex(index).filename())
+                self.model.removeRow(index.row())
+            except IOError as ioerr:
+                QtWidgets.QMessageBox.critical(self, "Error", "Error while trying to delete '%s':<br><b>%s</b>" % (self.model.itemFromIndex(index).filename(), ioerr.strerror))
 
         self.tableView.selectRow(min(currentRow, self.rowCount() - 1))
         self.updateStatus()
