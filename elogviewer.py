@@ -792,9 +792,11 @@ class Elogviewer(ElogviewerUi):
         for index in reversed(selection):
             # [Fonic] Check for errors when removing logfile. This is
             #         important if elogviewer is run by an unprivileged
-            #         user who lacks proper permissions
+            #         user who lacks proper permissions. Also, don't care
+            #         if logfile already got deleted
             try:
-                os.remove(self.model.itemFromIndex(index).filename())
+                if os.path.exists(filename):
+                    os.remove(self.model.itemFromIndex(index).filename())
                 self.model.removeRow(index.row())
             except IOError as ioerr:
                 QtWidgets.QMessageBox.critical(self, "Error", "Error while trying to delete '%s':<br><b>%s</b>" % (self.model.itemFromIndex(index).filename(), ioerr.strerror))
